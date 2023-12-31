@@ -16,7 +16,7 @@ services:
     volumes:
       - video_cache:/video_cache
   nginx:
-    image: nginx:latest
+    image: nginx:stable-alpine-slim
     environment:
       BASE_URL: $BASE_URL
     labels:
@@ -40,7 +40,7 @@ services:
       - video_cache:/video_cache:ro
       - ./nginx/conf.d/:/etc/nginx/conf.d
   cron:
-    image: busybox:latest
+    image: busybox:stable
     volumes:
       - video_cache:/video_cache
     command: watch -n 60 'find /video_cache/ -type f -amin +1440 -delete' > /dev/null
