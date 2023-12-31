@@ -14,7 +14,7 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 
 ### Prerequisites
 
-- Docker and Docker Compose installed on your system (or your own fairy dust, whichever is handier).
+- Docker and Docker Compose are installed on your system (or your fairy dust, whichever is handier).
 
 ### Installation
 
@@ -32,7 +32,7 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
    BASE_URL=your_base_url
    ```
 
-3. Do not forget to create a traefik reverse proxy `docker-compose.yml` file:
+3. Do not forget to create a Traefik reverse proxy `docker-compose.yml` file:
 
    ```yaml
    ---
