@@ -9,17 +9,9 @@ from urllib.parse import urlparse, urlunparse, parse_qs
 
 # Load environment variables from .env file
 load_dotenv()
-ALLOWED_USER_IDS = os.getenv("ALLOWED_USER_IDS")
 BASE_URL = os.getenv("BASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CACHE_DIR = "/video_cache"
-
-# Convert ALLOWED_USER_IDS to a list of integers
-ALLOWED_USER_IDS = (
-    []
-    if ALLOWED_USER_IDS == "*"
-    else [int(id) for id in ALLOWED_USER_IDS.split(",") if id.strip()]
-)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
@@ -73,35 +65,32 @@ def is_within_size_limit(video_path):
 # Handler for processing incoming messages
 @dp.message_handler(content_types=[types.ContentType.TEXT])
 async def process_message(message: types.Message):
-    if not ALLOWED_USER_IDS or message.from_user.id in ALLOWED_USER_IDS:
-        message_text = message.text.strip()
+    message_text = message.text.strip()
 
-        if message_text.startswith(("http", "www")):
-            clean_url = follow_redirects(message_text)
-            video_path = os.path.join(CACHE_DIR, sanitize_filename(clean_url) + ".mp4")
-            file_link = f"https://{BASE_URL}/{sanitize_filename(clean_url)}.mp4"
+    if message_text.startswith(("http", "www")):
+        clean_url = follow_redirects(message_text)
+        video_path = os.path.join(CACHE_DIR, sanitize_filename(clean_url) + ".mp4")
+        file_link = f"https://{BASE_URL}/{sanitize_filename(clean_url)}.mp4"
 
-            if "tiktok" in clean_url:
-                clean_url = clean_tiktok_url(clean_url)
-                if os.path.exists(video_path):
-                    try:
-                        if is_within_size_limit(video_path):
-                            with open(video_path, "rb") as video_file:
-                                await message.reply_video(video_file, caption=clean_url)
-                        else:
-                            await send_large_video(message, clean_url, file_link)
-                    except Exception as e:
-                        error_message = f"Error sending video from URL: {clean_url}. Error details: {str(e)}"
-                        traceback.print_exc()
-                        await message.reply(error_message)
-                else:
-                    await yt_dlp_download_and_send(clean_url, message)
+        if "tiktok" in clean_url:
+            clean_url = clean_tiktok_url(clean_url)
+            if os.path.exists(video_path):
+                try:
+                    if is_within_size_limit(video_path):
+                        with open(video_path, "rb") as video_file:
+                            await message.reply_video(video_file, caption=clean_url)
+                    else:
+                        await send_large_video(message, clean_url, file_link)
+                except Exception as e:
+                    error_message = f"Error sending video from URL: {clean_url}. Error details: {str(e)}"
+                    traceback.print_exc()
+                    await message.reply(error_message)
             else:
-                await message.reply(clean_url)
+                await yt_dlp_download_and_send(clean_url, message)
         else:
-            await message.reply(message_text)
+            await message.reply(clean_url)
     else:
-        await message.reply("Sorry, you are not authorized to use this bot.")
+        await message.reply(message_text)
 
 
 # Function to download a video using yt_dlp and send it

@@ -29,7 +29,6 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 
    ```dotenv
    BOT_TOKEN=your_bot_token
-   ALLOWED_USER_IDS=comma_separated_list_of_fellow_adventurers
    BASE_URL=your_base_url
    ```
 
