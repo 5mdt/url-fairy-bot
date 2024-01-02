@@ -27,7 +27,7 @@ services:
       traefik.http.routers.url-fairy-bot.rule: Host(`$BASE_URL`)
       traefik.http.routers.url-fairy-bot.service: url-fairy-bot
       traefik.http.routers.url-fairy-bot.tls: true
-      traefik.http.routers.url-fairy-bot.tls.certresolver: le
+      traefik.http.routers.url-fairy-bot.tls.certresolver: ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
       traefik.http.services.url-fairy-bot.loadbalancer.server.port: 80
     logging:
       driver: "json-file"
@@ -47,10 +47,7 @@ services:
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     logging:
-      driver: "json-file"
-      options:
-        max-file: "3"
-        max-size: "1m"
+      driver: none
 version: "3"
 volumes:
   video_cache:

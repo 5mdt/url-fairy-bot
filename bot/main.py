@@ -113,6 +113,13 @@ async def yt_dlp_download_and_send(clean_url, message):
         video_path = os.path.join(CACHE_DIR, sanitize_filename(clean_url) + ".mp4")
         await yt_dlp_download(clean_url)
 
+        # Check if the video file exists
+        if not os.path.exists(video_path):
+            await message.reply(
+                f"Sorry, the video from URL {clean_url} could not be downloaded or is missing."
+            )
+            return
+
         if is_within_size_limit(video_path):
             with open(video_path, "rb") as video_file:
                 await message.reply_video(video_file, caption=clean_url)
@@ -120,7 +127,9 @@ async def yt_dlp_download_and_send(clean_url, message):
             file_link = f"https://{BASE_URL}/{sanitize_filename(clean_url)}.mp4"
             await send_large_video(message, clean_url, file_link)
     except Exception as e:
-        error_message = f"Error processing video from URL: {clean_url}"
+        error_message = (
+            f"Error processing video from URL: {clean_url}. Error details: {str(e)}"
+        )
         traceback.print_exc()
         await message.reply(error_message)
 
