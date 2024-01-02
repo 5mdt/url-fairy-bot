@@ -108,7 +108,6 @@ async def handle_url(url, message):
 
         # Check if the video file exists after download attempt
         if os.path.exists(video_path):
-            # Check file size and send files if they are within limits
             files_to_send = []
             for filename in os.listdir(os.path.dirname(video_path)):
                 file_path = os.path.join(os.path.dirname(video_path), filename)
@@ -116,9 +115,9 @@ async def handle_url(url, message):
                     files_to_send.append(file_path)
 
             if files_to_send:
-                for file_path in files_to_send:
-                    with open(file_path, "rb") as file:
-                        await message.reply_document(file, caption=sanitized_url)
+                # Group the files into a single message (up to Telegram's API limit)
+                media_group = [types.InputMediaDocument(media=open(file_path, 'rb')) for file_path in files_to_send]
+                await bot.send_media_group(message.chat.id, media_group)
             else:
                 file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
                 await message.reply(
