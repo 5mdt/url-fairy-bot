@@ -3,6 +3,7 @@ import os
 import requests
 import traceback
 import yt_dlp
+import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 from dotenv import load_dotenv
@@ -61,6 +62,7 @@ async def process_message(message: types.Message):
     # Split the message by spaces or any other delimiter you prefer
     urls = message_text.split()
 
+    tasks = []
     error_messages = []  # List to store invalid URL format errors
 
     for url in urls:
@@ -68,33 +70,41 @@ async def process_message(message: types.Message):
             error_messages.append(f"Invalid URL format: {url}")
             continue
 
-        sanitized_url = follow_redirects(url)
-        video_path = os.path.join(CACHE_DIR, sanitize_filename(sanitized_url) + ".mp4")
-        file_link = f"https://{BASE_URL}/{sanitize_filename(sanitized_url)}.mp4"
+        tasks.append(handle_url(url, message))
 
-        if "tiktok" in sanitized_url:
-            sanitized_url = clean_tiktok_url(sanitized_url)
+    results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            if not os.path.exists(video_path):
-                await yt_dlp_download_and_send(sanitized_url, message)
-                continue
-
-            try:
-                if is_within_size_limit(video_path):
-                    with open(video_path, "rb") as video_file:
-                        await message.reply_video(video_file, caption=sanitized_url)
-                else:
-                    await send_large_video(message, sanitized_url, file_link)
-            except Exception as e:
-                error_message = f"Error sending video from URL: {sanitized_url}. Error details: {str(e)}"
-                traceback.print_exc()
-                await message.reply(error_message)
-        else:
-            error_messages.append(f"Invalid URL format: {url}")
+    for result in results:
+        if isinstance(result, Exception):
+            error_messages.append(str(result))
 
     # Send accumulated error messages, if any
     if error_messages:
         await message.reply("\n".join(error_messages))
+
+
+async def handle_url(url, message):
+    sanitized_url = follow_redirects(url)
+    video_path = os.path.join(CACHE_DIR, sanitize_filename(sanitized_url) + ".mp4")
+    file_link = f"https://{BASE_URL}/{sanitize_filename(sanitized_url)}.mp4"
+
+    if "tiktok" in sanitized_url:
+        sanitized_url = clean_tiktok_url(sanitized_url)
+
+        if not os.path.exists(video_path):
+            await yt_dlp_download_and_send(sanitized_url, message)
+            return
+
+        try:
+            if is_within_size_limit(video_path):
+                with open(video_path, "rb") as video_file:
+                    await message.reply_video(video_file, caption=sanitized_url)
+            else:
+                await send_large_video(message, sanitized_url, file_link)
+        except Exception as e:
+            return f"Error sending video from URL: {sanitized_url}. Error details: {str(e)}"
+    else:
+        return f"Invalid URL format: {url}"
 
 
 # Video Download and Processing Functions
