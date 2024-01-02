@@ -108,17 +108,23 @@ async def handle_url(url, message):
 
         # Check if the video file exists after download attempt
         if os.path.exists(video_path):
-            if is_within_size_limit(video_path):
-                with open(video_path, "rb") as video_file:
-                    await message.reply_video(video_file, caption=sanitized_url)
+            # Check file size and send files if they are within limits
+            files_to_send = []
+            for filename in os.listdir(os.path.dirname(video_path)):
+                file_path = os.path.join(os.path.dirname(video_path), filename)
+                if is_within_size_limit(file_path):
+                    files_to_send.append(file_path)
+
+            if files_to_send:
+                for file_path in files_to_send:
+                    with open(file_path, "rb") as file:
+                        await message.reply_document(file, caption=sanitized_url)
             else:
-                file_link = (
-                    f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
-                )
+                file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
                 await message.reply(
-                    f"Sorry, the attachment file is too big.\n"
+                    f"Sorry, all files in the attachment folder are too big.\n"
                     f"Original URL: {sanitized_url}\n"
-                    f"Use this link to download the file:\n{file_link}"
+                    f"Use this link to download the files:\n{file_link}"
                 )
         else:
             await message.reply(
