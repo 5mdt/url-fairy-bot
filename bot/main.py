@@ -161,11 +161,11 @@ async def handle_url(url, message):
                     batch_media_files = media_files_to_send[i : i + 10]
                     media_group = [
                         types.InputMediaVideo(
-                            media=open(file_path, "rb"), caption=sanitized_url
+                            media=open(file_path, "rb"), caption=original_sanitized_url
                         )
                         if file_path.endswith(".mp4")
                         else types.InputMediaPhoto(
-                            media=open(file_path, "rb"), caption=sanitized_url
+                            media=open(file_path, "rb"), caption=original_sanitized_url
                         )
                         for file_path in batch_media_files
                     ]
@@ -181,7 +181,7 @@ async def handle_url(url, message):
                 )
         else:
             await message.reply(
-                f"Sorry, the media from URL {sanitized_url} could not be downloaded or is missing."
+                f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
             )
     else:
         await message.reply(f"Invalid URL format: {url}")
