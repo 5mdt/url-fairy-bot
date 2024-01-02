@@ -21,14 +21,14 @@ services:
       BASE_URL: $BASE_URL
     labels:
       com.centurylinklabs.watchtower.enable: "true"
-      # traefik.docker.network: traefik_default
-      # traefik.enable: true
-      # traefik.http.routers.url-fairy-bot.entrypoints: websecure
-      # traefik.http.routers.url-fairy-bot.rule: Host(`$BASE_URL`)
-      # traefik.http.routers.url-fairy-bot.service: url-fairy-bot
-      # traefik.http.routers.url-fairy-bot.tls: true
-      # traefik.http.routers.url-fairy-bot.tls.certresolver: ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
-      # traefik.http.services.url-fairy-bot.loadbalancer.server.port: 80
+      traefik.docker.network: traefik_default
+      traefik.enable: true
+      traefik.http.routers.url-fairy-bot.entrypoints: websecure
+      traefik.http.routers.url-fairy-bot.rule: Host(`$BASE_URL`)
+      traefik.http.routers.url-fairy-bot.service: url-fairy-bot
+      traefik.http.routers.url-fairy-bot.tls: true
+      traefik.http.routers.url-fairy-bot.tls.certresolver: ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
+      traefik.http.services.url-fairy-bot.loadbalancer.server.port: 80
     ports:
       - ${PUBLIC_PORT:-"80:80"}
     logging:
