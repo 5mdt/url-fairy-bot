@@ -103,7 +103,8 @@ async def handle_url(url, message):
         sanitized_url = clean_tiktok_url(sanitized_url)
 
         if not os.path.exists(video_path):
-            await yt_dlp_download_and_send(sanitized_url, message)
+            await yt_dlp_download(sanitized_url)
+            await send_media_to_user(sanitized_url, message)
             return
 
         try:
@@ -143,10 +144,9 @@ async def send_large_video(message, sanitized_url, file_link):
 
 
 # Function to download a video using yt_dlp and send it
-async def yt_dlp_download_and_send(sanitized_url, message):
+async def send_media_to_user(sanitized_url, message):
     try:
         video_path = create_subfolder_and_path(sanitized_url)
-        await yt_dlp_download(sanitized_url)
 
         # Check if the video file exists
         if not os.path.exists(video_path):
