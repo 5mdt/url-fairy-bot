@@ -22,8 +22,19 @@ def follow_redirects(url):
 
 
 # Function to sanitize a filename for the cached video
-def sanitize_filename(filename):
-    return "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in filename)
+def sanitize_subfolder_name(url):
+    return "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in url)
+
+# Function to create subfolder based on sanitized URL and return full path
+def create_subfolder_and_path(sanitized_url):
+    subfolder_name = sanitize_subfolder_name(sanitized_url)
+    subfolder_path = os.path.join(CACHE_DIR, subfolder_name)
+
+    # Create subfolder if it doesn't exist
+    os.makedirs(subfolder_path, exist_ok=True)
+
+    # Return the path for the video inside the subfolder
+    return os.path.join(subfolder_path, f"{subfolder_name}.mp4")
 
 
 # Function to check if video is within size limits
@@ -85,8 +96,8 @@ async def process_message(message: types.Message):
 
 async def handle_url(url, message):
     sanitized_url = follow_redirects(url)
-    video_path = os.path.join(CACHE_DIR, sanitize_filename(sanitized_url) + ".mp4")
-    file_link = f"https://{BASE_URL}/{sanitize_filename(sanitized_url)}.mp4"
+    video_path = create_subfolder_and_path(sanitized_url)
+    file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
 
     if "tiktok" in sanitized_url:
         sanitized_url = clean_tiktok_url(sanitized_url)
@@ -111,7 +122,9 @@ async def handle_url(url, message):
 # Function to download a video using yt_dlp
 async def yt_dlp_download(url):
     try:
-        ydl_opts = {"outtmpl": os.path.join(CACHE_DIR, sanitize_filename(url) + ".mp4")}
+        video_path = create_subfolder_and_path(url)
+        ydl_opts = {"outtmpl": video_path}
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
     except Exception as e:
@@ -132,7 +145,7 @@ async def send_large_video(message, sanitized_url, file_link):
 # Function to download a video using yt_dlp and send it
 async def yt_dlp_download_and_send(sanitized_url, message):
     try:
-        video_path = os.path.join(CACHE_DIR, sanitize_filename(sanitized_url) + ".mp4")
+        video_path = create_subfolder_and_path(sanitized_url)
         await yt_dlp_download(sanitized_url)
 
         # Check if the video file exists
@@ -146,7 +159,7 @@ async def yt_dlp_download_and_send(sanitized_url, message):
             with open(video_path, "rb") as video_file:
                 await message.reply_video(video_file, caption=sanitized_url)
         else:
-            file_link = f"https://{BASE_URL}/{sanitize_filename(sanitized_url)}.mp4"
+            file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
             await send_large_video(message, sanitized_url, file_link)
     except Exception as e:
         error_message = (
