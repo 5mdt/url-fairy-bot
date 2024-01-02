@@ -89,6 +89,15 @@ def clean_tiktok_url(url):
     return url
 
 
+def transform_tiktok_url(url):
+    """Transform TikTok URL to the embed format for yt-dlp."""
+    parsed_url = urlparse(url)
+    video_path = parsed_url.path.strip("/")
+    video_id = video_path.split("/")[-1]
+    transformed_url = f"https://www.tiktok.com/embed/v2/{video_id}"
+    return transformed_url
+
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
@@ -123,7 +132,13 @@ async def process_message(message: types.Message):
 
 async def handle_url(url, message):
     """Handle individual URLs to process and send media."""
-    sanitized_url = follow_redirects(url)
+    original_sanitized_url = follow_redirects(url)
+
+    if "tiktok" in original_sanitized_url:
+        sanitized_url = transform_tiktok_url(original_sanitized_url)
+    else:
+        sanitized_url = original_sanitized_url
+
     video_path = create_subfolder_and_path(sanitized_url)
 
     if "tiktok" in sanitized_url:
