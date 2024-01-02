@@ -1,4 +1,3 @@
-# Constants and Environment Setup
 import os
 import requests
 import traceback
@@ -15,37 +14,73 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 CACHE_DIR = "/cache"
 
 
-# Function to follow redirects and retrieve the clean URL
 def follow_redirects(url):
+    """
+    Follow redirects for a given URL and retrieve the final clean URL.
+
+    Args:
+        url (str): The initial URL to follow redirects for.
+
+    Returns:
+        str: The final clean URL after following redirects.
+    """
     response = requests.head(url, allow_redirects=True)
     return urlunparse(urlparse(response.url)._replace(query=""))
 
 
-# Function to sanitize a filename for the cached video
 def sanitize_subfolder_name(url):
+    """
+    Sanitize the URL to create a valid subfolder name.
+
+    Args:
+        url (str): The URL to sanitize.
+
+    Returns:
+        str: The sanitized subfolder name.
+    """
     return "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in url)
 
 
-# Function to create subfolder based on sanitized URL and return full path
 def create_subfolder_and_path(sanitized_url):
+    """
+    Create a subfolder based on the sanitized URL and return the full path for video storage.
+
+    Args:
+        sanitized_url (str): The sanitized URL.
+
+    Returns:
+        str: The full path to store the video inside the subfolder.
+    """
     subfolder_name = sanitize_subfolder_name(sanitized_url)
     subfolder_path = os.path.join(CACHE_DIR, subfolder_name)
-
-    # Create subfolder if it doesn't exist
     os.makedirs(subfolder_path, exist_ok=True)
-
-    # Return the path for the video inside the subfolder
     return os.path.join(subfolder_path, f"{subfolder_name}.mp4")
 
 
-# Function to check if video is within size limits
 def is_within_size_limit(video_path):
+    """
+    Check if the video file size is within the allowed limit (20 MB).
+
+    Args:
+        video_path (str): The path to the video file.
+
+    Returns:
+        bool: True if the video file size is within the limit, otherwise False.
+    """
     file_size = os.path.getsize(video_path)
-    return file_size <= 20 * 1024 * 1024  # 20 MB
+    return file_size <= 20 * 1024 * 1024
 
 
-# Function to clean TikTok video URL
 def clean_tiktok_url(url):
+    """
+    Clean the TikTok video URL by extracting the video_id.
+
+    Args:
+        url (str): The TikTok URL to clean.
+
+    Returns:
+        str: The cleaned TikTok URL.
+    """
     parsed_url = urlparse(url)
     video_id = parse_qs(parsed_url.query).get("video_id")
     if video_id:
@@ -54,76 +89,70 @@ def clean_tiktok_url(url):
     return url
 
 
-# Command Handlers and Message Handlers
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
 
-# Command handler for the /start command
 async def start(message: types.Message):
+    """Command handler for the /start command."""
     await message.reply(
         "Hello! I'm your friendly URLFairyBot. Send me a URL to clean and extract data!"
     )
 
 
-# Handler for processing incoming messages
 @dp.message_handler(content_types=[types.ContentType.TEXT])
 async def process_message(message: types.Message):
+    """Handler for processing incoming messages."""
     message_text = message.text.strip()
-
-    # Split the message by spaces or any other delimiter you prefer
     urls = message_text.split()
-
     tasks = []
-    error_messages = []  # List to store invalid URL format errors
+    error_messages = []
 
     for url in urls:
         if not url.startswith(("http", "www")):
             error_messages.append(f"Invalid URL format: {url}")
             continue
-
         tasks.append(handle_url(url, message))
-
     results = await asyncio.gather(*tasks, return_exceptions=True)
-
     for result in results:
         if isinstance(result, Exception):
             error_messages.append(str(result))
-
-    # Send accumulated error messages, if any
     if error_messages:
         await message.reply("\n".join(error_messages))
 
 
 async def handle_url(url, message):
+    """Handle individual URLs to process and send media."""
     sanitized_url = follow_redirects(url)
     video_path = create_subfolder_and_path(sanitized_url)
 
     if "tiktok" in sanitized_url:
         sanitized_url = clean_tiktok_url(sanitized_url)
 
-        # Download the video if it doesn't exist
         if not os.path.exists(video_path):
             await yt_dlp_download(sanitized_url)
 
-        # Check if the video file exists after download attempt
         if os.path.exists(video_path):
-            files_to_send = []
-            for filename in os.listdir(os.path.dirname(video_path)):
-                file_path = os.path.join(os.path.dirname(video_path), filename)
-                if is_within_size_limit(file_path):
-                    files_to_send.append(file_path)
+            media_files_to_send = [
+                os.path.join(os.path.dirname(video_path), filename)
+                for filename in os.listdir(os.path.dirname(video_path))
+                if is_within_size_limit(
+                    os.path.join(os.path.dirname(video_path), filename)
+                )
+            ]
 
-            if files_to_send:
-                # Split files into batches of 10 for sending
-                for i in range(0, len(files_to_send), 10):
-                    batch_files = files_to_send[i : i + 10]
+            if media_files_to_send:
+                for i in range(0, len(media_files_to_send), 10):
+                    batch_media_files = media_files_to_send[i : i + 10]
                     media_group = [
-                        types.InputMediaDocument(
-                            media=open(file_path, "rb"),
-                            caption=sanitized_url,  # Attach sanitized_url as caption
+                        types.InputMediaVideo(
+                            media=open(file_path, "rb"), caption=sanitized_url
                         )
-                        for file_path in batch_files
+                        if file_path.endswith(".mp4")
+                        else types.InputMediaPhoto(
+                            media=open(file_path, "rb"), caption=sanitized_url
+                        )
+                        for file_path in batch_media_files
                     ]
                     await bot.send_media_group(message.chat.id, media_group)
             else:
@@ -131,25 +160,23 @@ async def handle_url(url, message):
                     f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
                 )
                 await message.reply(
-                    f"Sorry, all files in the attachment folder are too big.\n"
+                    f"Sorry, all media in the attachment folder are too big.\n"
                     f"Original URL: {sanitized_url}\n"
-                    f"Use this link to download the files:\n{file_link}"
+                    f"Use this link to download the media:\n{file_link}"
                 )
         else:
             await message.reply(
-                f"Sorry, the video from URL {sanitized_url} could not be downloaded or is missing."
+                f"Sorry, the media from URL {sanitized_url} could not be downloaded or is missing."
             )
     else:
         await message.reply(f"Invalid URL format: {url}")
 
 
-# Video Download and Processing Functions
-# Function to download a video using yt_dlp
 async def yt_dlp_download(url):
+    """Download a video using yt_dlp."""
     try:
         video_path = create_subfolder_and_path(url)
         ydl_opts = {"outtmpl": video_path}
-
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
     except Exception as e:
@@ -160,12 +187,9 @@ async def yt_dlp_download(url):
         return error_message
 
 
-# Main function to start the bot
 def main():
-    # Create the cache directory if it doesn't exist
+    """Main function to start the bot."""
     os.makedirs(CACHE_DIR, exist_ok=True)
-
-    # Start the bot using the Dispatcher
     executor.start_polling(dp, skip_updates=True)
 
 
