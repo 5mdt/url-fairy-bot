@@ -25,6 +25,7 @@ def follow_redirects(url):
 def sanitize_subfolder_name(url):
     return "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in url)
 
+
 # Function to create subfolder based on sanitized URL and return full path
 def create_subfolder_and_path(sanitized_url):
     subfolder_name = sanitize_subfolder_name(sanitized_url)
@@ -97,26 +98,34 @@ async def process_message(message: types.Message):
 async def handle_url(url, message):
     sanitized_url = follow_redirects(url)
     video_path = create_subfolder_and_path(sanitized_url)
-    file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
 
     if "tiktok" in sanitized_url:
         sanitized_url = clean_tiktok_url(sanitized_url)
 
+        # Download the video if it doesn't exist
         if not os.path.exists(video_path):
             await yt_dlp_download(sanitized_url)
-            await send_media_to_user(sanitized_url, message)
-            return
 
-        try:
+        # Check if the video file exists after download attempt
+        if os.path.exists(video_path):
             if is_within_size_limit(video_path):
                 with open(video_path, "rb") as video_file:
                     await message.reply_video(video_file, caption=sanitized_url)
             else:
-                await send_large_video(message, sanitized_url, file_link)
-        except Exception as e:
-            return f"Error sending video from URL: {sanitized_url}. Error details: {str(e)}"
+                file_link = (
+                    f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
+                )
+                await message.reply(
+                    f"Sorry, the attachment file is too big.\n"
+                    f"Original URL: {sanitized_url}\n"
+                    f"Use this link to download the file:\n{file_link}"
+                )
+        else:
+            await message.reply(
+                f"Sorry, the video from URL {sanitized_url} could not be downloaded or is missing."
+            )
     else:
-        return f"Invalid URL format: {url}"
+        await message.reply(f"Invalid URL format: {url}")
 
 
 # Video Download and Processing Functions
@@ -134,39 +143,6 @@ async def yt_dlp_download(url):
         )
         traceback.print_exc()
         return error_message
-
-
-# Function to handle sending large video
-async def send_large_video(message, sanitized_url, file_link):
-    await message.reply(
-        f"Sorry, the attachment file is too big.\nOriginal URL: {sanitized_url}\nUse this link to download the file:\n{file_link}"
-    )
-
-
-# Function to download a video using yt_dlp and send it
-async def send_media_to_user(sanitized_url, message):
-    try:
-        video_path = create_subfolder_and_path(sanitized_url)
-
-        # Check if the video file exists
-        if not os.path.exists(video_path):
-            await message.reply(
-                f"Sorry, the video from URL {sanitized_url} could not be downloaded or is missing."
-            )
-            return
-
-        if is_within_size_limit(video_path):
-            with open(video_path, "rb") as video_file:
-                await message.reply_video(video_file, caption=sanitized_url)
-        else:
-            file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
-            await send_large_video(message, sanitized_url, file_link)
-    except Exception as e:
-        error_message = (
-            f"Error processing video from URL: {sanitized_url}. Error details: {str(e)}"
-        )
-        traceback.print_exc()
-        await message.reply(error_message)
 
 
 # Main function to start the bot
