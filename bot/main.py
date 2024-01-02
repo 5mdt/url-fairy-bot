@@ -11,7 +11,7 @@ from urllib.parse import urlparse, urlunparse, parse_qs
 load_dotenv()
 BASE_URL = os.getenv("BASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CACHE_DIR = "/video_cache"
+CACHE_DIR = "/cache"
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
@@ -50,9 +50,9 @@ async def yt_dlp_download(url):
 
 
 # Function to handle sending large video
-async def send_large_video(message, clean_url, file_link):
+async def send_large_video(message, sanitized_url, file_link):
     await message.reply(
-        f"Sorry, the attachment file is too big.\nOriginal URL: {clean_url}\nUse this link to download the file:\n{file_link}"
+        f"Sorry, the attachment file is too big.\nOriginal URL: {sanitized_url}\nUse this link to download the file:\n{file_link}"
     )
 
 
@@ -74,25 +74,25 @@ async def process_message(message: types.Message):
 
     for url in urls:
         if url.startswith(("http", "www")):
-            clean_url = follow_redirects(url)
-            video_path = os.path.join(CACHE_DIR, sanitize_filename(clean_url) + ".mp4")
-            file_link = f"https://{BASE_URL}/{sanitize_filename(clean_url)}.mp4"
+            sanitized_url = follow_redirects(url)
+            video_path = os.path.join(CACHE_DIR, sanitize_filename(sanitized_url) + ".mp4")
+            file_link = f"https://{BASE_URL}/{sanitize_filename(sanitized_url)}.mp4"
 
-            if "tiktok" in clean_url:
-                clean_url = clean_tiktok_url(clean_url)
+            if "tiktok" in sanitized_url:
+                sanitized_url = clean_tiktok_url(sanitized_url)
                 if os.path.exists(video_path):
                     try:
                         if is_within_size_limit(video_path):
                             with open(video_path, "rb") as video_file:
-                                await message.reply_video(video_file, caption=clean_url)
+                                await message.reply_video(video_file, caption=sanitized_url)
                         else:
-                            await send_large_video(message, clean_url, file_link)
+                            await send_large_video(message, sanitized_url, file_link)
                     except Exception as e:
-                        error_message = f"Error sending video from URL: {clean_url}. Error details: {str(e)}"
+                        error_message = f"Error sending video from URL: {sanitized_url}. Error details: {str(e)}"
                         traceback.print_exc()
                         await message.reply(error_message)
                 else:
-                    await yt_dlp_download_and_send(clean_url, message)
+                    await yt_dlp_download_and_send(sanitized_url, message)
             else:
                 error_messages.append(
                     f"Invalid URL format: {url}"
@@ -108,27 +108,27 @@ async def process_message(message: types.Message):
 
 
 # Function to download a video using yt_dlp and send it
-async def yt_dlp_download_and_send(clean_url, message):
+async def yt_dlp_download_and_send(sanitized_url, message):
     try:
-        video_path = os.path.join(CACHE_DIR, sanitize_filename(clean_url) + ".mp4")
-        await yt_dlp_download(clean_url)
+        video_path = os.path.join(CACHE_DIR, sanitize_filename(sanitized_url) + ".mp4")
+        await yt_dlp_download(sanitized_url)
 
         # Check if the video file exists
         if not os.path.exists(video_path):
             await message.reply(
-                f"Sorry, the video from URL {clean_url} could not be downloaded or is missing."
+                f"Sorry, the video from URL {sanitized_url} could not be downloaded or is missing."
             )
             return
 
         if is_within_size_limit(video_path):
             with open(video_path, "rb") as video_file:
-                await message.reply_video(video_file, caption=clean_url)
+                await message.reply_video(video_file, caption=sanitized_url)
         else:
-            file_link = f"https://{BASE_URL}/{sanitize_filename(clean_url)}.mp4"
-            await send_large_video(message, clean_url, file_link)
+            file_link = f"https://{BASE_URL}/{sanitize_filename(sanitized_url)}.mp4"
+            await send_large_video(message, sanitized_url, file_link)
     except Exception as e:
         error_message = (
-            f"Error processing video from URL: {clean_url}. Error details: {str(e)}"
+            f"Error processing video from URL: {sanitized_url}. Error details: {str(e)}"
         )
         traceback.print_exc()
         await message.reply(error_message)
@@ -139,8 +139,8 @@ def clean_tiktok_url(url):
     parsed_url = urlparse(url)
     video_id = parse_qs(parsed_url.query).get("video_id")
     if video_id:
-        clean_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?video_id={video_id[0]}"
-        return clean_url
+        sanitized_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?video_id={video_id[0]}"
+        return sanitized_url
     return url
 
 
