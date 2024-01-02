@@ -115,11 +115,21 @@ async def handle_url(url, message):
                     files_to_send.append(file_path)
 
             if files_to_send:
-                # Group the files into a single message (up to Telegram's API limit)
-                media_group = [types.InputMediaDocument(media=open(file_path, 'rb')) for file_path in files_to_send]
-                await bot.send_media_group(message.chat.id, media_group)
+                # Split files into batches of 10 for sending
+                for i in range(0, len(files_to_send), 10):
+                    batch_files = files_to_send[i : i + 10]
+                    media_group = [
+                        types.InputMediaDocument(
+                            media=open(file_path, "rb"),
+                            caption=sanitized_url,  # Attach sanitized_url as caption
+                        )
+                        for file_path in batch_files
+                    ]
+                    await bot.send_media_group(message.chat.id, media_group)
             else:
-                file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
+                file_link = (
+                    f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
+                )
                 await message.reply(
                     f"Sorry, all files in the attachment folder are too big.\n"
                     f"Original URL: {sanitized_url}\n"
