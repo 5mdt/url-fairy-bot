@@ -1,3 +1,4 @@
+# Constants and Environment Setup
 import os
 import requests
 import traceback
@@ -7,21 +8,10 @@ from aiogram.utils import executor
 from dotenv import load_dotenv
 from urllib.parse import urlparse, urlunparse, parse_qs
 
-# Load environment variables from .env file
 load_dotenv()
 BASE_URL = os.getenv("BASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CACHE_DIR = "/cache"
-
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
-
-
-# Command handler for the /start command
-async def start(message: types.Message):
-    await message.reply(
-        "Hello! I'm your friendly URLFairyBot. Send me a URL to clean and extract data!"
-    )
 
 
 # Function to follow redirects and retrieve the clean URL
@@ -35,31 +25,32 @@ def sanitize_filename(filename):
     return "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in filename)
 
 
-# Function to download a video using yt_dlp
-async def yt_dlp_download(url):
-    try:
-        ydl_opts = {"outtmpl": os.path.join(CACHE_DIR, sanitize_filename(url) + ".mp4")}
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-    except Exception as e:
-        error_message = (
-            f"Error downloading video from URL: {url}. Error details: {str(e)}"
-        )
-        traceback.print_exc()
-        return error_message
-
-
-# Function to handle sending large video
-async def send_large_video(message, sanitized_url, file_link):
-    await message.reply(
-        f"Sorry, the attachment file is too big.\nOriginal URL: {sanitized_url}\nUse this link to download the file:\n{file_link}"
-    )
-
-
 # Function to check if video is within size limits
 def is_within_size_limit(video_path):
     file_size = os.path.getsize(video_path)
     return file_size <= 20 * 1024 * 1024  # 20 MB
+
+
+# Function to clean TikTok video URL
+def clean_tiktok_url(url):
+    parsed_url = urlparse(url)
+    video_id = parse_qs(parsed_url.query).get("video_id")
+    if video_id:
+        sanitized_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?video_id={video_id[0]}"
+        return sanitized_url
+    return url
+
+
+# Command Handlers and Message Handlers
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(bot)
+
+
+# Command handler for the /start command
+async def start(message: types.Message):
+    await message.reply(
+        "Hello! I'm your friendly URLFairyBot. Send me a URL to clean and extract data!"
+    )
 
 
 # Handler for processing incoming messages
@@ -75,7 +66,9 @@ async def process_message(message: types.Message):
     for url in urls:
         if url.startswith(("http", "www")):
             sanitized_url = follow_redirects(url)
-            video_path = os.path.join(CACHE_DIR, sanitize_filename(sanitized_url) + ".mp4")
+            video_path = os.path.join(
+                CACHE_DIR, sanitize_filename(sanitized_url) + ".mp4"
+            )
             file_link = f"https://{BASE_URL}/{sanitize_filename(sanitized_url)}.mp4"
 
             if "tiktok" in sanitized_url:
@@ -84,7 +77,9 @@ async def process_message(message: types.Message):
                     try:
                         if is_within_size_limit(video_path):
                             with open(video_path, "rb") as video_file:
-                                await message.reply_video(video_file, caption=sanitized_url)
+                                await message.reply_video(
+                                    video_file, caption=sanitized_url
+                                )
                         else:
                             await send_large_video(message, sanitized_url, file_link)
                     except Exception as e:
@@ -105,6 +100,28 @@ async def process_message(message: types.Message):
     # Check if there are any accumulated error messages and send them as one reply
     if error_messages:
         await message.reply("\n".join(error_messages))
+
+
+# Video Download and Processing Functions
+# Function to download a video using yt_dlp
+async def yt_dlp_download(url):
+    try:
+        ydl_opts = {"outtmpl": os.path.join(CACHE_DIR, sanitize_filename(url) + ".mp4")}
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+    except Exception as e:
+        error_message = (
+            f"Error downloading video from URL: {url}. Error details: {str(e)}"
+        )
+        traceback.print_exc()
+        return error_message
+
+
+# Function to handle sending large video
+async def send_large_video(message, sanitized_url, file_link):
+    await message.reply(
+        f"Sorry, the attachment file is too big.\nOriginal URL: {sanitized_url}\nUse this link to download the file:\n{file_link}"
+    )
 
 
 # Function to download a video using yt_dlp and send it
@@ -132,16 +149,6 @@ async def yt_dlp_download_and_send(sanitized_url, message):
         )
         traceback.print_exc()
         await message.reply(error_message)
-
-
-# Function to clean TikTok video URL
-def clean_tiktok_url(url):
-    parsed_url = urlparse(url)
-    video_id = parse_qs(parsed_url.query).get("video_id")
-    if video_id:
-        sanitized_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}?video_id={video_id[0]}"
-        return sanitized_url
-    return url
 
 
 # Main function to start the bot
