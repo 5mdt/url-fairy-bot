@@ -59,7 +59,7 @@ def create_subfolder_and_path(sanitized_url):
 
 def is_within_size_limit(video_path):
     """
-    Check if the video file size is within the allowed limit (20 MB).
+    Check if the video file size is within the allowed limit (10 MB).
 
     Args:
         video_path (str): The path to the video file.
@@ -68,7 +68,7 @@ def is_within_size_limit(video_path):
         bool: True if the video file size is within the limit, otherwise False.
     """
     file_size = os.path.getsize(video_path)
-    return file_size <= 20 * 1024 * 1024
+    return file_size <= 10 * 1024 * 1024
 
 
 def clean_tiktok_url(url):
