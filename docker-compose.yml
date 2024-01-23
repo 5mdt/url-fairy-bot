@@ -39,8 +39,9 @@ services:
     networks:
       - traefik_default
     volumes:
-      - cache:/cache:ro
       - ./nginx/conf.d/:/etc/nginx/conf.d
+      - ./nginx/theme/:/theme/:ro
+      - cache:/cache:ro
   cron:
     image: busybox:stable
     volumes:
