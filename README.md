@@ -1,5 +1,7 @@
 # URLFairyBot
 
+![Logo](logo.svg)
+
 URLFairyBot is a whimsical Telegram bot that sprinkles its magic on messy URLs, transforming them into organized and enchanting links. Let the bot be your URL-cleaning companion, waving its digital wand to reveal the hidden wonders behind every web address.
 
 ## Features
