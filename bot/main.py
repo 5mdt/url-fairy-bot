@@ -16,13 +16,13 @@ CACHE_DIR = "/cache"
 
 def follow_redirects(url):
     """
-    Follow redirects for a given URL and retrieve the final clean URL.
+    Follow redirects for a given URL and retrieve the final URL after redirection.
 
     Args:
         url (str): The initial URL to follow redirects for.
 
     Returns:
-        str: The final clean URL after following redirects.
+        str: The final URL after following redirects.
     """
     response = requests.head(url, allow_redirects=True)
     return urlunparse(urlparse(response.url)._replace(query=""))
@@ -188,7 +188,7 @@ async def handle_url(url, message):
                 f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
             )
     else:
-        await message.reply(f"Invalid URL format: {url}")
+        await message.reply(f"Purified url is: {url}", parse_mode=types.ParseMode.HTML)
 
 
 async def yt_dlp_download(url):

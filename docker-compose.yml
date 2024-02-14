@@ -8,6 +8,7 @@ services:
     environment:
       BOT_TOKEN: $BOT_TOKEN
       BASE_URL: $BASE_URL
+      DEBUG_MODE: $DEBUG_MODE
     logging:
       driver: "json-file"
       options:
