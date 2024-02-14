@@ -112,6 +112,10 @@ async def start(message: types.Message):
 @dp.message_handler(content_types=[types.ContentType.TEXT])
 async def process_message(message: types.Message):
     """Handler for processing incoming messages."""
+    if message.chat.type != types.ChatType.PRIVATE:
+        if not any(word.startswith(("http", "www")) for word in message.text.split()):
+            return
+
     message_text = message.text.strip()
     urls = message_text.split()
     tasks = []
