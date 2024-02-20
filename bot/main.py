@@ -190,8 +190,6 @@ async def handle_url(url, message):
             await message.reply(
                 f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
             )
-    else:
-        await message.reply(f"Purified url is: {original_sanitized_url}", disable_web_page_preview=True)
 
 
 async def yt_dlp_download(url):
