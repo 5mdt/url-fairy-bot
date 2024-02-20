@@ -121,6 +121,9 @@ async def process_message(message: types.Message):
     tasks = []
     error_messages = []
 
+    # Check if there are valid URLs in the message
+    valid_urls_exist = any(url.startswith(("http", "www")) for url in urls)
+
     for url in urls:
         if not url.startswith(("http", "www")):
             error_messages.append(f"Invalid URL format: {url}")
@@ -130,7 +133,7 @@ async def process_message(message: types.Message):
     for result in results:
         if isinstance(result, Exception):
             error_messages.append(str(result))
-    if error_messages:
+    if error_messages and not valid_urls_exist:  # Only send error messages if valid URLs exist
         await message.reply("\n".join(error_messages))
 
 
