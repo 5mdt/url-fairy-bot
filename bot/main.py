@@ -184,7 +184,7 @@ async def handle_url(url, message):
                 await message.reply(
                     f"Sorry, all media in the attachment folder are too big.\n"
                     f"Original URL: {original_sanitized_url}\n"
-                    f"Use this link to download the media:\n{file_link}"
+                    f"Use this link to download or watch the media:\n{file_link}"
                 )
         else:
             await message.reply(

@@ -6,15 +6,14 @@
     <title>🪄 URL-Fairy</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 20px;
+            align-self: center;
             background-color: #2e3440;
             color: #d8dee9;
-            align-self: center;
-            font-size: larger;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1.2em;
+            margin: 20px;
             word-wrap: break-word;
         }
-
         @media (prefers-color-scheme: dark) {
             body {
                 background-color: #2e3440;
@@ -23,34 +22,38 @@
         }
 
         h1 {
+            display: none;
+        }
+        h2 {
             color: #88c0d0;
         }
 
         pre {
-            white-space: pre-wrap;
             background-color: #3b4252;
+            border-radius: 5px;
             color: #d8dee9;
             padding: 10px;
-            border-radius: 5px;
+            white-space: pre-wrap;
         }
 
         a {
             color: #81a1c1;
             text-decoration: underline;
+            line-height: 250%;
         }
 
         a[href$=".mp4"]::before {
             content: "⬇️ ";
         }
-
         a:hover {
             text-decoration: underline;
         }
-    </style>
+            </style>
 </head>
 <body>
-    <h1>Hi,this is ✨URL Fairy✨:</h1>
+    <h2>Hi, this is ✨URL Fairy✨ speaking:</h1>
     <p>I ✨magically✨ downloaded some files 📂</p>
-    <p>Feel free to download them, my sweet cutie pie 💖</p>
+    <p>You can watch file, by tapping link with ⬇️ emojii down there</p>
+    <p>Or dowload it with long tap, my sweet cutie pie 💖</p>
 </body>
 </html>
