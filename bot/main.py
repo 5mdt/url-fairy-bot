@@ -133,7 +133,9 @@ async def process_message(message: types.Message):
     for result in results:
         if isinstance(result, Exception):
             error_messages.append(str(result))
-    if error_messages and not valid_urls_exist:  # Only send error messages if valid URLs exist
+    if (
+        error_messages and not valid_urls_exist
+    ):  # Only send error messages if valid URLs exist
         await message.reply("\n".join(error_messages))
 
 
@@ -148,7 +150,9 @@ async def handle_url(url, message):
 
     video_path = create_subfolder_and_path(sanitized_url)
 
-    if "tiktok" in sanitized_url:
+    if "tiktok" in sanitized_url or (
+        "instagram" in sanitized_url and "reel" in sanitized_url
+    ):
         sanitized_url = clean_tiktok_url(sanitized_url)
 
         if not os.path.exists(video_path):
