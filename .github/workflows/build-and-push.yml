@@ -8,9 +8,6 @@ on:
     types:
       - created
 
-env:
-  DOCKERHUB_USERNAME: ${{ env.DOCKERHUB_USERNAME }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
