@@ -152,15 +152,15 @@ async def process_message(message: types.Message):
     """Handler for processing incoming messages."""
     print(f"✨ Message received: {message.text}")
 
+    error_messages = []
     if message.chat.type != types.ChatType.PRIVATE:
         if not any(word.startswith(("http", "www")) for word in message.text.split()):
-            error_messages.append(f"Invalid URL format: {url}")
+            error_messages.append(f"Invalid URL format: {message.text}")
             return
 
     message_text = message.text.strip()
     urls = message_text.split()
     tasks = []
-    error_messages = []
 
     # Check if there are valid URLs in the message
     valid_urls_exist = any(url.startswith(("http", "www")) for url in urls)
@@ -264,7 +264,10 @@ async def yt_dlp_download(url):
 
         # Save the original URL to a file if download was successful
         print(os.path.join(video_path, "original_url.txt"))
-        with open(os.path.join(CACHE_DIR, sanitize_subfolder_name(url), "original_url.txt"), "w") as f:
+        with open(
+            os.path.join(CACHE_DIR, sanitize_subfolder_name(url), "original_url.txt"),
+            "w",
+        ) as f:
             f.write(url)
 
     except Exception as e:
