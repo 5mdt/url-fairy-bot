@@ -10,17 +10,23 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 from dotenv import load_dotenv
 
+# Load environment variables
 load_dotenv()
+
+# Initialize constants from environment variables
 BASE_URL = os.getenv("BASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CACHE_DIR = "/cache"
 
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(bot)
 
+# Check if environment variables are set
 if BASE_URL is None or BOT_TOKEN is None:
     raise ValueError("BASE_URL or BOT_TOKEN environment variables are not set")
 
 
-def follow_redirects(url):
+async def follow_redirects(url):
     """
     Follow redirects for a given URL and retrieve the final URL after redirection.
 
@@ -30,6 +36,25 @@ def follow_redirects(url):
     Returns:
         str: The final URL after following redirects.
     """
+    print("✨ Start following URL: " + url)
+
+    # Dictionary to store domain name replacements
+    domain_replacements = {
+        "https://www.twitter.com/": "https://www.fxtwitter.com/",
+        "https://twitter.com/": "https://www.fxtwitter.com/",
+        "https://x.com/": "https://www.fxtwitter.com/",
+        "https://www.instagram.com/reel": "https://www.ddinstagram.com/reel",
+        # Add more mappings as needed
+    }
+
+    # Check if the URL starts with any of the keys in the domain_replacements dictionary
+    for domain, replacement in domain_replacements.items():
+        if url.startswith(domain):
+            print("✨ Replacable link found")
+            # Replace the domain name with the corresponding replacement
+            return url.replace(domain, replacement)
+
+    # If the URL does not match any of the mappings, follow redirects using requests
     response = requests.head(url, allow_redirects=True)
     return urlunparse(urlparse(response.url)._replace(query=""))
 
@@ -44,6 +69,7 @@ def sanitize_subfolder_name(url):
     Returns:
         str: The sanitized subfolder name.
     """
+    print("✨ Sanitize subfolder name for URL: " + url)
     return "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in url)
 
 
@@ -57,6 +83,8 @@ def create_subfolder_and_path(sanitized_url):
     Returns:
         str: The full path to store the video inside the subfolder.
     """
+    print("✨ Create a subfolder for URL: " + sanitized_url)
+
     subfolder_name = sanitize_subfolder_name(sanitized_url)
     subfolder_path = os.path.join(CACHE_DIR, subfolder_name)
     os.makedirs(subfolder_path, exist_ok=True)
@@ -73,6 +101,8 @@ def is_within_size_limit(video_path):
     Returns:
         bool: True if the video file size is within the limit, otherwise False.
     """
+    print("✨ Check if video size is within limit for path: " + video_path)
+
     file_size = os.path.getsize(video_path)
     return file_size <= 10 * 1024 * 1024
 
@@ -87,6 +117,8 @@ def clean_tiktok_url(url):
     Returns:
         str: The cleaned TikTok URL.
     """
+    print("✨ Clean the TikTok video URL: " + url)
+
     parsed_url = urlparse(url)
     video_id = parse_qs(parsed_url.query).get("video_id")
     if video_id:
@@ -97,6 +129,8 @@ def clean_tiktok_url(url):
 
 def transform_tiktok_url(url):
     """Transform TikTok URL to the embed format for yt-dlp."""
+    print("✨ Transform TikTok URL to the embed format: " + url)
+
     parsed_url = urlparse(url)
     video_path = parsed_url.path.strip("/")
     video_id = video_path.split("/")[-1]
@@ -104,12 +138,10 @@ def transform_tiktok_url(url):
     return transformed_url
 
 
-bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
-
-
 async def start(message: types.Message):
     """Command handler for the /start command."""
+    print("✨ Start command received: /start")
+
     await message.reply(
         "Hello! I'm your friendly URLFairyBot. Send me a URL to clean and extract data!"
     )
@@ -118,8 +150,11 @@ async def start(message: types.Message):
 @dp.message_handler(content_types=[types.ContentType.TEXT])
 async def process_message(message: types.Message):
     """Handler for processing incoming messages."""
+    print(f"✨ Message received: {message.text}")
+
     if message.chat.type != types.ChatType.PRIVATE:
         if not any(word.startswith(("http", "www")) for word in message.text.split()):
+            error_messages.append(f"Invalid URL format: {url}")
             return
 
     message_text = message.text.strip()
@@ -132,6 +167,7 @@ async def process_message(message: types.Message):
 
     for url in urls:
         if not url.startswith(("http", "www")):
+            print(f"✨ Invalid URL format: {url}")
             error_messages.append(f"Invalid URL format: {url}")
             continue
         tasks.append(handle_url(url, message))
@@ -147,35 +183,34 @@ async def process_message(message: types.Message):
 
 async def handle_url(url, message):
     """Handle individual URLs to process and send media."""
-    original_sanitized_url = follow_redirects(url)
+    print("✨ Handle individual URL: " + url)
+    original_sanitized_url = await follow_redirects(url)
+
+    if (
+        original_sanitized_url.startswith("https://www.fxtwitter.com")
+        or original_sanitized_url.startswith("https://fxtwitter.com/")
+        or original_sanitized_url.startswith("https://www.ddinstagram.com/reel")
+    ):
+        await message.reply(f"{original_sanitized_url}")
+        return
 
     if "tiktok" in original_sanitized_url:
         sanitized_url = transform_tiktok_url(original_sanitized_url)
     else:
         sanitized_url = original_sanitized_url
 
-    if sanitized_url.startswith("https://www.instagram.com/reel"):
-        reel_sanitized_url = sanitized_url.replace(
-            "https://www.instagram.com/reel", "https://www.ddinstagram.com/reel"
-        )
-        await message.reply(f"{reel_sanitized_url}")
-        return
-    if sanitized_url.startswith("https://www.x.com/"):
-        twitter_sanitized_url = sanitized_url.replace(
-            "https://www.x.com/", "https://www.fxtwitter.com/"
-        )
-        await message.reply(f"{twitter_sanitized_url}")
-        return
-
-    video_path = create_subfolder_and_path(sanitized_url)
-
     if "tiktok" in sanitized_url:
+        print("✨ Tiktok link found")
+        video_path = create_subfolder_and_path(sanitized_url)
         sanitized_url = clean_tiktok_url(sanitized_url)
 
         if not os.path.exists(video_path):
+            print("✨ This file was not downloaded yet. Lets download")
             await yt_dlp_download(sanitized_url)
 
         if os.path.exists(video_path):
+            print("✨ Files exist, lets share them")
+
             media_files_to_send = [
                 os.path.join(os.path.dirname(video_path), filename)
                 for filename in os.listdir(os.path.dirname(video_path))
@@ -208,17 +243,19 @@ async def handle_url(url, message):
                 )
                 await message.reply(
                     f"Sorry, all media in the attachment folder are too big.\n"
+                    f"Use this link to download or watch the media:\n{file_link}\n"
                     f"Original URL: {original_sanitized_url}\n"
-                    f"Use this link to download or watch the media:\n{file_link}"
                 )
         else:
             await message.reply(
                 f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
             )
+    return
 
 
 async def yt_dlp_download(url):
     """Download a video using yt_dlp."""
+    print(f"✨ Download a video using yt_dlp: {url}")
     try:
         video_path = create_subfolder_and_path(url)
         ydl_opts = {"outtmpl": video_path}
@@ -235,9 +272,11 @@ async def yt_dlp_download(url):
 
 def main():
     """Main function to start the bot."""
+    print("✨Start polling")
     os.makedirs(CACHE_DIR, exist_ok=True)
     executor.start_polling(dp, skip_updates=False)
 
 
 if __name__ == "__main__":
+    print("✨Url-fairy-bot initialized")
     main()
