@@ -16,6 +16,10 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 CACHE_DIR = "/cache"
 
 
+if BASE_URL is None or BOT_TOKEN is None:
+    raise ValueError("BASE_URL or BOT_TOKEN environment variables are not set")
+
+
 def follow_redirects(url):
     """
     Follow redirects for a given URL and retrieve the final URL after redirection.
@@ -220,7 +224,7 @@ async def yt_dlp_download(url):
 def main():
     """Main function to start the bot."""
     os.makedirs(CACHE_DIR, exist_ok=True)
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dp, skip_updates=False)
 
 
 if __name__ == "__main__":
