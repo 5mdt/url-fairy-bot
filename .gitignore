@@ -1,3 +1,5 @@
 .*
 !.gitignore
 !.github
+!.markdownlint.yaml
+!.pre-commit-config.yaml
