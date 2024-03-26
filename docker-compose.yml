@@ -48,7 +48,7 @@ services:
     image: busybox:stable
     volumes:
       - cache:/cache
-    command: "watch -n 60 'find /cache/ -type f -amin +1440 -delete > /dev/null; find /cache/ -type d -empty -delete > /dev/null'"
+    command: sh -c "find /cache/ -type f -amin +1440 -delete > /dev/null; find /cache/ -type d -empty -delete > /dev/null; sleep 60m"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     logging:

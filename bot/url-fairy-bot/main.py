@@ -154,11 +154,22 @@ async def handle_url(url, message):
     else:
         sanitized_url = original_sanitized_url
 
+    if sanitized_url.startswith("https://www.instagram.com/reel"):
+        reel_sanitized_url = sanitized_url.replace(
+            "https://www.instagram.com/reel", "https://www.ddinstagram.com/reel"
+        )
+        await message.reply(f"{reel_sanitized_url}")
+        return
+    if sanitized_url.startswith("https://www.x.com/"):
+        twitter_sanitized_url = sanitized_url.replace(
+            "https://www.x.com/", "https://www.fxtwitter.com/"
+        )
+        await message.reply(f"{twitter_sanitized_url}")
+        return
+
     video_path = create_subfolder_and_path(sanitized_url)
 
-    if "tiktok" in sanitized_url or (
-        "instagram" in sanitized_url and "reel" in sanitized_url
-    ):
+    if "tiktok" in sanitized_url:
         sanitized_url = clean_tiktok_url(sanitized_url)
 
         if not os.path.exists(video_path):
@@ -218,6 +229,7 @@ async def yt_dlp_download(url):
             f"Error downloading video from URL: {url}. Error details: {str(e)}"
         )
         traceback.print_exc()
+        print(error_message)
         return error_message
 
 
