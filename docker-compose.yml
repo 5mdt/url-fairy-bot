@@ -46,9 +46,11 @@ services:
       - cache:/cache:ro
   cron:
     image: busybox:stable
+    environment:
+      - FILE_TTL=${FILE_TTL:-3} #days
     volumes:
       - cache:/cache
-    command: sh -c "find /cache/ -type f -amin +1440 -delete > /dev/null; find /cache/ -type d -empty -delete > /dev/null; sleep 60m"
+    command: sh -c "find /cache/ -type f -atime +${FILE_TTL} -delete > /dev/null; find /cache/ -type d -empty -delete > /dev/null; sleep 60m"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     logging:
