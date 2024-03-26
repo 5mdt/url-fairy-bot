@@ -1,12 +1,14 @@
-import os
-import requests
-import traceback
-import yt_dlp
+# -*- coding: utf-8 -*-
 import asyncio
+import os
+import traceback
+from urllib.parse import parse_qs, urlparse, urlunparse
+
+import requests
+import yt_dlp
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 from dotenv import load_dotenv
-from urllib.parse import urlparse, urlunparse, parse_qs
 
 load_dotenv()
 BASE_URL = os.getenv("BASE_URL")
@@ -171,12 +173,16 @@ async def handle_url(url, message):
                 for i in range(0, len(media_files_to_send), 10):
                     batch_media_files = media_files_to_send[i : i + 10]
                     media_group = [
-                        types.InputMediaVideo(
-                            media=open(file_path, "rb"), caption=original_sanitized_url
-                        )
-                        if file_path.endswith(".mp4")
-                        else types.InputMediaPhoto(
-                            media=open(file_path, "rb"), caption=original_sanitized_url
+                        (
+                            types.InputMediaVideo(
+                                media=open(file_path, "rb"),
+                                caption=original_sanitized_url,
+                            )
+                            if file_path.endswith(".mp4")
+                            else types.InputMediaPhoto(
+                                media=open(file_path, "rb"),
+                                caption=original_sanitized_url,
+                            )
                         )
                         for file_path in batch_media_files
                     ]

@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "url-fairy-bot"
+version = "1.9"
+description = "Bot making some convenience in telegram cchats with urls"
+authors = ["Vladimir nett00n Budylnikov <git@nett00n.org>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

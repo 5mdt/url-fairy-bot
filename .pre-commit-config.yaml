@@ -1,10 +1,44 @@
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
+---
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.2.0
-    hooks:
-    -   id: trailing-whitespace
-    -   id: end-of-file-fixer
-    -   id: check-yaml
-    -   id: check-added-large-files
+  - hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+      - id: check-ast
+      - files: bot/requirements.txt
+        id: file-contents-sorter
+      - id: check-builtin-literals
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-symlinks
+      - id: detect-private-key
+      - id: double-quote-string-fixer
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: fix-encoding-pragma
+      - id: mixed-line-ending
+      - id: name-tests-test
+      - id: pretty-format-json
+      - id: trailing-whitespace
+      - files: docker-compose.yml
+        id: sort-simple-yaml
+      - id: no-commit-to-branch
+    repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+  - hooks:
+      - id: black
+    repo: https://github.com/psf/black
+    rev: 24.3.0
+  - hooks:
+      - id: isort
+    repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+  - hooks:
+      - id: flake8
+    repo: https://github.com/PyCQA/flake8
+    rev: 7.0.0
