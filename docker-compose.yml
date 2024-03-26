@@ -5,6 +5,7 @@ networks:
 services:
   bot:
     build: bot/
+    # command: pip freeze
     environment:
       BOT_TOKEN: $BOT_TOKEN
       BASE_URL: $BASE_URL
