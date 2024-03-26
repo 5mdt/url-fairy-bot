@@ -261,6 +261,12 @@ async def yt_dlp_download(url):
         ydl_opts = {"outtmpl": video_path}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
+
+        # Save the original URL to a file if download was successful
+        print(os.path.join(video_path, "original_url.txt"))
+        with open(os.path.join(CACHE_DIR, sanitize_subfolder_name(url), "original_url.txt"), "w") as f:
+            f.write(url)
+
     except Exception as e:
         error_message = (
             f"Error downloading video from URL: {url}. Error details: {str(e)}"
