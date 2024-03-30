@@ -3,6 +3,7 @@ import asyncio
 import os
 import traceback
 from urllib.parse import parse_qs, urlparse, urlunparse
+import logging
 
 import requests
 import yt_dlp
@@ -17,6 +18,12 @@ load_dotenv()
 BASE_URL = os.getenv("BASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CACHE_DIR = "/cache"
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
+# Define logger
+logger = logging.getLogger(__name__)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
@@ -36,7 +43,7 @@ async def follow_redirects(url):
     Returns:
         str: The final URL after following redirects.
     """
-    print("✨ Start following URL: " + url)
+    logger.info("✨ Start following URL: %s", url)
 
     # Dictionary to store domain name replacements
     domain_replacements = {
@@ -50,7 +57,7 @@ async def follow_redirects(url):
     # Check if the URL starts with any of the keys in the domain_replacements dictionary
     for domain, replacement in domain_replacements.items():
         if url.startswith(domain):
-            print("✨ Replacable link found")
+            logger.info("✨ Replacable link found: %s", url)
             # Replace the domain name with the corresponding replacement
             return url.replace(domain, replacement)
 
@@ -69,7 +76,7 @@ def sanitize_subfolder_name(url):
     Returns:
         str: The sanitized subfolder name.
     """
-    print("✨ Sanitize subfolder name for URL: " + url)
+    logger.info("✨ Sanitize subfolder name for URL: %s", url)
     return "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in url)
 
 
@@ -83,7 +90,7 @@ def create_subfolder_and_path(sanitized_url):
     Returns:
         str: The full path to store the video inside the subfolder.
     """
-    print("✨ Create a subfolder for URL: " + sanitized_url)
+    logger.info("✨ Create a subfolder for URL: %s", sanitized_url)
 
     subfolder_name = sanitize_subfolder_name(sanitized_url)
     subfolder_path = os.path.join(CACHE_DIR, subfolder_name)
@@ -101,7 +108,7 @@ def is_within_size_limit(video_path):
     Returns:
         bool: True if the video file size is within the limit, otherwise False.
     """
-    print("✨ Check if video size is within limit for path: " + video_path)
+    logger.info("✨ Check if video size is within limit for path: %s", video_path)
 
     file_size = os.path.getsize(video_path)
     return file_size <= 10 * 1024 * 1024
@@ -117,7 +124,7 @@ def clean_tiktok_url(url):
     Returns:
         str: The cleaned TikTok URL.
     """
-    print("✨ Clean the TikTok video URL: " + url)
+    logger.info("✨ Clean the TikTok video URL: %s", url)
 
     parsed_url = urlparse(url)
     video_id = parse_qs(parsed_url.query).get("video_id")
@@ -129,7 +136,7 @@ def clean_tiktok_url(url):
 
 def transform_tiktok_url(url):
     """Transform TikTok URL to the embed format for yt-dlp."""
-    print("✨ Transform TikTok URL to the embed format: " + url)
+    logger.info("✨ Transform TikTok URL to the embed format: %s", url)
 
     parsed_url = urlparse(url)
     video_path = parsed_url.path.strip("/")
@@ -140,7 +147,7 @@ def transform_tiktok_url(url):
 
 async def start(message: types.Message):
     """Command handler for the /start command."""
-    print("✨ Start command received: /start")
+    logger.info("✨ Start command received: /start")
 
     await message.reply(
         "Hello! I'm your friendly URLFairyBot. Send me a URL to clean and extract data!"
@@ -150,7 +157,7 @@ async def start(message: types.Message):
 @dp.message_handler(content_types=[types.ContentType.TEXT])
 async def process_message(message: types.Message):
     """Handler for processing incoming messages."""
-    print(f"✨ Message received: {message.text}")
+    logger.info("✨ Message received: %s", message.text)
 
     error_messages = []
     if message.chat.type != types.ChatType.PRIVATE:
@@ -167,7 +174,7 @@ async def process_message(message: types.Message):
 
     for url in urls:
         if not url.startswith(("http", "www")):
-            print(f"✨ Invalid URL format: {url}")
+            logger.info("✨ Invalid URL format: %s", url)
             error_messages.append(f"Invalid URL format: {url}")
             continue
         tasks.append(handle_url(url, message))
@@ -183,7 +190,7 @@ async def process_message(message: types.Message):
 
 async def handle_url(url, message):
     """Handle individual URLs to process and send media."""
-    print("✨ Handle individual URL: " + url)
+    logger.info("✨ Handle individual URL: %s", url)
     original_sanitized_url = await follow_redirects(url)
 
     if (
@@ -200,62 +207,52 @@ async def handle_url(url, message):
         sanitized_url = original_sanitized_url
 
     if "tiktok" in sanitized_url:
-        print("✨ Tiktok link found")
+        logger.info("✨ Tiktok link found: %s", sanitized_url)
         video_path = create_subfolder_and_path(sanitized_url)
         sanitized_url = clean_tiktok_url(sanitized_url)
 
         if not os.path.exists(video_path):
-            print("✨ This file was not downloaded yet. Lets download")
+            logger.info("✨ This file was not downloaded yet. Lets download")
             await yt_dlp_download(sanitized_url)
 
         if os.path.exists(video_path):
-            print("✨ Files exist, lets share them")
+            logger.info("✨ Files exist, let's share the link")
 
-            media_files_to_send = [
-                os.path.join(os.path.dirname(video_path), filename)
-                for filename in os.listdir(os.path.dirname(video_path))
-                if is_within_size_limit(
-                    os.path.join(os.path.dirname(video_path), filename)
-                )
-            ]
+            mp4_file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/{sanitize_subfolder_name(sanitized_url)}.mp4"
+            await message.reply(
+                f"Download or watch the media from this link:\n{mp4_file_link}\n"
+                f"Original URL: {original_sanitized_url}\n"
+            )
+        else:
+            await message.reply(
+                f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
+            )
 
-            if media_files_to_send:
-                for i in range(0, len(media_files_to_send), 10):
-                    batch_media_files = media_files_to_send[i : i + 10]
-                    media_group = [
-                        (
-                            types.InputMediaVideo(
-                                media=open(file_path, "rb"),
-                                caption=original_sanitized_url,
-                            )
-                            if file_path.endswith(".mp4")
-                            else types.InputMediaPhoto(
-                                media=open(file_path, "rb"),
-                                caption=original_sanitized_url,
-                            )
-                        )
-                        for file_path in batch_media_files
-                    ]
-                    await bot.send_media_group(message.chat.id, media_group)
-            else:
-                file_link = (
-                    f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/"
-                )
-                await message.reply(
-                    f"Sorry, all media in the attachment folder are too big.\n"
-                    f"Use this link to download or watch the media:\n{file_link}\n"
-                    f"Original URL: {original_sanitized_url}\n"
-                )
+    if original_sanitized_url.startswith("https://www.youtube.com/shorts"):
+        logger.info("✨ Youtube shorts link found: %s", sanitized_url)
+        video_path = create_subfolder_and_path(sanitized_url)
+
+        if not os.path.exists(video_path):
+            logger.info("✨ This file was not downloaded yet. Lets download")
+            await yt_dlp_download(sanitized_url)
+
+        if os.path.exists(video_path):
+            logger.info("✨ Files exist, let's share the link")
+
+            mp4_file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/{sanitize_subfolder_name(sanitized_url)}.mp4"
+            await message.reply(
+                f"Download or watch the media from this link:\n{mp4_file_link}\n"
+                f"Original URL: {original_sanitized_url}\n"
+            )
         else:
             await message.reply(
                 f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
             )
     return
 
-
 async def yt_dlp_download(url):
     """Download a video using yt_dlp."""
-    print(f"✨ Download a video using yt_dlp: {url}")
+    logger.info("✨ Download a video using yt_dlp: %s", {url})
     try:
         video_path = create_subfolder_and_path(url)
         ydl_opts = {"outtmpl": video_path}
@@ -263,29 +260,29 @@ async def yt_dlp_download(url):
             ydl.download([url])
 
         # Save the original URL to a file if download was successful
-        print(os.path.join(video_path, "original_url.txt"))
         with open(
             os.path.join(CACHE_DIR, sanitize_subfolder_name(url), "original_url.txt"),
             "w",
         ) as f:
             f.write(url)
+        logger.info("✨ Download was successful")
 
     except Exception as e:
         error_message = (
             f"Error downloading video from URL: {url}. Error details: {str(e)}"
         )
-        traceback.print_exc()
-        print(error_message)
+        traceback.logger.info_exc()
+        logger.info(error_message)
         return error_message
 
 
 def main():
     """Main function to start the bot."""
-    print("✨Start polling")
+    logger.info("✨Start polling")
     os.makedirs(CACHE_DIR, exist_ok=True)
     executor.start_polling(dp, skip_updates=False)
 
 
 if __name__ == "__main__":
-    print("✨Url-fairy-bot initialized")
+    logger.info("✨Url-fairy-bot initialized")
     main()

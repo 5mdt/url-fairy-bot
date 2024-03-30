@@ -3,13 +3,13 @@ networks:
   traefik_default:
     external: true
 services:
-  bot:
+  app:
     build: bot/
-    # command: pip freeze
     environment:
+      BASE_URL: ${BASE_URL:-localhost}
       BOT_TOKEN: $BOT_TOKEN
-      BASE_URL: $BASE_URL
-      DEBUG_MODE: $DEBUG_MODE
+      CACHE_DIR: ${CACHE_DIR}
+      DEBUG_MODE: ${DEBUG_MODE}
     logging:
       driver: "json-file"
       options:
@@ -20,13 +20,14 @@ services:
   nginx:
     image: nginx:stable-alpine-slim
     environment:
-      BASE_URL: $BASE_URL
+      BASE_URL: ${BASE_URL:-localhost}
+      CACHE_DIR: ${CACHE_DIR}
     labels:
       com.centurylinklabs.watchtower.enable: "true"
       traefik.docker.network: traefik_default
       traefik.enable: true
       traefik.http.routers.url-fairy-bot.entrypoints: websecure
-      traefik.http.routers.url-fairy-bot.rule: Host(`$BASE_URL`)
+      traefik.http.routers.url-fairy-bot.rule: Host(`${BASE_URL:-localhost}`)
       traefik.http.routers.url-fairy-bot.service: url-fairy-bot
       traefik.http.routers.url-fairy-bot.tls: true
       traefik.http.routers.url-fairy-bot.tls.certresolver: ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
@@ -34,10 +35,7 @@ services:
     ports:
       - ${PUBLIC_PORT:-"80:80"}
     logging:
-      driver: "json-file"
-      options:
-        max-file: "3"
-        max-size: "1m"
+      driver: none
     networks:
       - traefik_default
     volumes:
@@ -50,7 +48,7 @@ services:
       - FILE_TTL=${FILE_TTL:-3} #days
     volumes:
       - cache:/cache
-    command: sh -c "find /cache/ -type f -atime +${FILE_TTL} -delete > /dev/null; find /cache/ -type d -empty -delete > /dev/null; sleep 60m"
+    command: sh -c "find /cache/ -type f -atime +${FILE_TTL:-3} -delete > /dev/null; find /cache/ -type d -empty -delete > /dev/null; sleep 60m"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     logging:
