@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import logging
 import os
 import traceback
 from urllib.parse import parse_qs, urlparse, urlunparse
-import logging
 
 import requests
 import yt_dlp
@@ -43,7 +43,7 @@ async def follow_redirects(url):
     Returns:
         str: The final URL after following redirects.
     """
-    logger.info("✨ Start following URL: %s", url)
+    logger.debug("✨ Start following URL: %s", url)
 
     # Dictionary to store domain name replacements
     domain_replacements = {
@@ -57,7 +57,7 @@ async def follow_redirects(url):
     # Check if the URL starts with any of the keys in the domain_replacements dictionary
     for domain, replacement in domain_replacements.items():
         if url.startswith(domain):
-            logger.info("✨ Replacable link found: %s", url)
+            logger.debug("✨ Replacable link found: %s", url)
             # Replace the domain name with the corresponding replacement
             return url.replace(domain, replacement)
 
@@ -76,7 +76,7 @@ def sanitize_subfolder_name(url):
     Returns:
         str: The sanitized subfolder name.
     """
-    logger.info("✨ Sanitize subfolder name for URL: %s", url)
+    logger.debug("✨ Sanitize subfolder name for URL: %s", url)
     return "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in url)
 
 
@@ -98,22 +98,6 @@ def create_subfolder_and_path(sanitized_url):
     return os.path.join(subfolder_path, f"{subfolder_name}.mp4")
 
 
-def is_within_size_limit(video_path):
-    """
-    Check if the video file size is within the allowed limit (10 MB).
-
-    Args:
-        video_path (str): The path to the video file.
-
-    Returns:
-        bool: True if the video file size is within the limit, otherwise False.
-    """
-    logger.info("✨ Check if video size is within limit for path: %s", video_path)
-
-    file_size = os.path.getsize(video_path)
-    return file_size <= 10 * 1024 * 1024
-
-
 def clean_tiktok_url(url):
     """
     Clean the TikTok video URL by extracting the video_id.
@@ -124,7 +108,7 @@ def clean_tiktok_url(url):
     Returns:
         str: The cleaned TikTok URL.
     """
-    logger.info("✨ Clean the TikTok video URL: %s", url)
+    logger.debug("✨ Clean the TikTok video URL: %s", url)
 
     parsed_url = urlparse(url)
     video_id = parse_qs(parsed_url.query).get("video_id")
@@ -136,7 +120,7 @@ def clean_tiktok_url(url):
 
 def transform_tiktok_url(url):
     """Transform TikTok URL to the embed format for yt-dlp."""
-    logger.info("✨ Transform TikTok URL to the embed format: %s", url)
+    logger.debug("✨ Transform TikTok URL to the embed format: %s", url)
 
     parsed_url = urlparse(url)
     video_path = parsed_url.path.strip("/")
@@ -157,7 +141,7 @@ async def start(message: types.Message):
 @dp.message_handler(content_types=[types.ContentType.TEXT])
 async def process_message(message: types.Message):
     """Handler for processing incoming messages."""
-    logger.info("✨ Message received: %s", message.text)
+    logger.debug("✨ Message received: %s", message.text)
 
     error_messages = []
     if message.chat.type != types.ChatType.PRIVATE:
@@ -174,7 +158,7 @@ async def process_message(message: types.Message):
 
     for url in urls:
         if not url.startswith(("http", "www")):
-            logger.info("✨ Invalid URL format: %s", url)
+            logger.debug("✨ Invalid URL format: %s", url)
             error_messages.append(f"Invalid URL format: {url}")
             continue
         tasks.append(handle_url(url, message))
@@ -190,7 +174,7 @@ async def process_message(message: types.Message):
 
 async def handle_url(url, message):
     """Handle individual URLs to process and send media."""
-    logger.info("✨ Handle individual URL: %s", url)
+    logger.debug("✨ Handle individual URL: %s", url)
     original_sanitized_url = await follow_redirects(url)
 
     if (
@@ -207,16 +191,16 @@ async def handle_url(url, message):
         sanitized_url = original_sanitized_url
 
     if "tiktok" in sanitized_url:
-        logger.info("✨ Tiktok link found: %s", sanitized_url)
+        logger.debug("✨ Tiktok link found: %s", sanitized_url)
         video_path = create_subfolder_and_path(sanitized_url)
         sanitized_url = clean_tiktok_url(sanitized_url)
 
         if not os.path.exists(video_path):
-            logger.info("✨ This file was not downloaded yet. Lets download")
+            logger.debug("✨ This file was not downloaded yet. Lets download")
             await yt_dlp_download(sanitized_url)
 
         if os.path.exists(video_path):
-            logger.info("✨ Files exist, let's share the link")
+            logger.debug("✨ Files exist, let's share the link")
 
             mp4_file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/{sanitize_subfolder_name(sanitized_url)}.mp4"
             await message.reply(
@@ -229,15 +213,15 @@ async def handle_url(url, message):
             )
 
     if original_sanitized_url.startswith("https://www.youtube.com/shorts"):
-        logger.info("✨ Youtube shorts link found: %s", sanitized_url)
+        logger.debug("✨ Youtube shorts link found: %s", sanitized_url)
         video_path = create_subfolder_and_path(sanitized_url)
 
         if not os.path.exists(video_path):
-            logger.info("✨ This file was not downloaded yet. Lets download")
+            logger.debug("✨ This file was not downloaded yet. Lets download")
             await yt_dlp_download(sanitized_url)
 
         if os.path.exists(video_path):
-            logger.info("✨ Files exist, let's share the link")
+            logger.debug("✨ Files exist, let's share the link")
 
             mp4_file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/{sanitize_subfolder_name(sanitized_url)}.mp4"
             await message.reply(
@@ -250,30 +234,38 @@ async def handle_url(url, message):
             )
     return
 
+
 async def yt_dlp_download(url):
-    """Download a video using yt_dlp."""
+    """Download a video using yt_dlp with retries."""
     logger.info("✨ Download a video using yt_dlp: %s", {url})
-    try:
-        video_path = create_subfolder_and_path(url)
-        ydl_opts = {"outtmpl": video_path}
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+    for attempt in range(3):
+        try:
+            video_path = create_subfolder_and_path(url)
+            ydl_opts = {"outtmpl": video_path}
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
 
-        # Save the original URL to a file if download was successful
-        with open(
-            os.path.join(CACHE_DIR, sanitize_subfolder_name(url), "original_url.txt"),
-            "w",
-        ) as f:
-            f.write(url)
-        logger.info("✨ Download was successful")
+            # Save the original URL to a file if download was successful
+            with open(
+                os.path.join(
+                    CACHE_DIR, sanitize_subfolder_name(url), "original_url.txt"
+                ),
+                "w",
+            ) as f:
+                f.write(url)
+            logger.info("✨ Download was successful")
+            return None  # Indicate successful download, exit loop
+        except Exception as e:
+            error_message = (
+                f"Error downloading video from URL: {url}. Error details: {str(e)}"
+            )
+            traceback.logger.info_exc()
+            logger.critical(error_message)
+            # Wait 5 seconds before retrying
+            await asyncio.sleep(5)
 
-    except Exception as e:
-        error_message = (
-            f"Error downloading video from URL: {url}. Error details: {str(e)}"
-        )
-        traceback.logger.info_exc()
-        logger.info(error_message)
-        return error_message
+    # All retries failed, return error message
+    return f"Failed to download video from URL: {url} after 3 attempts."
 
 
 def main():
