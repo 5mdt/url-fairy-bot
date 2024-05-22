@@ -41,7 +41,7 @@ async def follow_redirects(url):
         url (str): The initial URL to follow redirects for.
 
     Returns:
-        str: The final URL after following redirects.
+        str: The final URL after following redirects or the original URL if it times out.
     """
     logger.debug("✨ Start following URL: %s", url)
 
@@ -62,8 +62,12 @@ async def follow_redirects(url):
             return url.replace(domain, replacement)
 
     # If the URL does not match any of the mappings, follow redirects using requests
-    response = requests.head(url, allow_redirects=True)
-    return urlunparse(urlparse(response.url)._replace(query=""))
+    try:
+        response = requests.head(url, allow_redirects=True, timeout=10)
+        return urlunparse(urlparse(response.url)._replace(query=""))
+    except requests.exceptions.Timeout:
+        logger.warning("✨ Timeout occurred while following redirects for URL: %s", url)
+        return url
 
 
 def sanitize_subfolder_name(url):
