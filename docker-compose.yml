@@ -8,7 +8,6 @@ services:
     environment:
       BASE_URL: ${BASE_URL:-localhost}
       BOT_TOKEN: $BOT_TOKEN
-      CACHE_DIR: ${CACHE_DIR}
       DEBUG_MODE: ${DEBUG_MODE}
     logging:
       driver: "json-file"
@@ -48,7 +47,7 @@ services:
       - FILE_TTL=${FILE_TTL:-3} #days
     volumes:
       - cache:/cache
-    command: sh -c "find /cache/ -type f -atime +${FILE_TTL:-3} -delete > /dev/null; find /cache/ -type d -empty -delete > /dev/null; sleep 60m"
+    command: sh -c "find /cache/ -type f -{FILE_TTL_TYPE:-mtime} +${FILE_TTL:-3} -delete > /dev/null; find /cache/ -type d -empty -delete > /dev/null; sleep 60m"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     logging:
