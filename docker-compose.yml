@@ -9,6 +9,7 @@ services:
       BASE_URL: ${BASE_URL:-localhost}
       BOT_TOKEN: $BOT_TOKEN
       DEBUG_MODE: ${DEBUG_MODE}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     logging:
       driver: "json-file"
       options:
@@ -20,7 +21,6 @@ services:
     image: nginx:stable-alpine-slim
     environment:
       BASE_URL: ${BASE_URL:-localhost}
-      CACHE_DIR: ${CACHE_DIR}
     labels:
       com.centurylinklabs.watchtower.enable: "true"
       traefik.docker.network: traefik_default

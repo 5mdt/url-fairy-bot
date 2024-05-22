@@ -17,10 +17,11 @@ load_dotenv()
 # Initialize constants from environment variables
 BASE_URL = os.getenv("BASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CACHE_DIR = "/cache"
+CACHE_DIR = os.getenv("CACHE_DIR", "/cache/")
+LOG_LEVEL = os.getenv("LOG_LEVEL").upper()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
 
 # Define logger
 logger = logging.getLogger(__name__)
@@ -29,8 +30,8 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
 # Check if environment variables are set
-if BASE_URL is None or BOT_TOKEN is None:
-    raise ValueError("BASE_URL or BOT_TOKEN environment variables are not set")
+if BASE_URL is None or BOT_TOKEN is None or CACHE_DIR is None or LOG_LEVEL is None:
+    raise ValueError("BASE_URL, BOT_TOKEN, CACHE_DIR, or LOG_LEVEL environment variables are not set")
 
 
 async def follow_redirects(url):
@@ -185,6 +186,10 @@ async def handle_url(url, message):
         or original_sanitized_url.startswith("https://fxtwitter.com/")
         or original_sanitized_url.startswith("https://www.ddinstagram.com/reel")
     ):
+        # Check if the original sanitized URL matches any URL in the user's message
+        if original_sanitized_url in url:
+            return  # If matched, do not send any response
+
         await message.reply(f"{original_sanitized_url}")
         return
 
