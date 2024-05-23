@@ -15,10 +15,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize constants from environment variables
-BASE_URL = os.getenv("BASE_URL")
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BASE_URL = os.getenv("BASE_URL", "")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 CACHE_DIR = os.getenv("CACHE_DIR", "/cache/")
-LOG_LEVEL = os.getenv("LOG_LEVEL").upper()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
 # Configure logging
 logging.basicConfig(level=getattr(logging, LOG_LEVEL, logging.INFO))
@@ -29,17 +29,18 @@ logger = logging.getLogger(__name__)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot)
 
-# Check if environment variables are set
-if BASE_URL is None or BOT_TOKEN is None or CACHE_DIR is None or LOG_LEVEL is None:
-    raise ValueError("BASE_URL, BOT_TOKEN, CACHE_DIR, or LOG_LEVEL environment variables are not set")
+# Check if required environment variables are set
+if not all([BASE_URL, BOT_TOKEN]):
+    raise ValueError("BASE_URL or BOT_TOKEN environment variables are not set")
 
 
-async def follow_redirects(url):
+async def follow_redirects(url, timeout=10):
     """
     Follow redirects for a given URL and retrieve the final URL after redirection.
 
     Args:
         url (str): The initial URL to follow redirects for.
+        timeout (int): Timeout for the HTTP request.
 
     Returns:
         str: The final URL after following redirects or the original URL if it times out.
@@ -48,10 +49,11 @@ async def follow_redirects(url):
 
     # Dictionary to store domain name replacements
     domain_replacements = {
-        "https://www.twitter.com/": "https://www.fxtwitter.com/",
         "https://twitter.com/": "https://www.fxtwitter.com/",
+        "https://www.instagram.com/p/": "https://www.ddinstagram.com/p/",
+        "https://www.instagram.com/reel/": "https://www.ddinstagram.com/reel/",
+        "https://www.twitter.com/": "https://www.fxtwitter.com/",
         "https://x.com/": "https://www.fxtwitter.com/",
-        "https://www.instagram.com/reel": "https://www.ddinstagram.com/reel",
         # Add more mappings as needed
     }
 
@@ -64,7 +66,7 @@ async def follow_redirects(url):
 
     # If the URL does not match any of the mappings, follow redirects using requests
     try:
-        response = requests.head(url, allow_redirects=True, timeout=10)
+        response = requests.head(url, allow_redirects=True, timeout=timeout)
         return urlunparse(urlparse(response.url)._replace(query=""))
     except requests.exceptions.Timeout:
         logger.warning("✨ Timeout occurred while following redirects for URL: %s", url)
@@ -176,6 +178,7 @@ async def process_message(message: types.Message):
     ):  # Only send error messages if valid URLs exist
         await message.reply("\n".join(error_messages))
 
+
 async def handle_url(url, message):
     """Handle individual URLs to process and send media."""
     logger.debug("✨ Handle individual URL: %s", url)
@@ -184,65 +187,52 @@ async def handle_url(url, message):
     if (
         original_sanitized_url.startswith("https://www.fxtwitter.com")
         or original_sanitized_url.startswith("https://fxtwitter.com/")
-        or original_sanitized_url.startswith("https://www.ddinstagram.com/reel")
+        or original_sanitized_url.startswith("https://www.ddinstagram.com/p/")
+        or original_sanitized_url.startswith("https://www.ddinstagram.com/reel/")
     ):
         # Check if the original sanitized URL matches any URL in the user's message
         if original_sanitized_url in url:
             return  # If matched, do not send any response
 
-        await message.reply(f"{original_sanitized_url}")
+        await message.reply(
+            f"Here is the link Telegram parses better: "
+            f"[📎]({original_sanitized_url})",
+            parse_mode=types.ParseMode.MARKDOWN,
+        )
         return
 
     if "tiktok" in original_sanitized_url:
+        logger.debug("✨ Tiktok link found: %s", original_sanitized_url)
         sanitized_url = transform_tiktok_url(original_sanitized_url)
-    else:
+    elif original_sanitized_url.startswith("https://www.youtube.com/shorts"):
+        logger.debug("✨ YouTube shorts link found: %s", original_sanitized_url)
         sanitized_url = original_sanitized_url
+    else:
+        logger.debug("✨ Unsupported URL: %s", original_sanitized_url)
+        await message.reply(
+            f"Sorry, the media from URL {original_sanitized_url} is not supported."
+        )
+        return
 
-    if "tiktok" in sanitized_url:
-        logger.debug("✨ Tiktok link found: %s", sanitized_url)
-        video_path = create_subfolder_and_path(sanitized_url)
-        sanitized_url = clean_tiktok_url(sanitized_url)
+    video_path = create_subfolder_and_path(sanitized_url)
 
-        if not os.path.exists(video_path):
-            logger.debug("✨ This file was not downloaded yet. Lets download")
-            await yt_dlp_download(sanitized_url)
+    if not os.path.exists(video_path):
+        logger.debug("✨ File has not been downloaded yet. Let's download.")
+        await yt_dlp_download(sanitized_url)
 
-        if os.path.exists(video_path):
-            logger.debug("✨ Files exist, let's share the link")
+    if os.path.exists(video_path):
+        logger.debug("✨ Files exist, let's share the link")
 
-            mp4_file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/{sanitize_subfolder_name(sanitized_url)}.mp4"
-            await message.reply(
-                f"[⏬ Download\n⏯️ Watch]({mp4_file_link})\n\n"
-                f"[📎 Original]({original_sanitized_url})\n",
-                parse_mode=types.ParseMode.MARKDOWN
-            )
-        else:
-            await message.reply(
-                f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
-            )
-
-    if original_sanitized_url.startswith("https://www.youtube.com/shorts"):
-        logger.debug("✨ Youtube shorts link found: %s", sanitized_url)
-        video_path = create_subfolder_and_path(sanitized_url)
-
-        if not os.path.exists(video_path):
-            logger.debug("✨ This file was not downloaded yet. Lets download")
-            await yt_dlp_download(sanitized_url)
-
-        if os.path.exists(video_path):
-            logger.debug("✨ Files exist, let's share the link")
-
-            mp4_file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/{sanitize_subfolder_name(sanitized_url)}.mp4"
-            await message.reply(
-                f"[⏬ Download\n⏯️ Watch]({mp4_file_link})\n\n"
-                f"[📎 Original]({original_sanitized_url})\n",
-                parse_mode=types.ParseMode.MARKDOWN
-            )
-        else:
-            await message.reply(
-                f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
-            )
-    return
+        mp4_file_link = f"https://{BASE_URL}/{sanitize_subfolder_name(sanitized_url)}/{sanitize_subfolder_name(sanitized_url)}.mp4"
+        await message.reply(
+            f"[⏬ Download\n⏯️ Watch]({mp4_file_link})\n\n"
+            f"[📎 Original]({original_sanitized_url})\n",
+            parse_mode=types.ParseMode.MARKDOWN,
+        )
+    else:
+        await message.reply(
+            f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
+        )
 
 
 async def yt_dlp_download(url):
