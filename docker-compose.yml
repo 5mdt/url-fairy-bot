@@ -8,7 +8,6 @@ services:
     environment:
       BASE_URL: ${BASE_URL:-localhost}
       BOT_TOKEN: $BOT_TOKEN
-      DEBUG_MODE: ${DEBUG_MODE}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     logging:
       driver: "json-file"

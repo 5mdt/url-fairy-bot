@@ -209,9 +209,11 @@ async def handle_url(url, message):
         sanitized_url = original_sanitized_url
     else:
         logger.debug("✨ Unsupported URL: %s", original_sanitized_url)
-        await message.reply(
-            f"Sorry, the media from URL {original_sanitized_url} is not supported."
-        )
+        # Only send this message in private chats
+        if message.chat.type == types.ChatType.PRIVATE:
+            await message.reply(
+                f"Sorry, the media from URL {original_sanitized_url} is not supported."
+            )
         return
 
     video_path = create_subfolder_and_path(sanitized_url)
@@ -230,9 +232,10 @@ async def handle_url(url, message):
             parse_mode=types.ParseMode.MARKDOWN,
         )
     else:
-        await message.reply(
-            f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
-        )
+        if message.chat.type == types.ChatType.PRIVATE:
+            await message.reply(
+                f"Sorry, the media from URL {original_sanitized_url} could not be downloaded or is missing."
+            )
 
 
 async def yt_dlp_download(url):
