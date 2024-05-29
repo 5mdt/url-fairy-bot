@@ -4,3 +4,4 @@
 !.markdownlint.yaml
 !.pre-commit-config.yaml
 dist
+__pycache__

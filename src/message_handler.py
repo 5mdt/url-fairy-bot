@@ -1,7 +1,7 @@
 # message_handler.py
 import logging
 from aiogram import types
-from healthcheck import perform_healthcheck  # Import the function for health check
+from healthcheck import perform_healthcheck
 
 logger = logging.getLogger(__name__)
 
@@ -9,13 +9,19 @@ logger = logging.getLogger(__name__)
 async def message_handle(message: types.Message):
     logger.debug(f"Received message: {message.text}")
 
-    # Check if the message is '/healthcheck'
     if message.text.strip() == "/healthcheck":
         healthcheck_result = perform_healthcheck()
         await message.reply(healthcheck_result)
-    else:
-        # Continue with regular message handling
-        await echo(message)  # Assuming `echo` is the regular message handling logic
+        return
+    if message.text.strip() == "/start":
+        await message.reply(
+            f"This bot helps to watch content from TikTok, Shorts, Twitter and Instagram Reels more convenient inside telegram.\n\n"
+            f"Send me the link here or add me to chatgroup.",
+            parse_mode=types.ParseMode.MARKDOWN,
+        )
+        return
+    await echo(message)
+
 
 
 async def echo(message: types.Message):
