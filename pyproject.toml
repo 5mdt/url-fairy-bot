@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "url-fairy-bot"
+version = "2.0.0"
+description = "This bot helps to watch content from TikTok, Shorts, Twitter and Instagram Reels more convenient inside telegram chatgroups"
+authors = ["Vladimir nett00n Budylnikov <git@nett00n.org>"]
+license = "GPL v3"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiogram-utils = "^0.1.4"
+fastapi = "^0.111.0"
+python-dotenv = "^1.0.1"
+requests = "^2.32.3"
+yt-dlp = "^2024.5.27"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+flake8 = "^7.0.0"
+yamllint = "^1.35.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

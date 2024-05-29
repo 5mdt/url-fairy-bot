@@ -4,11 +4,15 @@ networks:
     external: true
 services:
   app:
-    build: bot/
+    build:
+      context: ./
     environment:
       BASE_URL: ${BASE_URL:-localhost}
       BOT_TOKEN: $BOT_TOKEN
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     logging:
       driver: "json-file"
       options:
@@ -16,6 +20,8 @@ services:
         max-size: "1m"
     volumes:
       - cache:/cache
+  redis:
+    image: redis:7-alpine
   nginx:
     image: nginx:stable-alpine-slim
     environment:

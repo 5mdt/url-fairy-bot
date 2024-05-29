@@ -3,11 +3,11 @@ ARG POETRY_VERSION=1.8.2
 RUN pip install poetry==${POETRY_VERSION}
 
 COPY \
-  pyproject.toml \
-  poetry.lock \
+  ./pyproject.toml \
+  ./poetry.lock \
   /app/
 WORKDIR /app
 RUN poetry install --no-root --no-interaction --no-ansi
 VOLUME [ "/cache" ]
-CMD ["poetry", "run", "python", "url-fairy-bot/main.py"]
-COPY ./ /app/
+CMD ["poetry", "run", "python", "/app/main.py"]
+COPY ./src /app
