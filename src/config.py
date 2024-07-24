@@ -1,4 +1,6 @@
 # config.py
+# -*- coding: utf-8 -*-
+
 import os
 import logging
 from dotenv import load_dotenv
@@ -31,6 +33,15 @@ REQUIRED_VARIABLES = [
 
 
 def check_required_variables(global_vars):
+    """
+    Check if all required environment variables are set.
+
+    Args:
+        global_vars: Dictionary containing global variables.
+
+    Raises:
+        ValueError: If any required environment variable is not set or empty.
+    """
     for var in REQUIRED_VARIABLES:
         if var not in global_vars or not global_vars[var]:
             logger.error(f"Required environment variable {var} is not set or is empty")

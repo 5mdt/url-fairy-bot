@@ -1,3 +1,5 @@
+# main
+# -*- coding: utf-8 -*-
 import logging
 import asyncio
 from threading import Thread
