@@ -10,7 +10,7 @@ readme = "README.md"
 python = "^3.11"
 yt-dlp = "^2024.3.10"
 aiogram = "2.23.1"
-requests = "^2.31.0"
+requests = "^2.32.2"
 python-dotenv = "^1.0.1"
 aiogram-utils = "^0.1.4"
 
