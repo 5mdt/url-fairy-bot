@@ -8,20 +8,20 @@ services:
       context: ./
     environment:
       BASE_URL: ${BASE_URL:-localhost}
-      BOT_TOKEN: $BOT_TOKEN
+      BOT_TOKEN: ${BOT_TOKEN:-YOUR_BOT_TOKEN}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-""}
     logging:
       driver: "json-file"
       options:
         max-file: "3"
         max-size: "1m"
     volumes:
-      - cache:/cache
-  redis:
-    image: redis:7-alpine
+      - cache:/tmp/url-fairy-bot-cache/
+    ports:
+      - "8000:8000"
   nginx:
     image: nginx:stable-alpine-slim
     environment:
@@ -45,14 +45,14 @@ services:
     volumes:
       - ./nginx/conf.d/:/etc/nginx/conf.d
       - ./nginx/theme/:/theme/:ro
-      - cache:/cache:ro
+      - cache:/tmp/url-fairy-bot-cache/:ro
   cron:
     image: busybox:stable
     environment:
       - FILE_TTL=${FILE_TTL:-3} #days
     volumes:
-      - cache:/cache
-    command: sh -c "find /cache/ -type f -{FILE_TTL_TYPE:-mtime} +${FILE_TTL:-3} -delete > /dev/null; find /cache/ -type d -empty -delete > /dev/null; sleep 60m"
+      - cache:/tmp/url-fairy-bot-cache/
+    command: sh -c "find /tmp/url-fairy-bot-cache/ -type f -{FILE_TTL_TYPE:-mtime} +${FILE_TTL:-3} -delete > /dev/null; find /tmp/url-fairy-bot-cache// -type d -empty -delete > /dev/null; sleep 60m"
     labels:
       com.centurylinklabs.watchtower.enable: "true"
     logging:

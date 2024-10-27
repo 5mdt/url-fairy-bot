@@ -3,5 +3,9 @@
 !.github
 !.markdownlint.yaml
 !.pre-commit-config.yaml
-dist
 __pycache__
+bin
+dist
+lib
+share
+pyvenv.cfg

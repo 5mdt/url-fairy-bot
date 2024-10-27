@@ -1,13 +1,18 @@
+Here’s an updated README to include the new REST API feature:
+
+---
+
 # URLFairyBot
 
 ![Logo](logo.svg)
 
-URLFairyBot is a whimsical Telegram bot that sprinkles its magic on messy URLs, transforming them into organized and enchanting links. Let the bot be your URL-cleaning companion, waving its digital wand to reveal the hidden wonders behind every web address.
+URLFairyBot is a whimsical Telegram bot and REST API that sprinkles its magic on messy URLs, transforming them into organized and enchanting links. Let the bot be your URL-cleaning companion, waving its digital wand to reveal the hidden wonders behind every web address.
 
 ## Features
 
 - Casts a spell on URLs, turning them from chaos to clarity.
 - Conjures up valuable data from URLs, like a true magical oracle.
+- Offers URL processing through both Telegram and a REST API, adding flexibility and utility.
 - Your trusty URL fairy with a touch of whimsy and humor.
 
 ## Getting Started
@@ -16,7 +21,7 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 
 ### Prerequisites
 
-- Docker and Docker Compose are installed on your system (or your fairy dust, whichever is handier).
+- Docker and Docker Compose installed on your system (or your fairy dust, whichever is handier).
 
 ### Installation
 
@@ -34,7 +39,7 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
    BASE_URL=your_base_url
    ```
 
-3. Do not forget to create a Traefik reverse proxy `docker-compose.yml` file:
+3. Create a Traefik reverse proxy `docker-compose.yml` file:
 
    ```yaml
    ---
@@ -72,7 +77,7 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
          - "/opt/traefik/acme.json:/acme.json"
    ```
 
-4. Brew your concoction of Docker spells to awaken the bot:
+4. Brew your concoction of Docker spells to awaken the bot and API:
 
    ```shell
    docker-compose up -d
@@ -88,10 +93,38 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 
 ## Usage
 
+### Telegram Bot
+
 1. Initiate a conversation with the bot on Telegram.
 2. Bestow upon it a twisted and tangled URL.
 3. Witness the bot's incantations as it transforms the URL into an elegant masterpiece of clarity.
 4. Share the now-gleaming link with fellow travelers to spread the charm of URLFairyBot.
+
+### REST API
+
+You can also access the URL processing functionality through the REST API. This makes URLFairyBot accessible through `curl` requests or other HTTP clients.
+
+#### Endpoint
+
+- **URL**: `POST /process_url/`
+- **Body**: JSON with `url` field
+
+#### Example Request
+
+```bash
+curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://example.com/some-url"}'
+```
+
+#### Example Response
+
+```json
+{
+  "status": "success",
+  "data": "https://example.com/processed-url"
+}
+```
+
+This flexibility allows you to use URLFairyBot in various applications outside of Telegram, making it a versatile tool for URL cleaning and transformation.
 
 ## Contributing
 
@@ -107,4 +140,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-2023, Tbilisi, Sakartvelo
+2023-2024, Tbilisi, Sakartvelo
