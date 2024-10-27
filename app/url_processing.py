@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os
 from urllib.parse import urlparse, urlunparse
 
 import requests
@@ -16,12 +17,13 @@ logger = logging.getLogger(__name__)
 async def process_url_request(url: str) -> str:
     try:
         final_url = follow_redirects(url)
-        video_path = await yt_dlp_download(final_url)
+        video_os_path = await yt_dlp_download(final_url)
 
-        if video_path:
+        if video_os_path:
+            video_path = os.path.join(*video_os_path.split(os.path.sep)[-1:])
             response = (
                 "[Click here to ⏯️ Watch or ⏬ Download]"
-                + f"(https://{settings.BASE_URL}{video_path})\n\n"
+                + f"(https://{settings.BASE_URL}/{video_path})\n\n"
                 + f"[📎 Original]({final_url})\n"
             )
         else:
@@ -45,7 +47,7 @@ async def process_url_request(url: str) -> str:
                 + f"\n[📎 Original]({final_url})\n"
             )
 
-        return {"status": "success", "data": response}
+        return response
 
     except requests.exceptions.RequestException as req_e:
         logger.error(f"Request error processing URL: {req_e}")
