@@ -4,7 +4,7 @@ FROM python:3.11-buster
 # Install Rust for packages requiring compilation
 RUN apt-get update && apt-get install -y curl && \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-    source $HOME/.cargo/env
+    . "$HOME/.cargo/env"
 
 # Set the Poetry version as a build argument and install it
 ARG POETRY_VERSION=1.8.4
