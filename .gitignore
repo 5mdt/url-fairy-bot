@@ -1,11 +1,12 @@
 .*
-!.gitignore
-!.github
-!.markdownlint.yaml
-!.pre-commit-config.yaml
 __pycache__
+*.zip
 bin
 dist
 lib
-share
 pyvenv.cfg
+share
+!.github
+!.gitignore
+!.markdownlint.yaml
+!.pre-commit-config.yaml
