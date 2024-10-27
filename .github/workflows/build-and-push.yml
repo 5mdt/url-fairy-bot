@@ -58,7 +58,7 @@ jobs:
         with:
           context: ./
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm/v7,linux/arm64/v8,linux/386
+          platforms: linux/amd64,linux/arm,linux/arm64
           push: true
           tags: |
             ${{ vars.DOCKERHUB_USER }}/url-fairy-bot:latest
