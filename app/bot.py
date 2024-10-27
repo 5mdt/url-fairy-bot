@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 # bot.py
+# -*- coding: utf-8 -*-
 
 import logging
 

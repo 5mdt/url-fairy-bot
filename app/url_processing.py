@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 # url_processing.py
+# -*- coding: utf-8 -*-
 
 import logging
 from urllib.parse import urlparse, urlunparse
@@ -22,15 +22,30 @@ async def process_url_request(url: str) -> str:
             sanitized_url = final_url
         else:
             return f"Unsupported URL {final_url}"
+
         video_path = await yt_dlp_download(sanitized_url)
-        return (
-            f"https://{settings.BASE_URL}{video_path}"
-            if video_path
-            else "Download failed"
-        )
+
+        if video_path:
+            return (
+                "[Click here to ⏯️ Watch or ⏬ Download]"
+                + f"(https://{settings.BASE_URL}{video_path})\n\n"
+                + f"[📎 Original]({final_url})\n"
+            )
+        else:
+            rewritten_url = final_url.replace("tiktok.com/", "tfxktok.com/")
+            return (
+                "I failed to download the file by myself"
+                + "\n\nHere is the link,"
+                + f" which Telegram parses better: [📎]({rewritten_url})"
+                + f"\n[📎 Original]({final_url})\n"
+            )
+
+    except requests.exceptions.RequestException as req_e:
+        logger.error(f"Request error processing URL: {req_e}")
+        return f"Request error: {str(req_e)}"
     except Exception as e:
         logger.error(f"Error processing URL: {e}")
-        return str(e)
+        return f"An error occurred: {str(e)}"
 
 
 def follow_redirects(url: str, timeout=10) -> str:

@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 # main.py
+# -*- coding: utf-8 -*-
 
 import asyncio
 import logging
