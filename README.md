@@ -1,7 +1,3 @@
-Here’s an updated README to include the new REST API feature:
-
----
-
 # URLFairyBot
 
 ![Logo](logo.svg)
