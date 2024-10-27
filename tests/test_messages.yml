@@ -1,0 +1,51 @@
+# test_messages.yml
+
+---
+- request: "https://vt.tiktok.com/ZSYFmgDeS/"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://vt.tiktok.com/ZSYFmgDeS/"}'
+  name: Normal Tiktok Video Short URL (CAN EXPIRE!)
+  response: '{"status":"success","data":"[Click here to ⏯️ Watch or ⏬ Download](https://url-fairy-bot-dev.nixos.nett00n.org/tmp/url-fairy-bot-cache/https___www_tiktok_com___video_7371578973689482539.mp4)\n\n[📎 Original](https://www.tiktok.com/@/video/7371578973689482539)\n"}'
+- request: "https://www.tiktok.com/@annethegnome/video/7318093559800827142"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://www.tiktok.com/@annethegnome/video/7318093559800827142"}'
+  name: Normal Tiktok Video Long URL
+  response: '{"status":"success","data":"[Click here to ⏯️ Watch or ⏬ Download](https://url-fairy-bot-dev.nixos.nett00n.org/tmp/url-fairy-bot-cache/https___www_tiktok_com__annethegnome_video_7318093559800827142.mp4)\n\n[📎 Original](https://www.tiktok.com/@annethegnome/video/7318093559800827142)\n"}'
+- request: "https://www.tiktok.com/@bdccarpenter/video/7315528977559325984"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://www.tiktok.com/@bdccarpenter/video/7315528977559325984"}'
+  name: Hard Tiktok Video Long URL
+  response: '{"status":"success","data":"[Click here to ⏯️ Watch or ⏬ Download](https://url-fairy-bot-dev.nixos.nett00n.org/tmp/url-fairy-bot-cache/https___www_tiktok_com__bdccarpenter_video_7315528977559325984.mp4)\n\n[📎 Original](https://www.tiktok.com/@bdccarpenter/video/7315528977559325984)\n"}'
+- request: "https://www.tiktok.com/@lkahaobr9y4/video/72520015795223"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://www.tiktok.com/@lkahaobr9y4/video/72520015795223"}'
+  name: Fail Tiktok Video Long URL
+  response: '{"status":"success","data":"I failed to download the file by myself\n\nHere is the link, which Telegram parses better: [📎](https://www.tiktok.com/@lkahaobr9y4/video/72520015795223)\n[📎 Original](https://www.tiktok.com/@lkahaobr9y4/video/72520015795223)\n"}'
+- request: "https://www.tiktok.com/@vladimirraevskiy7/video/7316250241890635015"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://www.tiktok.com/@vladimirraevskiy7/video/7316250241890635015"}'
+  name: Big Tiktok Video Long URL
+  response: '{"status":"success","data":"I failed to download the file by myself\n\nHere is the link, which Telegram parses better: [📎](https://www.tiktok.com/@vladimirraevskiy7/video/7316250241890635015)\n[📎 Original](https://www.tiktok.com/@vladimirraevskiy7/video/7316250241890635015)\n"}'
+- request: "https://twitter.com/leonov_mr/status/1772299904179708228?s=12&t=zeCYafL-E7Tm4xrhQdmb9Q"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://twitter.com/leonov_mr/status/1772299904179708228?s=12&t=zeCYafL-E7Tm4xrhQdmb9Q"}'
+  name: Twitter link with video
+  response: '{"status":"success","data":"[Click here to ⏯️ Watch or ⏬ Download](https://url-fairy-bot-dev.nixos.nett00n.org/tmp/url-fairy-bot-cache/https___twitter_com_leonov_mr_status_1772299904179708228.mp4)\n\n[📎 Original](https://twitter.com/leonov_mr/status/1772299904179708228)\n"}'
+- request: "https://www.twitter.com/leonov_mr/status/1772299904179708228?s=12&t=zeCYafL-E7Tm4xrhQdmb9Q"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://www.twitter.com/leonov_mr/status/1772299904179708228?s=12&t=zeCYafL-E7Tm4xrhQdmb9Q"}'
+  name: Twitter link with video 2
+  response: '{"status":"success","data":"[Click here to ⏯️ Watch or ⏬ Download](https://url-fairy-bot-dev.nixos.nett00n.org/tmp/url-fairy-bot-cache/https___twitter_com_leonov_mr_status_1772299904179708228.mp4)\n\n[📎 Original](https://twitter.com/leonov_mr/status/1772299904179708228)\n"}'
+- request: "https://x.com/leonov_mr/status/1772299904179708228?s=12&t=zeCYafL-E7Tm4xrhQdmb9Q"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://x.com/leonov_mr/status/1772299904179708228?s=12&t=zeCYafL-E7Tm4xrhQdmb9Q"}'
+  name: x.com link
+  response: '{"status":"success","data":"[Click here to ⏯️ Watch or ⏬ Download](https://url-fairy-bot-dev.nixos.nett00n.org/tmp/url-fairy-bot-cache/https___x_com_leonov_mr_status_1772299904179708228.mp4)\n\n[📎 Original](https://x.com/leonov_mr/status/1772299904179708228)\n"}'
+- request: "https://x.com/nett00n/status/1504718261354704898"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://x.com/nett00n/status/1504718261354704898?s=12&t=zeCYafL-E7Tm4xrhQdmb9Q"}'
+  name: Twitter link without video
+  response: '{"status":"success","data":"I failed to download the file by myself\n\nHere is the link, which Telegram parses better: [📎](https://www.fxtwitter.com/nett00n/status/1504718261354704898)\n[📎 Original](https://x.com/nett00n/status/1504718261354704898)\n"}'
+- request: "https://www.instagram.com/reel/C3PulgmobBO/?igsh=MXZqc2ljbHRuNTRmMg=="
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://www.instagram.com/reel/C3PulgmobBO/?igsh=MXZqc2ljbHRuNTRmMg=="}'
+  name: Instagram reel
+  response: '{"status":"success","data":"[Click here to ⏯️ Watch or ⏬ Download](https://url-fairy-bot-dev.nixos.nett00n.org/tmp/url-fairy-bot-cache/https___www_instagram_com_reel_C3PulgmobBO_.mp4)\n\n[📎 Original](https://www.instagram.com/reel/C3PulgmobBO/)\n"}'
+- request: "https://www.instagram.com/p/C4GhFgSpYd6/"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://www.instagram.com/p/C4GhFgSpYd6/"}'
+  name: Instagram post with video
+  response: '{"status":"success","data":"[Click here to ⏯️ Watch or ⏬ Download](https://url-fairy-bot-dev.nixos.nett00n.org/tmp/url-fairy-bot-cache/https___www_instagram_com_p_C4GhFgSpYd6_.mp4)\n\n[📎 Original](https://www.instagram.com/p/C4GhFgSpYd6/)\n"}'
+- request: "https://www.instagram.com/p/Cii3hCFhrpj/"
+  # curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/json" -d '{"url": "https://www.instagram.com/p/Cii3hCFhrpj/"}'
+  name: Instagram post with photo
+  response: '{"status":"success","data":"I failed to download the file by myself\n\nHere is the link, which Telegram parses better: [📎](https://www.ddinstagram.com/p/Cii3hCFhrpj/)\n[📎 Original](https://www.instagram.com/p/Cii3hCFhrpj/)\n"}'

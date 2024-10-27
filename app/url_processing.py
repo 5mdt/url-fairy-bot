@@ -16,36 +16,45 @@ logger = logging.getLogger(__name__)
 async def process_url_request(url: str) -> str:
     try:
         final_url = follow_redirects(url)
-        if "youtube.com/shorts" in final_url:
-            sanitized_url = final_url
-        elif "tiktok" in final_url:
-            sanitized_url = final_url
-        else:
-            return f"Unsupported URL {final_url}"
-
-        video_path = await yt_dlp_download(sanitized_url)
+        video_path = await yt_dlp_download(final_url)
 
         if video_path:
-            return (
+            response = (
                 "[Click here to ⏯️ Watch or ⏬ Download]"
                 + f"(https://{settings.BASE_URL}{video_path})\n\n"
                 + f"[📎 Original]({final_url})\n"
             )
         else:
-            rewritten_url = final_url.replace("tiktok.com/", "tfxktok.com/")
-            return (
+            rewrite_map = {
+                "https://tiktok.com/": "https://tfxktok.com/",
+                "https://twitter.com/": "https://www.fxtwitter.com/",
+                "https://www.instagram.com/p/": "https://www.ddinstagram.com/p/",
+                "https://www.instagram.com/reel/": "https://www.ddinstagram.com/reel/",
+                "https://www.twitter.com/": "https://www.fxtwitter.com/",
+                "https://x.com/": "https://www.fxtwitter.com/",
+            }
+            rewritten_url = final_url
+            for original, rewrite in rewrite_map.items():
+                if original in final_url:
+                    rewritten_url = final_url.replace(original, rewrite)
+                    break
+            response = (
                 "I failed to download the file by myself"
                 + "\n\nHere is the link,"
                 + f" which Telegram parses better: [📎]({rewritten_url})"
                 + f"\n[📎 Original]({final_url})\n"
             )
 
+        return {"status": "success", "data": response}
+
     except requests.exceptions.RequestException as req_e:
         logger.error(f"Request error processing URL: {req_e}")
-        return f"Request error: {str(req_e)}"
+        return {"status": "error", "data": f"Request error: {str(req_e)}"}
     except Exception as e:
         logger.error(f"Error processing URL: {e}")
-        return f"An error occurred: {str(e)}"
+        return {"status": "error", "data": f"An error occurred: {str(e)}"}
+
+
 
 
 def follow_redirects(url: str, timeout=10) -> str:
