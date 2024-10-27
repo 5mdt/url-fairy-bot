@@ -8,7 +8,7 @@ WORKDIR /app
 RUN poetry install --no-root --no-interaction --no-ansi
 
 # Copy application code after dependencies are installed
-COPY ./app /app
+COPY ./app /app/app
 
 # Set volume for cache
 VOLUME [ "/tmp/url-fairy-bot-cache/" ]

@@ -5,6 +5,7 @@ description = "I help to watch content from TikTok, Shorts, Twitter and Instagra
 authors = ["Vladimir nett00n Budylnikov <git@nett00n.org>"]
 license = "GPL v3"
 readme = "README.md"
+packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
 aiogram-utils = "^0.1.4"

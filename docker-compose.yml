@@ -57,6 +57,5 @@ services:
       com.centurylinklabs.watchtower.enable: "true"
     logging:
       driver: none
-version: "3"
 volumes:
   cache:
