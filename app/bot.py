@@ -23,7 +23,10 @@ async def start(message: types.Message):
 async def handle_message(message: types.Message):
     url = message.text.strip()
     result = await process_url_request(url)
-    await message.reply(result)
+    await message.reply(
+        result,
+        parse_mode=types.ParseMode.MARKDOWN,
+        )
 
 
 def start_bot():
