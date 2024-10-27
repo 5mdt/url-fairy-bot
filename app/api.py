@@ -1,14 +1,19 @@
+# -*- coding: utf-8 -*-
 # api.py
 
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, Body, HTTPException
 from pydantic import BaseModel
+
 from .url_processing import process_url_request
+
 
 # Define a request model to parse JSON body
 class URLRequest(BaseModel):
     url: str
 
+
 api_router = APIRouter()
+
 
 @api_router.post("/process_url/")
 async def process_url(request: URLRequest = Body(...)):

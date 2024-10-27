@@ -4,43 +4,69 @@
 repos:
   - hooks:
       - id: trailing-whitespace
+        always_run: true
       - id: end-of-file-fixer
+        always_run: true
       - id: check-yaml
+        always_run: true
       - id: check-added-large-files
+        always_run: true
       - id: check-ast
-      - files: bot/requirements.txt
-        id: file-contents-sorter
+        always_run: true
       - id: check-builtin-literals
+        always_run: true
       - id: check-case-conflict
+        always_run: true
       - id: check-docstring-first
+        always_run: true
       - id: check-executables-have-shebangs
+        always_run: true
       - id: check-json
+        always_run: true
       - id: check-merge-conflict
+        always_run: true
       - id: check-shebang-scripts-are-executable
+        always_run: true
       - id: check-symlinks
+        always_run: true
       - id: detect-private-key
+        always_run: true
       - id: end-of-file-fixer
+        always_run: true
       - id: fix-byte-order-marker
-      - id: fix-encoding-pragma
+        always_run: true
       - id: mixed-line-ending
+        always_run: true
       - id: name-tests-test
+        always_run: true
       - id: pretty-format-json
+        always_run: true
       - id: trailing-whitespace
+        always_run: true
       - files: docker-compose.yml
         id: sort-simple-yaml
+        always_run: true
       - id: no-commit-to-branch
+        args: ['--branch', 'main']
+        always_run: true
     repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
   - hooks:
       - id: black
+        args: ["."]
+        always_run: true
     repo: https://github.com/psf/black
     rev: 24.10.0
   - hooks:
       - id: isort
+        args: ["."]
+        always_run: true
     repo: https://github.com/PyCQA/isort
     rev: 5.13.2
   - hooks:
       - id: flake8
+        always_run: true
+        exclude: lib/python3.11/site-packages
     repo: https://github.com/PyCQA/flake8
     rev: 7.1.1
   - repo: local
@@ -50,3 +76,4 @@ repos:
         entry: poetry run pytest
         language: system
         pass_filenames: false
+        always_run: true
