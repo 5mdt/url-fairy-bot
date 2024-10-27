@@ -4,7 +4,9 @@
 networks:
   traefik_default:
     external: true
+  default:
 services:
+
   app:
     build:
       context: ./
@@ -28,6 +30,9 @@ services:
       - cache:/tmp/url-fairy-bot-cache/
     ports:
       - "8000:8000"
+    networks:
+      - default
+
   nginx:
     image: nginx:stable-alpine-slim
     environment:
@@ -52,6 +57,7 @@ services:
       - ./nginx/conf.d/:/etc/nginx/conf.d
       - ./nginx/theme/:/theme/:ro
       - cache:/tmp/url-fairy-bot-cache/:ro
+
   cron:
     image: busybox:stable
     environment:
@@ -63,5 +69,16 @@ services:
       com.centurylinklabs.watchtower.enable: "true"
     logging:
       driver: none
+
+  cobalt-api:
+    image: ghcr.io/imputnet/cobalt:10
+    restart: unless-stopped
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    networks:
+      - default
+    environment:
+      API_URL: cobalt-api
+
 volumes:
   cache:
