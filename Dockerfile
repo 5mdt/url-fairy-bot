@@ -9,7 +9,7 @@ RUN poetry install --no-root --no-interaction --no-ansi
 
 # Copy application code after dependencies are installed
 COPY ./app /app/app
-
+COPY entrypoint.sh /
 # Set volume for cache
 VOLUME [ "/tmp/url-fairy-bot-cache/" ]
 
@@ -17,4 +17,4 @@ VOLUME [ "/tmp/url-fairy-bot-cache/" ]
 ENV PYTHONPATH="/app"
 
 # Set the command to run the app as a module
-CMD ["poetry", "run", "python", "-m", "app.main"]
+CMD [ "/entrypoint.sh" ]
