@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y curl && \
     . "$HOME/.cargo/env"
 
 # Set the Poetry version as a build argument and install it
-ARG POETRY_VERSION=1.8.4
+ARG POETRY_VERSION=1.8.2
 RUN pip install poetry==${POETRY_VERSION}
 
 # Copy dependency files and install packages
