@@ -1,3 +1,5 @@
+# .markdownlint.yaml
+
 ---
 MD013: false
 default: true

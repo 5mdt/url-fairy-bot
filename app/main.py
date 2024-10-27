@@ -1,4 +1,5 @@
-# app/main.py
+# main.py
+
 import logging
 import asyncio
 from fastapi import FastAPI

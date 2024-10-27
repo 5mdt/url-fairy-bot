@@ -1,4 +1,5 @@
-# app/url_processing.py
+# url_processing.py
+
 import os
 import logging
 from urllib.parse import urlparse, urlunparse
@@ -16,7 +17,7 @@ async def process_url_request(url: str) -> str:
         elif "youtube.com/shorts" in final_url:
             sanitized_url = final_url
         else:
-            return "Unsupported URL"
+            return f"Unsupported URL {final_url}"
         video_path = await yt_dlp_download(sanitized_url)
         return video_path if video_path else "Download failed"
     except Exception as e:
@@ -33,5 +34,4 @@ def follow_redirects(url: str, timeout=10) -> str:
 
 def transform_tiktok_url(url: str) -> str:
     parsed_url = urlparse(url)
-    video_id = parsed_url.path.split("/")[-1]
-    return f"https://www.tiktok.com/embed/v2/{video_id}"
+    return f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
