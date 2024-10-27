@@ -4,17 +4,14 @@ from unittest.mock import patch
 
 import pytest
 
-from app.url_processing import process_url_request, transform_tiktok_url
+from app.config import settings
+from app.url_processing import process_url_request
 
 
 @pytest.mark.asyncio
 async def test_tiktok_url_processing():
     test_url = "https://vt.tiktok.com/ZSYFmgDeS/"
     expected_file_path = "/tmp/url-fairy-bot-cache/https___www_tiktok_com___video_7371578973689482539.mp4"
-    transformed_url = transform_tiktok_url(
-        "https://www.tiktok.com/video/7371578973689482539"
-    )
-
     # Mock follow_redirects to return the final TikTok URL format
     with patch(
         "app.url_processing.follow_redirects",
@@ -27,5 +24,7 @@ async def test_tiktok_url_processing():
             result = await process_url_request(test_url)
 
             # Assertions
-            mock_download.assert_called_once_with(transformed_url)
-            assert result == expected_file_path
+            mock_download.assert_called_once_with(
+                "https://www.tiktok.com/video/7371578973689482539"
+            )
+            assert result == f"https://{settings.BASE_URL}{expected_file_path}"

@@ -53,18 +53,19 @@ repos:
     rev: v5.0.0
   - hooks:
       - id: black
-        args: ["."]
+        args: ["./app"]
         always_run: true
     repo: https://github.com/psf/black
     rev: 24.10.0
   - hooks:
       - id: isort
-        args: ["."]
+        args: ["./app"]
         always_run: true
     repo: https://github.com/PyCQA/isort
     rev: 5.13.2
   - hooks:
       - id: flake8
+        args: ["./app"]
         always_run: true
         exclude: lib/python3.11/site-packages
     repo: https://github.com/PyCQA/flake8
