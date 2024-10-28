@@ -32,7 +32,6 @@ async def yt_dlp_download(url: str) -> str:
         return video_path
 
     except yt_dlp.DownloadError as e:
-        # Check if the error is due to an unsupported URL
         if "Unsupported URL" in str(e):
             logger.error(f"Unsupported URL: {url}")
             raise UnsupportedUrlError(f"Unsupported URL: {url}")

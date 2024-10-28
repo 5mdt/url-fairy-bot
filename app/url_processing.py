@@ -1,5 +1,4 @@
 # url_processing.py
-
 import logging
 import os
 import re
@@ -14,18 +13,18 @@ from .download import UnsupportedUrlError, yt_dlp_download
 logger = logging.getLogger(__name__)
 
 
-def follow_redirects(url: str, timeout=10) -> str:
+def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
     try:
         response = requests.head(url, allow_redirects=True, timeout=timeout)
         redirected_url = urlunparse(urlparse(response.url)._replace(query=""))
 
         if not urlparse(redirected_url).scheme or not urlparse(redirected_url).netloc:
             logger.warning(f"Invalid redirect URL: {redirected_url}")
-            return url  # Return original URL if redirect is invalid
+            return url
 
         return redirected_url
     except requests.Timeout:
-        logger.warning(f"Timeout for URL: {url}")
+        logger.warning(f"Timeout for URL: {url} after {timeout} seconds")
         return url
 
 
@@ -39,11 +38,9 @@ rewrite_map = {
 
 
 async def process_url_request(url: str, is_group_chat: bool = False) -> str:
-    # Ensure url is a string
     url = str(url)
-    final_url = url  # Initialize final_url with url for error handling
+    final_url = url
 
-    # Check if the URL is a YouTube URL and apply the custom transformation
     youtube_patterns = [
         (
             r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
@@ -82,6 +79,7 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
         for pattern, replacement in rewrite_map.items():
             if re.match(pattern, final_url):
                 modified_url = re.sub(pattern, replacement, final_url, count=1)
+                logger.info(f"Rewrite applied for URL: {final_url} -> {modified_url}")
                 break
 
         response = (

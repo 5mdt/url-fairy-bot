@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 # config.py
-
 import os
 
 from dotenv import load_dotenv
@@ -14,6 +12,7 @@ class Settings(BaseSettings):
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
     CACHE_DIR: str = os.getenv("CACHE_DIR", "/tmp/url-fairy-bot-cache/")
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
+    FOLLOW_REDIRECT_TIMEOUT: int = int(os.getenv("FOLLOW_REDIRECT_TIMEOUT", 10))
 
 
 settings = Settings()
