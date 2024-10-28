@@ -39,8 +39,9 @@ rewrite_map = {
 
 async def process_url_request(url: str, is_group_chat: bool = False) -> str:
     url = str(url)
-    final_url = url
+    final_url = url  # Keep the original URL as a fallback
 
+    # Check for specific YouTube patterns to transform without downloading
     youtube_patterns = [
         (
             r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
@@ -59,6 +60,7 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
             )
 
     try:
+        # Attempt to follow redirects and download video content
         final_url = follow_redirects(url)
         video_os_path = await yt_dlp_download(final_url)
 
@@ -71,10 +73,10 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
             )
             return response
         else:
-            logger.error("Video download failed unexpectedly.")
-            return "I couldn't download this video. Please try again later."
+            raise UnsupportedUrlError
 
     except UnsupportedUrlError:
+
         modified_url = final_url
         for pattern, replacement in rewrite_map.items():
             if re.match(pattern, final_url):
@@ -84,15 +86,23 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
 
         response = (
             "I failed to download the file by myself."
-            + "\n\nHere is an alternative link, which Telegram may parse better: "
-            + f"[📎 Modified URL]({modified_url})"
-            + f"\n\n[📎 Original]({final_url})\n"
+            + "Here is an alternative link, which Telegram may parse better: "
+            + f"\n\n[📎 Modified URL]({modified_url})"
+            + f"\n\n[📎 Original]({final_url})"
         )
         return response
 
-    except requests.exceptions.RequestException as req_e:
-        logger.error(f"Request error processing URL: {req_e}")
-        return "There was an error processing your request. Please try again later."
     except Exception as e:
         logger.error(f"Error processing URL: {e}")
-        return "An unexpected error occurred. Please try again."
+        # Default to modified/original link display if an unknown error occurs
+        modified_url = final_url
+        for pattern, replacement in rewrite_map.items():
+            if re.match(pattern, final_url):
+                modified_url = re.sub(pattern, replacement, final_url, count=1)
+                break
+        return (
+            "I failed to download the file by myself.\n\n"
+            + "Here is an alternative link, which Telegram may parse better: "
+            + f"\n\n[📎 Modified URL]({modified_url})"
+            + f"\n\n[📎 Original]({final_url})"
+        )
