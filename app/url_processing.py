@@ -11,7 +11,6 @@ from .download import yt_dlp_download, UnsupportedUrlError
 
 logger = logging.getLogger(__name__)
 
-# Define the function to follow redirects
 def follow_redirects(url: str, timeout=10) -> str:
     try:
         response = requests.head(url, allow_redirects=True, timeout=timeout)
@@ -26,7 +25,6 @@ def follow_redirects(url: str, timeout=10) -> str:
         logger.warning(f"Timeout for URL: {url}")
         return url
 
-# Updated rewrite_map to handle specific domain changes only
 rewrite_map = {
     r"^https://(www\.)?tiktok\.com": "https://tfxktok.com",
     r"^https://(www\.)?twitter\.com": "https://www.fxtwitter.com",
@@ -36,6 +34,25 @@ rewrite_map = {
 }
 
 async def process_url_request(url: str, is_group_chat: bool = False) -> str:
+    # Ensure url is a string
+    url = str(url)
+
+    # Check if the URL is a YouTube URL and apply the custom transformation
+    youtube_patterns = [
+        (r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)", r"https://www.yfxtube.com/watch?v=\1"),
+        (r"^https://youtu\.be/([a-zA-Z0-9_-]+)", r"https://fxyoutu.be/\1"),
+    ]
+
+    for pattern, replacement in youtube_patterns:
+        if re.match(pattern, url):
+            # Replace the URL according to the custom rule and return without downloading
+            modified_url = re.sub(pattern, replacement, url)
+            return (
+                "YouTube video cannot be downloaded, but here’s an alternative link:"
+                + f"\n\n[📎 Modified URL]({modified_url})"
+                + f"\n\n[📎 Original]({url})"  # Using `url` directly here
+            )
+
     try:
         final_url = follow_redirects(url)
         video_os_path = await yt_dlp_download(final_url)
@@ -50,27 +67,26 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
             return response
         else:
             logger.error("Video download failed unexpectedly.")
+            return "I couldn't download this video. Please try again later."
 
     except UnsupportedUrlError:
-        # Apply URL rewrite if final_url matches any regex pattern in rewrite_map
         modified_url = final_url
         for pattern, replacement in rewrite_map.items():
             if re.match(pattern, final_url):
-                # Replace only the matching domain part with the replacement
                 modified_url = re.sub(pattern, replacement, final_url, count=1)
                 break
 
         response = (
             "I failed to download the file by myself."
             + "\n\nHere is an alternative link, which Telegram may parse better: "
-            + f"\n[📎 Modified URL]({modified_url})"
+            + f"[📎 Modified URL]({modified_url})"
             + f"\n\n[📎 Original]({final_url})\n"
         )
         return response
 
     except requests.exceptions.RequestException as req_e:
         logger.error(f"Request error processing URL: {req_e}")
-        return None
+        return "There was an error processing your request. Please try again later."
     except Exception as e:
         logger.error(f"Error processing URL: {e}")
-        return None
+        return "An unexpected error occurred. Please try again."
