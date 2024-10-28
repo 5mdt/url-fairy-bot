@@ -1,15 +1,18 @@
 # url_processing.py
 
-import re
 import logging
 import os
-import requests
+import re
 from urllib.parse import urlparse, urlunparse
 
+import requests
+
 from app.config import settings
-from .download import yt_dlp_download, UnsupportedUrlError
+
+from .download import UnsupportedUrlError, yt_dlp_download
 
 logger = logging.getLogger(__name__)
+
 
 def follow_redirects(url: str, timeout=10) -> str:
     try:
@@ -25,6 +28,7 @@ def follow_redirects(url: str, timeout=10) -> str:
         logger.warning(f"Timeout for URL: {url}")
         return url
 
+
 rewrite_map = {
     r"^https://(www\.)?tiktok\.com": "https://tfxktok.com",
     r"^https://(www\.)?twitter\.com": "https://www.fxtwitter.com",
@@ -33,24 +37,28 @@ rewrite_map = {
     r"^https://(www\.)?instagram\.com/reel/": "https://www.ddinstagram.com/reel/",
 }
 
+
 async def process_url_request(url: str, is_group_chat: bool = False) -> str:
     # Ensure url is a string
     url = str(url)
+    final_url = url  # Initialize final_url with url for error handling
 
     # Check if the URL is a YouTube URL and apply the custom transformation
     youtube_patterns = [
-        (r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)", r"https://www.yfxtube.com/watch?v=\1"),
+        (
+            r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
+            r"https://www.yfxtube.com/watch?v=\1",
+        ),
         (r"^https://youtu\.be/([a-zA-Z0-9_-]+)", r"https://fxyoutu.be/\1"),
     ]
 
     for pattern, replacement in youtube_patterns:
         if re.match(pattern, url):
-            # Replace the URL according to the custom rule and return without downloading
             modified_url = re.sub(pattern, replacement, url)
             return (
                 "YouTube video cannot be downloaded, but here’s an alternative link:"
                 + f"\n\n[📎 Modified URL]({modified_url})"
-                + f"\n\n[📎 Original]({url})"  # Using `url` directly here
+                + f"\n\n[📎 Original]({url})"
             )
 
     try:

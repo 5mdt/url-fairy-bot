@@ -3,14 +3,14 @@
 
 import logging
 import re
-from pydantic import ValidationError  # For handling validation errors
-from .models import URLMessage  # Import the URLMessage model
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
+from pydantic import ValidationError  # For handling validation errors
 
 from app.config import settings
 
+from .models import URLMessage  # Import the URLMessage model
 from .url_processing import process_url_request
 
 bot = Bot(token=settings.BOT_TOKEN)
@@ -59,10 +59,14 @@ async def handle_message(message: types.Message):
     for url in urls:
         try:
             # Create a URLMessage instance to validate the URL and chat type
-            url_message = URLMessage(url=url, is_group_chat=message.chat.type in ["group", "supergroup"])
+            url_message = URLMessage(
+                url=url, is_group_chat=message.chat.type in ["group", "supergroup"]
+            )
 
             # Pass validated URL and chat type to the process_url_request function
-            result = await process_url_request(url_message.url, url_message.is_group_chat)
+            result = await process_url_request(
+                url_message.url, url_message.is_group_chat
+            )
 
             # If result is None, do not reply
             if result is not None:
@@ -71,6 +75,7 @@ async def handle_message(message: types.Message):
         except ValidationError as e:
             # Reply with validation error if URL is invalid
             await message.reply(f"Invalid URL provided: {e}")
+
 
 def start_bot():
     dp.register_message_handler(start, commands="start")
