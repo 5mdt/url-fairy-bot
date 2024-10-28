@@ -63,10 +63,10 @@ async def attempt_download(final_url: str) -> str:
     return None
 
 async def process_url_request(url: str, is_group_chat: bool = False) -> str:
-    url = str(url)
-    final_url = follow_redirects(url)
+    url = str(url)  # Ensure url is a string
 
-    youtube_alternative = transform_youtube_url(final_url)
+    # Now continue as before with the transformed url
+    youtube_alternative = transform_youtube_url(url)
     if youtube_alternative:
         return (
             "YouTube video cannot be downloaded, but here’s an alternative link:"
@@ -75,23 +75,27 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
         )
 
     try:
-        response = await attempt_download(final_url)
+        response = await attempt_download(url)
         if response:
             return response
     except UnsupportedUrlError:
-        modified_url = apply_rewrite_map(final_url)
+        modified_url = apply_rewrite_map(url)
+        if modified_url == url and is_group_chat:
+            return None  # Silent response for unmodified URLs in group/supergroup
         return (
-            "I failed to download the file by myself.\n\n"
+            "I failed to download this by myself.\n\n"
             + "Here is an alternative link, which Telegram may parse better: "
             + f"\n\n[📎 Modified URL]({modified_url})"
-            + f"\n\n[📎 Original]({final_url})"
+            + f"\n\n[📎 Original]({url})"
         )
     except Exception as e:
         logger.error(f"Unknown error processing URL: {e}")
-        modified_url = apply_rewrite_map(final_url)
+        modified_url = apply_rewrite_map(url)
+        if modified_url == url and is_group_chat:
+            return None  # Silent response for unmodified URLs in group/supergroup
         return (
-            "I failed to download the file by myself.\n\n"
+            "I failed to download this by myself.\n\n"
             + "Here is an alternative link, which Telegram may parse better: "
             + f"\n\n[📎 Modified URL]({modified_url})"
-            + f"\n\n[📎 Original]({final_url})"
+            + f"\n\n[📎 Original]({url})"
         )
