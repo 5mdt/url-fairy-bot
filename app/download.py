@@ -13,17 +13,37 @@ logger = logging.getLogger(__name__)
 
 async def yt_dlp_download(url: str) -> str:
     video_path = os.path.join(settings.CACHE_DIR, f"{sanitize_subfolder_name(url)}.mp4")
+
+    # Check if the video file already exists
     if os.path.exists(video_path):
+        logger.info(f"File already exists for URL: {url}, skipping download.")
         return video_path
 
     try:
-        ydl_opts = {"outtmpl": video_path}
+        ydl_opts = {
+            "outtmpl": video_path,
+            "format": "best",  # Specify the best quality format
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
+        logger.info(f"Download successful for URL: {url}")
         return video_path
+
+    except yt_dlp.DownloadError as e:
+        logger.error(f"DownloadError for URL: {url} - {str(e)}")
+        raise RuntimeError(f"Failed to download video from URL: {url}. Check if the URL is correct and accessible.") from e
+
+    except yt_dlp.ExtractorError as e:
+        logger.error(f"ExtractorError for URL: {url} - {str(e)}")
+        raise RuntimeError(f"Could not extract video from URL: {url}. This platform might not be supported.") from e
+
+    except yt_dlp.PostProcessingError as e:
+        logger.error(f"PostProcessingError for URL: {url} - {str(e)}")
+        raise RuntimeError(f"An error occurred while processing the video file for URL: {url}.") from e
+
     except Exception as e:
-        logger.error(f"Download failed for URL: {url}, error: {e}")
-        return None
+        logger.error(f"Unexpected error for URL: {url} - {str(e)}")
+        raise RuntimeError(f"An unexpected error occurred while processing the URL: {url}. Please try again later.") from e
 
 
 def sanitize_subfolder_name(url: str) -> str:
