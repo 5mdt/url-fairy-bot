@@ -27,13 +27,14 @@ async def handle_message(message: types.Message):
             await message.reply(
                 "Please do not be mad at me 🥺. I am not very clever bot 👉👈"
                 + "\n\n"
-                + "I am very sorry if I did not help you"
+                + "I am very sorry if I did not help you 😢"
                 + "\n\n"
                 + "Sometimes I use external tools to help you, but they can "
                 + "be offline or could not parse media too. "
-                + "Especially if we are talking about Facebook 🤬"
+                + "Especially if we are talking about 🤬🤬🤬🤬ing Facebook "
                 + "\n\n"
-                + "Please donate to [Centre T](https://translyaciya.com/help_eng)",
+                + "Please donate to "
+                + "[Centre T](https://translyaciya.com/help_eng) 🫶",
                 parse_mode=types.ParseMode.MARKDOWN,
             )
             return

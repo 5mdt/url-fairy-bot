@@ -4,12 +4,15 @@ import logging
 import os
 import re
 from urllib.parse import urlparse, urlunparse
+
 import requests
 
 from app.config import settings
+
 from .download import UnsupportedUrlError, yt_dlp_download
 
 logger = logging.getLogger(__name__)
+
 
 def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
     try:
@@ -23,16 +26,24 @@ def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
         logger.warning(f"Timeout for URL: {url} after {timeout} seconds")
         return url
 
+
 def transform_youtube_url(url: str) -> str:
     youtube_patterns = [
-        (r"^https://music\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)", r"https://music.yfxtube.com/watch?v=\1"),
-        (r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)", r"https://www.yfxtube.com/watch?v=\1"),
+        (
+            r"^https://music\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
+            r"https://music.yfxtube.com/watch?v=\1",
+        ),
+        (
+            r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
+            r"https://www.yfxtube.com/watch?v=\1",
+        ),
         (r"^https://youtu\.be/([a-zA-Z0-9_-]+)", r"https://fxyoutu.be/\1"),
     ]
     for pattern, replacement in youtube_patterns:
         if re.match(pattern, url):
             return re.sub(pattern, replacement, url)
     return None
+
 
 def apply_rewrite_map(final_url: str) -> str:
     rewrite_map = {
@@ -49,6 +60,7 @@ def apply_rewrite_map(final_url: str) -> str:
             return re.sub(pattern, replacement, final_url, count=1)
     return final_url
 
+
 async def attempt_download(final_url: str) -> str:
     try:
         video_os_path = await yt_dlp_download(final_url)
@@ -61,6 +73,7 @@ async def attempt_download(final_url: str) -> str:
         logger.error(f"Error downloading video: {e}")
         raise UnsupportedUrlError("Download failed unexpectedly.")
     return None
+
 
 async def process_url_request(url: str, is_group_chat: bool = False) -> str:
     url = str(url)  # Ensure url is a string
