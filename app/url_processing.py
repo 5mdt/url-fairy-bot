@@ -25,6 +25,7 @@ def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
 
 def transform_youtube_url(url: str) -> str:
     youtube_patterns = [
+        (r"^https://music\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)", r"https://music.yfxtube.com/watch?v=\1"),
         (r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)", r"https://www.yfxtube.com/watch?v=\1"),
         (r"^https://youtu\.be/([a-zA-Z0-9_-]+)", r"https://fxyoutu.be/\1"),
     ]
@@ -35,6 +36,7 @@ def transform_youtube_url(url: str) -> str:
 
 def apply_rewrite_map(final_url: str) -> str:
     rewrite_map = {
+        r"^https://(open\.)?spotify.com": "https://fxspotify.com",
         r"^https://(www\.)?instagram\.com/p/": "https://www.ddinstagram.com/p/",
         r"^https://(www\.)?instagram\.com/reel/": "https://www.ddinstagram.com/reel/",
         r"^https://(www\.)?reddit\.com": "https://rxddit.com",
