@@ -21,6 +21,7 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-""}
+      DOWNLOAD_ALLOWED_DOMAINS: ${DOWNLOAD_ALLOWED_DOMAINS:-}
     logging:
       driver: "json-file"
       options:
@@ -70,15 +71,15 @@ services:
     logging:
       driver: none
 
-  cobalt-api:
-    image: ghcr.io/imputnet/cobalt:10
-    restart: unless-stopped
-    labels:
-      com.centurylinklabs.watchtower.enable: "true"
-    networks:
-      - default
-    environment:
-      API_URL: cobalt-api
+  # cobalt-api:
+  #   image: ghcr.io/imputnet/cobalt:10
+  #   restart: unless-stopped
+  #   labels:
+  #     com.centurylinklabs.watchtower.enable: "true"
+  #   networks:
+  #     - default
+  #   environment:
+  #     API_URL: cobalt-api
 
 volumes:
   cache:

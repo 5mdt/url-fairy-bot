@@ -13,6 +13,6 @@ class Settings(BaseSettings):
     CACHE_DIR: str = os.getenv("CACHE_DIR", "/tmp/url-fairy-bot-cache/")
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     FOLLOW_REDIRECT_TIMEOUT: int = int(os.getenv("FOLLOW_REDIRECT_TIMEOUT", 10))
-
+    DOWNLOAD_ALLOWED_DOMAINS: str = os.getenv("DOWNLOAD_ALLOWED_DOMAINS", "")
 
 settings = Settings()
