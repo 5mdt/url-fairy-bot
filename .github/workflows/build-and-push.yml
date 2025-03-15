@@ -43,7 +43,11 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
+<<<<<<< HEAD
           username: ${{ vars.DOCKERHUB_USER }}
+=======
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+>>>>>>> bf5b89a (chore: valid docker push (#67))
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set default value for env.PUSH_DOCKER_IMAGE if not defined
@@ -61,6 +65,6 @@ jobs:
           platforms: linux/amd64,linux/arm,linux/arm64
           push: true
           tags: |
-            ${{ vars.DOCKERHUB_USER }}/url-fairy-bot:latest
-            ${{ vars.DOCKERHUB_USER }}/url-fairy-bot:${{ github.sha }}
-            ${{ vars.DOCKERHUB_USER }}/url-fairy-bot:${{ steps.set-tag.outputs.tag }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/url-fairy-bot:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/url-fairy-bot:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/url-fairy-bot:${{ steps.set-tag.outputs.tag }}
