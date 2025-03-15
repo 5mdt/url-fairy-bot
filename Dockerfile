@@ -2,7 +2,7 @@
 FROM python:3.11-slim
 
 # Set Poetry version
-ARG POETRY_VERSION=1.8.2
+ARG POETRY_VERSION=2.1.1
 
 # Install dependencies for Poetry and Python builds
 RUN apt-get update \

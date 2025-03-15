@@ -1,3 +1,5 @@
+# pyproject.toml
+
 [tool.poetry]
 name = "url-fairy-bot"
 version = "1.12"
@@ -13,7 +15,6 @@ aiogram = "2.23.1"
 requests = "^2.32.2"
 python-dotenv = "^1.0.1"
 aiogram-utils = "^0.1.4"
-
 
 [build-system]
 requires = ["poetry-core"]

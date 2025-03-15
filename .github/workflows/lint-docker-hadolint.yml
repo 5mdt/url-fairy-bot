@@ -1,3 +1,5 @@
+# lint-docker-hadolint.yml
+
 ---
 
 name: "Lint: docker/hadolint"
@@ -9,7 +11,7 @@ on:
 jobs:
   lint-docker-hadolint:
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0

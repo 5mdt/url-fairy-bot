@@ -14,9 +14,12 @@ from .download import UnsupportedUrlError, yt_dlp_download
 logger = logging.getLogger(__name__)
 
 
-
 def is_domain_allowed(url: str) -> bool:
-    allowed_domains = settings.DOWNLOAD_ALLOWED_DOMAINS.split(",") if settings.DOWNLOAD_ALLOWED_DOMAINS else []
+    allowed_domains = (
+        settings.DOWNLOAD_ALLOWED_DOMAINS.split(",")
+        if settings.DOWNLOAD_ALLOWED_DOMAINS
+        else []
+    )
     domain = urlparse(url).netloc
 
     # Normalize the domain by stripping 'www.' if present for comparison
@@ -30,6 +33,7 @@ def is_domain_allowed(url: str) -> bool:
             return True
 
     return False
+
 
 def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
     try:
@@ -139,10 +143,9 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
             return None  # Silent response for unmodified URLs in group/supergroup
 
         return (
-            "I failed to download this by myself.\n\n"
-            + "Here is an alternative link, which Telegram may parse better: "
+            "Here is an alternative link, which Telegram may parse better: "
             + f"\n\n[📎 Modified URL]({modified_url})"
-            + f"\n\n[📎 Original]({final_url})"
+            + f"\n\n[📎]({final_url})"
         )
     except Exception as e:
         logger.error(f"Unknown error processing URL: {e}")
@@ -153,8 +156,7 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
             return None  # Silent response for unmodified URLs in group/supergroup
 
         return (
-            "I failed to download this by myself.\n\n"
-            + "Here is an alternative link, which Telegram may parse better: "
+            "Here is an alternative link, which Telegram may parse better: "
             + f"\n\n[📎 Modified URL]({modified_url})"
             + f"\n\n[📎 Original]({final_url})"
         )
