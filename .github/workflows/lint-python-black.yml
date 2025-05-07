@@ -16,5 +16,5 @@ jobs:
       - uses: actions/checkout@v4
       - uses: psf/black@stable
         with:
-          src: "./bot"
+          src: "./app"
           options: "--check --verbose"
