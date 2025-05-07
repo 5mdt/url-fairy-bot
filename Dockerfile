@@ -6,8 +6,10 @@ ARG POETRY_VERSION=2.1.1
 
 # Install dependencies for Poetry and Python builds
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl build-essential \
-    && pip install poetry==${POETRY_VERSION} \
+    && apt-get install -y --no-install-recommends \
+        curl=7.* \
+        build-essential=12.* \
+    && pip install --no-cache-dir poetry==${POETRY_VERSION} \
     && apt-get remove -y build-essential \
     && apt-get autoremove -y \
     && rm -rf /var/lib/apt/lists/*
