@@ -36,6 +36,12 @@ def is_domain_allowed(url: str) -> bool:
 
 
 def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
+    if re.match(r"^https?://(www\.)?instagram\.com/reel/", url) or re.match(
+        r"^https?://instagram\.com/reel/", url
+    ):
+        logger.info(f"Skipping redirect for Instagram Reel URL: {url}")
+        return url
+
     try:
         response = requests.head(url, allow_redirects=True, timeout=timeout)
         redirected_url = urlunparse(urlparse(response.url)._replace(query=""))
