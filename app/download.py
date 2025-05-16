@@ -1,9 +1,10 @@
 # download.py
 # -*- coding: utf-8 -*-
 
+import glob
 import logging
 import os
-
+import tempfile
 import yt_dlp
 
 from app.config import settings
@@ -13,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 class UnsupportedUrlError(Exception):
     """Custom exception for unsupported URLs"""
-
     pass
 
 
@@ -25,7 +25,25 @@ async def yt_dlp_download(url: str) -> str:
         return video_path
 
     try:
-        ydl_opts = {"outtmpl": video_path, "format": "best"}
+        ydl_opts = {
+            "outtmpl": video_path,
+            "format": "best",
+        }
+
+
+        cookie_files = glob.glob("cookies*.txt")
+        if cookie_files:
+            with tempfile.NamedTemporaryFile(mode="w+", delete=False, suffix=".txt") as tmp_cookie_file:
+                for path in cookie_files:
+                    try:
+                        with open(path, "r", encoding="utf-8") as f:
+                            tmp_cookie_file.write(f.read() + "\n")
+                    except Exception as e:
+                        logger.warning(f"Failed to read cookies file {path}: {e}")
+                tmp_cookie_file.flush()
+                ydl_opts["cookiefile"] = tmp_cookie_file.name
+                logger.info(f"Using merged cookies from: {cookie_files}")
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         logger.info(f"Download successful for URL: {url}")

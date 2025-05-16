@@ -29,8 +29,9 @@ services:
         max-size: "1m"
     volumes:
       - cache:/tmp/url-fairy-bot-cache/
+      - ${GLOBAL_DATA_FOLDER:-/Data}/url-fairy-bot/config:/config
     ports:
-      - "8000:8000"
+      - 8000:8000
     networks:
       - default
 
@@ -49,7 +50,7 @@ services:
       traefik.http.routers.url-fairy-bot.tls.certresolver: ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
       traefik.http.services.url-fairy-bot.loadbalancer.server.port: 80
     ports:
-      - ${PUBLIC_PORT:-"80:80"}
+      - ${PUBLIC_PORT:-80:80}
     logging:
       driver: none
     networks:
