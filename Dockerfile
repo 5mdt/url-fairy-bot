@@ -1,42 +1,30 @@
-# Use a smaller base image
-FROM python:3.11-slim
+FROM python:3.11-alpine
 
-# Set Poetry version
 ARG POETRY_VERSION=2.1.1
 
-# Install dependencies for Poetry and Python builds
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-        curl=7.* \
-        build-essential=12.* \
+RUN apk add --no-cache \
+        curl \
+        build-base \
+        libffi-dev \
+        openssl-dev \
+        bash \
     && pip install --no-cache-dir poetry==${POETRY_VERSION} \
-    && apt-get remove -y build-essential \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
+    && apk del build-base \
+    && rm -rf /root/.cache/pip
 
-# Set the working directory
 WORKDIR /app
 
-# Copy only dependency files first to leverage Docker cache for dependencies
 COPY ./pyproject.toml ./poetry.lock /app/
 
-# Install dependencies, skipping development dependencies
 RUN poetry config virtualenvs.create false \
     && poetry install --no-root --only main --no-interaction --no-ansi \
     && rm -rf /root/.cache/pypoetry
 
-# Copy the application code after installing dependencies to avoid rebuilding layers
 COPY ./app /app/app
 COPY entrypoint.sh /
 
-# Set cache volume
 VOLUME [ "/tmp/url-fairy-bot-cache/" ]
 
-# Make entrypoint executable
-RUN chmod +x /entrypoint.sh
-
-# Set environment variables for Python path
 ENV PYTHONPATH="/app"
 
-# Set the command to run the app as a module
-CMD [ "/entrypoint.sh" ]
+CMD ["/entrypoint.sh"]
