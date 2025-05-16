@@ -67,10 +67,15 @@ def transform_youtube_url(url: str) -> str:
 
 
 def apply_rewrite_map(final_url: str) -> str:
+    """
+    Rewrites URLs from supported platforms to alternative domains using predefined patterns.
+    
+    If the input URL matches a known pattern for platforms like Spotify, Instagram, Reddit, TikTok, Twitter, or X, it is rewritten to an alternative domain. Returns the rewritten URL if a match is found; otherwise, returns the original URL.
+    """
     rewrite_map = {
         r"^https://(open\.)?spotify.com": "https://fxspotify.com",
-        r"^https://(www\.)?instagram\.com/p/": "https://www.ddinstagram.com/p/",
-        r"^https://(www\.)?instagram\.com/reel/": "https://www.ddinstagram.com/reel/",
+        r"^https://(www\.)?instagram\.com/p/": "https://www.kkinstagram.com/p/",
+        r"^https://(www\.)?instagram\.com/reel/": "https://www.kkinstagram.com/reel/",
         r"^https://(www\.)?reddit\.com": "https://rxddit.com",
         r"^https://(www\.)?tiktok\.com": "https://tfxktok.com",
         r"^https://(www\.)?twitter\.com": "https://www.fxtwitter.com",
