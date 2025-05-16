@@ -1,9 +1,10 @@
 # download.py
 # -*- coding: utf-8 -*-
 
+import glob
 import logging
 import os
-
+import tempfile
 import yt_dlp
 
 from app.config import settings
@@ -18,6 +19,17 @@ class UnsupportedUrlError(Exception):
 
 
 async def yt_dlp_download(url: str) -> str:
+    """
+    Downloads a video from the specified URL using yt_dlp and returns the local file path.
+
+    If a cached version of the video already exists, returns its path without downloading. Supports merging multiple cookie files named 'cookies*.txt' in the current directory to handle authenticated downloads. Raises UnsupportedUrlError for unsupported URLs and RuntimeError for other download or processing failures.
+
+    Args:
+        url: The URL of the video to download.
+
+    Returns:
+        The file path to the downloaded or cached video.
+    """
     video_path = os.path.join(settings.CACHE_DIR, f"{sanitize_subfolder_name(url)}.mp4")
 
     if os.path.exists(video_path):
@@ -25,11 +37,38 @@ async def yt_dlp_download(url: str) -> str:
         return video_path
 
     try:
-        ydl_opts = {"outtmpl": video_path, "format": "best"}
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        logger.info(f"Download successful for URL: {url}")
-        return video_path
+        ydl_opts = {
+            "outtmpl": video_path,
+            "format": "best",
+        }
+
+        cookie_files = glob.glob(os.path.join(settings.COOKIES_DIR, "cookies*.txt"))
+        if cookie_files:
+            with tempfile.NamedTemporaryFile(
+                mode="w+", delete=True, suffix=".txt"
+            ) as tmp_cookie_file:
+                for path in cookie_files:
+                    try:
+                        with open(path, "r", encoding="utf-8") as f:
+                            tmp_cookie_file.write(f.read() + "\n")
+                    except Exception as e:
+                        logger.warning(f"Failed to read cookies file {path}: {e}")
+                tmp_cookie_file.flush()
+                tmp_cookie_path = tmp_cookie_file.name
+            ydl_opts["cookiefile"] = tmp_cookie_path
+            logger.info(f"Using merged cookies from: {cookie_files}")
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([url])
+            finally:
+                try:
+                    os.unlink(tmp_cookie_path)
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to remove temporary cookie file {tmp_cookie_path}: {e}"
+                    )
+            logger.info(f"Download successful for URL: {url}")
+            return video_path
 
     except yt_dlp.DownloadError as e:
         if "Unsupported URL" in str(e):
