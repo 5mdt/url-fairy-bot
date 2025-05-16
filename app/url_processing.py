@@ -69,8 +69,8 @@ def transform_youtube_url(url: str) -> str:
 def apply_rewrite_map(final_url: str) -> str:
     rewrite_map = {
         r"^https://(open\.)?spotify.com": "https://fxspotify.com",
-        r"^https://(www\.)?instagram\.com/p/": "https://www.ddinstagram.com/p/",
-        r"^https://(www\.)?instagram\.com/reel/": "https://www.ddinstagram.com/reel/",
+        r"^https://(www\.)?instagram\.com/p/": "https://www.kkinstagram.com/p/",
+        r"^https://(www\.)?instagram\.com/reel/": "https://www.kkinstagram.com/reel/",
         r"^https://(www\.)?reddit\.com": "https://rxddit.com",
         r"^https://(www\.)?tiktok\.com": "https://tfxktok.com",
         r"^https://(www\.)?twitter\.com": "https://www.fxtwitter.com",
