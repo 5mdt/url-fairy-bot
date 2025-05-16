@@ -18,6 +18,17 @@ class UnsupportedUrlError(Exception):
 
 
 async def yt_dlp_download(url: str) -> str:
+    """
+    Downloads a video from the specified URL using yt_dlp and returns the local file path.
+    
+    If a cached version of the video already exists, returns its path without downloading. Supports merging multiple cookie files named 'cookies*.txt' in the current directory to handle authenticated downloads. Raises UnsupportedUrlError for unsupported URLs and RuntimeError for other download or processing failures.
+    
+    Args:
+        url: The URL of the video to download.
+    
+    Returns:
+        The file path to the downloaded or cached video.
+    """
     video_path = os.path.join(settings.CACHE_DIR, f"{sanitize_subfolder_name(url)}.mp4")
 
     if os.path.exists(video_path):
