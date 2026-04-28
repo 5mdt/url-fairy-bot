@@ -59,55 +59,18 @@ services:
       - ./nginx/conf.d/:/etc/nginx/conf.d
       - ./nginx/theme/:/theme/:ro
       - cache:/tmp/url-fairy-bot-cache/:ro
-  cron:
-    image: busybox:stable
+  cleanup:
+    image: docker.io/bash:5
     environment:
-      FILE_TTL: ${FILE_TTL:-3}
-      CRON_INTERVAL: ${CRON_INTERVAL:-3600}
+      FILE_TTL: 3
+      CRON_INTERVAL: 3600
+      CACHE_DIR: ${CACHE_DIR:-/tmp/url-fairy-bot-cache/}
     volumes:
+      - ./cleanup.sh:/cleanup.sh:ro
       - cache:/tmp/url-fairy-bot-cache/
-    command: >
-      sh -c '
-        echo "[cron] started, TTL=${FILE_TTL} days, interval=${CRON_INTERVAL}s"
-
-        while true; do
-          echo "[cron] $(date) cleanup started"
-
-          DELETED_FILES=$(find /tmp/url-fairy-bot-cache/ -type f -mtime +$FILE_TTL -print -delete | wc -l)
-          DELETED_DIRS=$(find /tmp/url-fairy-bot-cache/ -type d -empty -print -delete | wc -l)
-
-          echo "[cron] $(date) deleted files: $DELETED_FILES, empty dirs: $DELETED_DIRS"
-
-          echo "[cron] sleeping ${CRON_INTERVAL}s..."
-          sleep $CRON_INTERVAL
-        done
-      '
-    logging:
-      driver: json-file
-      options:
-        max-size: "1m"
-        max-file: "3"
-
-  # cobalt-api:
-  #   image: ghcr.io/imputnet/cobalt:10
-  #   restart: unless-stopped
-  #   labels:
-  #     com.centurylinklabs.watchtower.enable: "true"
-  #   networks:
-  #     - default
-  #   environment:
-  #     API_URL: cobalt-api
-
-  test:
-    build:
-      context: ./
-    command: sh -c "poetry install --with dev --no-root && poetry run pytest"
-    environment:
-      BASE_URL: http://localhost
-    volumes:
-      - .:/app
-    networks:
-      - default
-
+    command:
+      - bash
+      - cleanup.sh
+      - --serve
 volumes:
   cache:
