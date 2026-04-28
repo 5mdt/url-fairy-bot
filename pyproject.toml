@@ -10,22 +10,24 @@ readme = "README.md"
 packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
-aiogram-utils = "^0.1.4"
-fastapi = "^0.111.0"
+aiogram-utils = ">=0.1.4"
+fastapi = ">=0.111.0"
 python = "^3.11"
-python-dotenv = "^1.0.1"
-requests = "^2.32.4"
-yt-dlp = "^2025.2.19"
-pydantic-settings = "^2.6.0"
-pyyaml = "^6.0.2"
+python-dotenv = ">=1.0.1"
+requests = ">=2.32.4"
+yt-dlp = ">=2025.2.19"
+pydantic-settings = ">=2.6.0"
+pyyaml = ">=6.0.2"
+aiohttp = "<3.9"
+uvicorn = "^0.46.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.4.2"
-flake8 = "^7.0.0"
-pytest =  "^8.2.0"
-yamllint = "^1.35.1"
-httpx = "^0.27.2"
-pytest-asyncio = "^0.24.0"
+black = ">=24.4.2"
+flake8 = ">=7.0.0"
+pytest =  ">=8.2.0"
+yamllint = ">=1.35.1"
+httpx = ">=0.27.2"
+pytest-asyncio = ">=0.24.0"
 
 [build-system]
 requires = ["poetry-core"]

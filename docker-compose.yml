@@ -30,8 +30,8 @@ services:
     volumes:
       - cache:/tmp/url-fairy-bot-cache/
       - ${GLOBAL_DATA_FOLDER:-/Data}/url-fairy-bot/config:/config
-    ports:
-      - 8000:8000
+    # ports:
+    #   - 8000:8000
     networks:
       - default
 
@@ -49,8 +49,8 @@ services:
       traefik.http.routers.url-fairy-bot.tls: true
       traefik.http.routers.url-fairy-bot.tls.certresolver: ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
       traefik.http.services.url-fairy-bot.loadbalancer.server.port: 80
-    ports:
-      - ${PUBLIC_PORT:-80:80}
+    # ports:
+    #   - ${PUBLIC_PORT:-80:80}
     logging:
       driver: none
     networks:
@@ -59,18 +59,34 @@ services:
       - ./nginx/conf.d/:/etc/nginx/conf.d
       - ./nginx/theme/:/theme/:ro
       - cache:/tmp/url-fairy-bot-cache/:ro
-
   cron:
     image: busybox:stable
     environment:
-      - FILE_TTL=${FILE_TTL:-3} #days
+      FILE_TTL: ${FILE_TTL:-3}
+      CRON_INTERVAL: ${CRON_INTERVAL:-3600}
     volumes:
       - cache:/tmp/url-fairy-bot-cache/
-    command: sh -c "find /tmp/url-fairy-bot-cache/ -type f -${FILE_TTL_TYPE:-mtime} +${FILE_TTL:-3} -delete > /dev/null; find /tmp/url-fairy-bot-cache// -type d -empty -delete > /dev/null; sleep 60m"
-    labels:
-      com.centurylinklabs.watchtower.enable: "true"
+    command: >
+      sh -c '
+        echo "[cron] started, TTL=${FILE_TTL} days, interval=${CRON_INTERVAL}s"
+
+        while true; do
+          echo "[cron] $(date) cleanup started"
+
+          DELETED_FILES=$(find /tmp/url-fairy-bot-cache/ -type f -mtime +$FILE_TTL -print -delete | wc -l)
+          DELETED_DIRS=$(find /tmp/url-fairy-bot-cache/ -type d -empty -print -delete | wc -l)
+
+          echo "[cron] $(date) deleted files: $DELETED_FILES, empty dirs: $DELETED_DIRS"
+
+          echo "[cron] sleeping ${CRON_INTERVAL}s..."
+          sleep $CRON_INTERVAL
+        done
+      '
     logging:
-      driver: none
+      driver: json-file
+      options:
+        max-size: "1m"
+        max-file: "3"
 
   # cobalt-api:
   #   image: ghcr.io/imputnet/cobalt:10
@@ -81,6 +97,17 @@ services:
   #     - default
   #   environment:
   #     API_URL: cobalt-api
+
+  test:
+    build:
+      context: ./
+    command: sh -c "poetry install --with dev --no-root && poetry run pytest"
+    environment:
+      BASE_URL: http://localhost
+    volumes:
+      - .:/app
+    networks:
+      - default
 
 volumes:
   cache:
