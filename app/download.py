@@ -54,19 +54,10 @@ async def yt_dlp_download(url: str) -> str:
                     except Exception as e:
                         logger.warning(f"Failed to read cookies file {path}: {e}")
                 tmp_cookie_file.flush()
-                tmp_cookie_path = tmp_cookie_file.name
-            ydl_opts["cookiefile"] = tmp_cookie_path
-            logger.info(f"Using merged cookies from: {cookie_files}")
-            try:
+                ydl_opts["cookiefile"] = tmp_cookie_file.name
+                logger.info(f"Using merged cookies from: {cookie_files}")
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     ydl.download([url])
-            finally:
-                try:
-                    os.unlink(tmp_cookie_path)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to remove temporary cookie file {tmp_cookie_path}: {e}"
-                    )
             logger.info(f"Download successful for URL: {url}")
             return video_path
 
