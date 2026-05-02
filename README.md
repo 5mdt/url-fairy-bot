@@ -81,11 +81,32 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 
 ## Configuration
 
-- `server/default.conf`: The magical scroll containing Nginx's secrets for serving the bot's magic.
-- `cron/Dockerfile`: The recipe for the bot's trusty cron service that maintains its enchanted data.
-- `bot/requirements.txt`: Ingredients list for the bot's Python potion.
-- `bot/Dockerfile`: The cauldron where the bot's essence is distilled.
-- `bot/main.py`: The spellbook containing Python incantations for the bot's functions.
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `BOT_TOKEN` | _(required)_ | Telegram bot token |
+| `BASE_URL` | _(required)_ | Public base URL for serving downloaded files |
+| `CACHE_DIR` | `/tmp/url-fairy-bot-cache/` | Directory for cached downloads |
+| `COOKIES_DIR` | `/config/` | Directory containing cookie files for authenticated downloads |
+| `DOWNLOAD_ALLOWED_DOMAINS` | _(empty)_ | Comma-separated list of domains allowed for video download (e.g. `instagram.com,twitter.com`) |
+| `FOLLOW_REDIRECT_TIMEOUT` | `10` | Timeout in seconds when following URL redirects |
+| `LOG_LEVEL` | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `INSTAGRAM_REWRITE_ENABLED` | `true` | Rewrite Instagram URLs to `kkinstagram.com` when download fails |
+| `REDDIT_REWRITE_ENABLED` | `true` | Rewrite Reddit URLs to `rxddit.com` |
+| `SPOTIFY_REWRITE_ENABLED` | `true` | Rewrite Spotify URLs to `fxspotify.com` |
+| `TIKTOK_REWRITE_ENABLED` | `true` | Rewrite TikTok URLs to `tfxktok.com` |
+| `TWITTER_REWRITE_ENABLED` | `true` | Rewrite Twitter/X URLs to `fxtwitter.com` |
+
+### Cookie Support
+
+The bot supports authenticated downloads through cookies. To enable access to Instagram and other platforms requiring login:
+
+1. Create a cookies file named `cookies.txt` or `cookies*.txt` in the directory specified by the `COOKIES_DIR` environment variable (defaults to `/config/`)
+
+2. Browser extensions like [Get cookies.txt LOCALLY](https://chrome.google.com/webstore/detail/get-cookies-txt-locally/cjpalhdlnbpafiagobnlogmdbifnnodlj) can extract cookies from your browser
+
+3. The bot will automatically merge all cookie files matching the pattern and use them for authenticated downloads
 
 ## Usage
 
