@@ -47,10 +47,13 @@ async def yt_dlp_download(url: str) -> str:
             with tempfile.NamedTemporaryFile(
                 mode="w+", delete=True, suffix=".txt"
             ) as tmp_cookie_file:
+                tmp_cookie_file.write("# Netscape HTTP Cookie File\n")
                 for path in cookie_files:
                     try:
                         with open(path, "r", encoding="utf-8") as f:
-                            tmp_cookie_file.write(f.read() + "\n")
+                            for line in f:
+                                if not line.startswith("#"):
+                                    tmp_cookie_file.write(line)
                     except Exception as e:
                         logger.warning(f"Failed to read cookies file {path}: {e}")
                 tmp_cookie_file.flush()
