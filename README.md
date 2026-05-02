@@ -89,6 +89,7 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 | `BASE_URL` | _(required)_ | Public base URL for serving downloaded files |
 | `CACHE_DIR` | `/tmp/url-fairy-bot-cache/` | Directory for cached downloads |
 | `COOKIES_DIR` | `/config/` | Directory containing cookie files for authenticated downloads |
+| `COOKIE_JAR_ENABLED` | `false` | Use a persistent `cookie_jar.txt` so yt-dlp can save updated session tokens across requests. On first use, the jar is initialized by merging all `cookies*.txt` files in `COOKIES_DIR`. |
 | `DOWNLOAD_ALLOWED_DOMAINS` | _(empty)_ | Comma-separated list of domains allowed for video download (e.g. `instagram.com,twitter.com`) |
 | `FOLLOW_REDIRECT_TIMEOUT` | `10` | Timeout in seconds when following URL redirects |
 | `LOG_LEVEL` | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
