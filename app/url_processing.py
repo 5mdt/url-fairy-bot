@@ -52,13 +52,16 @@ def transform_youtube_url(url: str) -> str:
     youtube_patterns = [
         (
             r"^https://music\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
-            r"https://music.yfxtube.com/watch?v=\1",
+            rf"https://music.{settings.YOUTUBE_MIRROR_DOMAIN}/watch?v=\1",
         ),
         (
             r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
-            r"https://www.yfxtube.com/watch?v=\1",
+            rf"https://www.{settings.YOUTUBE_MIRROR_DOMAIN}/watch?v=\1",
         ),
-        (r"^https://youtu\.be/([a-zA-Z0-9_-]+)", r"https://fxyoutu.be/\1"),
+        (
+            r"^https://youtu\.be/([a-zA-Z0-9_-]+)",
+            rf"https://{settings.YOUTUBE_SHORT_MIRROR_DOMAIN}/\1",
+        ),
     ]
     for pattern, replacement in youtube_patterns:
         if re.match(pattern, url):
@@ -73,13 +76,13 @@ def apply_rewrite_map(final_url: str) -> str:
     If the input URL matches a known pattern for platforms like Spotify, Instagram, Reddit, TikTok, Twitter, or X, it is rewritten to an alternative domain. Returns the rewritten URL if a match is found; otherwise, returns the original URL.
     """
     rewrite_map = {
-        r"^https://(open\.)?spotify.com": "https://fxspotify.com",
-        r"^https://(www\.)?instagram\.com/p/": "https://www.kkinstagram.com/p/",
-        r"^https://(www\.)?instagram\.com/reel/": "https://www.kkinstagram.com/reel/",
-        r"^https://(www\.)?reddit\.com": "https://rxddit.com",
-        r"^https://(www\.)?tiktok\.com": "https://tfxktok.com",
-        r"^https://(www\.)?twitter\.com": "https://www.fxtwitter.com",
-        r"^https://(www\.)?x\.com": "https://www.fxtwitter.com",
+        r"^https://(open\.)?spotify.com": f"https://{settings.SPOTIFY_MIRROR_DOMAIN}",
+        r"^https://(www\.)?instagram\.com/p/": f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/p/",
+        r"^https://(www\.)?instagram\.com/reel/": f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/reel/",
+        r"^https://(www\.)?reddit\.com": f"https://{settings.REDDIT_MIRROR_DOMAIN}",
+        r"^https://(www\.)?tiktok\.com": f"https://{settings.TIKTOK_MIRROR_DOMAIN}",
+        r"^https://(www\.)?twitter\.com": f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
+        r"^https://(www\.)?x\.com": f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
     }
     for pattern, replacement in rewrite_map.items():
         if re.match(pattern, final_url):
