@@ -49,6 +49,12 @@ def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
 
 
 def transform_youtube_url(url: str) -> str:
+    """
+    Rewrite a YouTube URL to use a configured mirror domain.
+    
+    Returns:
+    	The rewritten URL using the configured mirror domain if the input is a supported YouTube URL, None otherwise.
+    """
     youtube_patterns = [
         (
             r"^https://music\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
@@ -71,9 +77,12 @@ def transform_youtube_url(url: str) -> str:
 
 def apply_rewrite_map(final_url: str) -> str:
     """
-    Rewrites URLs from supported platforms to alternative domains using predefined patterns.
-
-    If the input URL matches a known pattern for platforms like Spotify, Instagram, Reddit, TikTok, Twitter, or X, it is rewritten to an alternative domain. Returns the rewritten URL if a match is found; otherwise, returns the original URL.
+    Rewrites URLs from supported platforms to alternative mirror domains.
+    
+    If the URL matches a pattern for Spotify, Instagram, Reddit, TikTok, Twitter, or X, returns the rewritten URL with the configured mirror domain. Otherwise returns the original URL unchanged.
+    
+    Returns:
+    	str: The rewritten URL if a pattern matched, or the original URL
     """
     rewrite_map = {
         r"^https://(open\.)?spotify.com": f"https://{settings.SPOTIFY_MIRROR_DOMAIN}",

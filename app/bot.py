@@ -22,6 +22,11 @@ async def start(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentType.TEXT)
 async def handle_message(message: types.Message):
+    """
+    Process and respond to URLs extracted from incoming messages.
+    
+    In group chats, if the message is a reply to the bot's own message, replies with an emoji and returns. Otherwise, extracts URLs from the message text. If no URLs are found, silently returns in group chats or replies with an error message in private chats. For each valid URL, processes it and sends the processing result as a reply. Logs validation errors and reports them to the user.
+    """
     if message.chat.type in ["group", "supergroup"] and message.reply_to_message:
         if message.reply_to_message.from_user.id == bot.id:
             await message.reply(
