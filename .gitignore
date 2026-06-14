@@ -2,6 +2,7 @@ __pycache__
 .*
 *.pyc
 *.zip
+!.gitea
 !.github
 !.gitignore
 !.markdownlint.yaml
