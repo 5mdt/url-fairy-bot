@@ -30,7 +30,7 @@ async def handle_message(message: types.Message):
     if message.chat.type in ["group", "supergroup"] and message.reply_to_message:
         if message.reply_to_message.from_user.id == bot.id:
             await message.reply(
-                "\_ (ツ)_/"
+                "\_ (ツ)_/",
                 parse_mode=types.ParseMode.MARKDOWN,
             )
             return

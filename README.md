@@ -42,13 +42,13 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 
    | Variable                      | Default              | Applies to                           |
    |--------------------------------|----------------------|---------------------------------------|
-   | `SPOTIFY_MIRROR_DOMAIN`         | `fxspotify.com`      | open.spotify.com / spotify.com         |
-   | `INSTAGRAM_MIRROR_DOMAIN`       | `kkinstagram.com`    | instagram.com `/p/` and `/reel/`       |
-   | `REDDIT_MIRROR_DOMAIN`          | `rxddit.com`         | reddit.com                             |
-   | `TIKTOK_MIRROR_DOMAIN`          | `tfxktok.com`        | tiktok.com                             |
-   | `TWITTER_MIRROR_DOMAIN`         | `fxtwitter.com`      | twitter.com / x.com                    |
-   | `YOUTUBE_MIRROR_DOMAIN`         | `yfxtube.com`        | music.youtube.com / www.youtube.com    |
-   | `YOUTUBE_SHORT_MIRROR_DOMAIN`   | `fxyoutu.be`         | youtu.be                               |
+   | `SPOTIFY_MIRROR_DOMAIN`         | `fxspotify.com`      | `open.spotify.com` / `spotify.com`         |
+   | `INSTAGRAM_MIRROR_DOMAIN`       | `kkinstagram.com`    | `instagram.com` `/p/` and `/reel/`       |
+   | `REDDIT_MIRROR_DOMAIN`          | `rxddit.com`         | `reddit.com`                             |
+   | `TIKTOK_MIRROR_DOMAIN`          | `tfxktok.com`        | `tiktok.com`                             |
+   | `TWITTER_MIRROR_DOMAIN`         | `fxtwitter.com`      | `twitter.com` / `x.com`                    |
+   | `YOUTUBE_MIRROR_DOMAIN`         | `yfxtube.com`        | `music.youtube.com` / `www.youtube.com`    |
+   | `YOUTUBE_SHORT_MIRROR_DOMAIN`   | `fxyoutu.be`         | `youtu.be`                               |
 
 3. Create a Traefik reverse proxy `docker-compose.yml` file:
 
