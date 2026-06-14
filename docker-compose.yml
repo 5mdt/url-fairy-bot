@@ -21,13 +21,14 @@ services:
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-""}
-      COOKIE_JAR_ENABLED: ${COOKIE_JAR_ENABLED:-false}
       DOWNLOAD_ALLOWED_DOMAINS: ${DOWNLOAD_ALLOWED_DOMAINS:-}
-      INSTAGRAM_REWRITE_ENABLED: ${INSTAGRAM_REWRITE_ENABLED:-true}
-      REDDIT_REWRITE_ENABLED: ${REDDIT_REWRITE_ENABLED:-true}
-      SPOTIFY_REWRITE_ENABLED: ${SPOTIFY_REWRITE_ENABLED:-true}
-      TIKTOK_REWRITE_ENABLED: ${TIKTOK_REWRITE_ENABLED:-true}
-      TWITTER_REWRITE_ENABLED: ${TWITTER_REWRITE_ENABLED:-true}
+      SPOTIFY_MIRROR_DOMAIN: ${SPOTIFY_MIRROR_DOMAIN:-fxspotify.com}
+      INSTAGRAM_MIRROR_DOMAIN: ${INSTAGRAM_MIRROR_DOMAIN:-kkinstagram.com}
+      REDDIT_MIRROR_DOMAIN: ${REDDIT_MIRROR_DOMAIN:-rxddit.com}
+      TIKTOK_MIRROR_DOMAIN: ${TIKTOK_MIRROR_DOMAIN:-tfxktok.com}
+      TWITTER_MIRROR_DOMAIN: ${TWITTER_MIRROR_DOMAIN:-fxtwitter.com}
+      YOUTUBE_MIRROR_DOMAIN: ${YOUTUBE_MIRROR_DOMAIN:-yfxtube.com}
+      YOUTUBE_SHORT_MIRROR_DOMAIN: ${YOUTUBE_SHORT_MIRROR_DOMAIN:-fxyoutu.be}
     logging:
       driver: "json-file"
       options:
@@ -36,8 +37,8 @@ services:
     volumes:
       - cache:/tmp/url-fairy-bot-cache/
       - ${GLOBAL_DATA_FOLDER:-/Data}/url-fairy-bot/config:/config
-    # ports:
-    #   - 8000:8000
+    ports:
+      - 8000:8000
     networks:
       - default
 
@@ -55,8 +56,8 @@ services:
       traefik.http.routers.url-fairy-bot.tls: true
       traefik.http.routers.url-fairy-bot.tls.certresolver: ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
       traefik.http.services.url-fairy-bot.loadbalancer.server.port: 80
-    # ports:
-    #   - ${PUBLIC_PORT:-80:80}
+    ports:
+      - ${PUBLIC_PORT:-80:80}
     logging:
       driver: none
     networks:
@@ -65,18 +66,28 @@ services:
       - ./nginx/conf.d/:/etc/nginx/conf.d
       - ./nginx/theme/:/theme/:ro
       - cache:/tmp/url-fairy-bot-cache/:ro
-  cleanup:
-    image: docker.io/bash:5
+
+  cron:
+    image: busybox:stable
     environment:
-      FILE_TTL: 3
-      CRON_INTERVAL: 3600
-      CACHE_DIR: ${CACHE_DIR:-/tmp/url-fairy-bot-cache/}
+      - FILE_TTL=${FILE_TTL:-3} #days
     volumes:
-      - ./cleanup.sh:/cleanup.sh:ro
       - cache:/tmp/url-fairy-bot-cache/
-    command:
-      - bash
-      - cleanup.sh
-      - --serve
+    command: sh -c "find /tmp/url-fairy-bot-cache/ -type f -${FILE_TTL_TYPE:-mtime} +${FILE_TTL:-3} -delete > /dev/null; find /tmp/url-fairy-bot-cache// -type d -empty -delete > /dev/null; sleep 60m"
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    logging:
+      driver: none
+
+  # cobalt-api:
+  #   image: ghcr.io/imputnet/cobalt:10
+  #   restart: unless-stopped
+  #   labels:
+  #     com.centurylinklabs.watchtower.enable: "true"
+  #   networks:
+  #     - default
+  #   environment:
+  #     API_URL: cobalt-api
+
 volumes:
   cache:

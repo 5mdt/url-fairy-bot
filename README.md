@@ -35,6 +35,21 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
    BASE_URL=your_base_url
    ```
 
+   The bot also lets you override the "mirror" domains it rewrites URLs to
+   (e.g. when a platform's domain isn't downloadable). All are optional;
+   defaults shown below — values should be bare domains without `www.`/`music.`
+   prefixes, since those are added automatically where needed:
+
+   | Variable                      | Default              | Applies to                           |
+   |--------------------------------|----------------------|---------------------------------------|
+   | `SPOTIFY_MIRROR_DOMAIN`         | `fxspotify.com`      | `open.spotify.com` / `spotify.com`         |
+   | `INSTAGRAM_MIRROR_DOMAIN`       | `kkinstagram.com`    | `instagram.com` `/p/` and `/reel/`       |
+   | `REDDIT_MIRROR_DOMAIN`          | `rxddit.com`         | `reddit.com`                             |
+   | `TIKTOK_MIRROR_DOMAIN`          | `tfxktok.com`        | `tiktok.com`                             |
+   | `TWITTER_MIRROR_DOMAIN`         | `fxtwitter.com`      | `twitter.com` / `x.com`                    |
+   | `YOUTUBE_MIRROR_DOMAIN`         | `yfxtube.com`        | `music.youtube.com` / `www.youtube.com`    |
+   | `YOUTUBE_SHORT_MIRROR_DOMAIN`   | `fxyoutu.be`         | `youtu.be`                               |
+
 3. Create a Traefik reverse proxy `docker-compose.yml` file:
 
    ```yaml

@@ -49,16 +49,25 @@ def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
 
 
 def transform_youtube_url(url: str) -> str:
+    """
+    Rewrite a YouTube URL to use a configured mirror domain.
+    
+    Returns:
+    	The rewritten URL using the configured mirror domain if the input is a supported YouTube URL, None otherwise.
+    """
     youtube_patterns = [
         (
             r"^https://music\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
-            r"https://music.yfxtube.com/watch?v=\1",
+            rf"https://music.{settings.YOUTUBE_MIRROR_DOMAIN}/watch?v=\1",
         ),
         (
             r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
-            r"https://www.yfxtube.com/watch?v=\1",
+            rf"https://www.{settings.YOUTUBE_MIRROR_DOMAIN}/watch?v=\1",
         ),
-        (r"^https://youtu\.be/([a-zA-Z0-9_-]+)", r"https://fxyoutu.be/\1"),
+        (
+            r"^https://youtu\.be/([a-zA-Z0-9_-]+)",
+            rf"https://{settings.YOUTUBE_SHORT_MIRROR_DOMAIN}/\1",
+        ),
     ]
     for pattern, replacement in youtube_patterns:
         if re.match(pattern, url):
@@ -68,23 +77,22 @@ def transform_youtube_url(url: str) -> str:
 
 def apply_rewrite_map(final_url: str) -> str:
     """
-    Rewrites URLs from supported platforms to alternative domains using predefined patterns.
-
-    If the input URL matches a known pattern for platforms like Spotify, Instagram, Reddit, TikTok, Twitter, or X, it is rewritten to an alternative domain. Returns the rewritten URL if a match is found; otherwise, returns the original URL.
+    Rewrites URLs from supported platforms to alternative mirror domains.
+    
+    If the URL matches a pattern for Spotify, Instagram, Reddit, TikTok, Twitter, or X, returns the rewritten URL with the configured mirror domain. Otherwise returns the original URL unchanged.
+    
+    Returns:
+    	str: The rewritten URL if a pattern matched, or the original URL
     """
-    rewrite_map = {}
-    if settings.SPOTIFY_REWRITE_ENABLED:
-        rewrite_map[r"^https://(open\.)?spotify.com"] = "https://fxspotify.com"
-    if settings.INSTAGRAM_REWRITE_ENABLED:
-        rewrite_map[r"^https://(www\.)?instagram\.com/p/"] = "https://www.kkinstagram.com/p/"
-        rewrite_map[r"^https://(www\.)?instagram\.com/reel/"] = "https://www.kkinstagram.com/reel/"
-    if settings.REDDIT_REWRITE_ENABLED:
-        rewrite_map[r"^https://(www\.)?reddit\.com"] = "https://rxddit.com"
-    if settings.TIKTOK_REWRITE_ENABLED:
-        rewrite_map[r"^https://(www\.)?tiktok\.com"] = "https://tfxktok.com"
-    if settings.TWITTER_REWRITE_ENABLED:
-        rewrite_map[r"^https://(www\.)?twitter\.com"] = "https://www.fxtwitter.com"
-        rewrite_map[r"^https://(www\.)?x\.com"] = "https://www.fxtwitter.com"
+    rewrite_map = {
+        r"^https://(open\.)?spotify.com": f"https://{settings.SPOTIFY_MIRROR_DOMAIN}",
+        r"^https://(www\.)?instagram\.com/p/": f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/p/",
+        r"^https://(www\.)?instagram\.com/reel/": f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/reel/",
+        r"^https://(www\.)?reddit\.com": f"https://{settings.REDDIT_MIRROR_DOMAIN}",
+        r"^https://(www\.)?tiktok\.com": f"https://{settings.TIKTOK_MIRROR_DOMAIN}",
+        r"^https://(www\.)?twitter\.com": f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
+        r"^https://(www\.)?x\.com": f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
+    }
     for pattern, replacement in rewrite_map.items():
         if re.match(pattern, final_url):
             return re.sub(pattern, replacement, final_url, count=1)
