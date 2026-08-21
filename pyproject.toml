@@ -9,7 +9,7 @@ authors = [
 ]
 
 dependencies = [
-  "aiogram-utils>=0.1.4,<0.2.0",
+  "aiogram>=3.0.0,<4.0.0",
   "fastapi>=0.111.0,<0.112.0",
   "python-dotenv>=1.0.1,<2.0.0",
   "requests>=2.32.4,<3.0.0",
