@@ -5,6 +5,10 @@ Each entry cites the exact location so it can be re-verified.
 
 ## 1. Redirect resolution strips query strings, breaking YouTube rewrites (High) [P1/D2]
 
+**Status: Fixed (2026-08-21)** — `follow_redirects` now rebuilds the query string
+against an allow-list of content-identifying parameter names (`v`, `list`, `t`,
+`index`, `id`) instead of dropping it entirely.
+
 - **Location**: `app/url_processing.py:38-45` (`follow_redirects`)
 - **What happens**: `follow_redirects()` unconditionally drops the query component of every
   resolved URL (`urlunparse(urlparse(response.url)._replace(query=""))`).
@@ -17,6 +21,9 @@ Each entry cites the exact location so it can be re-verified.
   `transform_youtube_url` against the pre-redirect URL as well.
 
 ## 2. `*_REWRITE_ENABLED` settings are defined, documented, and never read (High) [P1/D2]
+
+**Status: Fixed (2026-08-21)** — `apply_rewrite_map`'s `rewrite_map` entries are now
+gated on their corresponding `*_REWRITE_ENABLED` setting.
 
 - **Location**: `app/config.py:18-22`, documented in `README.md:111-115`
 - **What happens**: `INSTAGRAM_REWRITE_ENABLED`, `REDDIT_REWRITE_ENABLED`,
@@ -53,6 +60,10 @@ Each entry cites the exact location so it can be re-verified.
   `dp.register_message_handler(start, commands="start")` at module import time in `bot.py`.
 
 ## 5. Domain allow-list can be bypassed or trivially disabled (Medium) [P1/D2]
+
+**Status: Fixed (2026-08-21)** — allow-list entries are now trimmed, lower-cased,
+and empties dropped; matching requires an exact or label-boundary
+(`.`-prefixed subdomain) match instead of a raw `endswith`.
 
 - **Location**: `app/url_processing.py:17-35` (`is_domain_allowed`)
 - **What happens**: The allow-list check is `domain.endswith(allowed_domain.lower())` with no
@@ -97,6 +108,9 @@ Each entry cites the exact location so it can be re-verified.
 
 ## 8. CI lint is currently red on `main` (Medium) [P1/D1]
 
+**Status: Fixed (2026-08-21)** — `black ./app` and `isort ./app` have been run and
+committed; `black --check ./app` is clean.
+
 - **Location**: `.github/workflows/lint-python-black.yml`; verified locally with
   `black --check ./app`
 - **What happens**: Running `black --check ./app` against the current `main` reports
@@ -131,6 +145,10 @@ Each entry cites the exact location so it can be re-verified.
   "--serve"]`) or remove it if superseded.
 
 ## 11. `follow_redirects` only handles the timeout case (Low) [P3/D2]
+
+**Status: Fixed (2026-08-21)** — `follow_redirects` now also catches
+`requests.RequestException` broadly and returns the original URL unchanged.
+The bot/API-side catch-alls described in the suggested fix are still open.
 
 - **Location**: `app/url_processing.py:38-48`
 - **What happens**: The `try` only catches `requests.Timeout`. `ConnectionError`,
@@ -301,6 +319,9 @@ findings above; do not renumber #1–#17, other docs link to them by anchor.
 
 ### 22. Unescaped `.` in the Spotify rewrite pattern (Low) [P2/D1]
 
+**Status: Fixed (2026-08-21)** — the Spotify pattern now escapes the dot in
+`spotify\.com`.
+
 - **Location**: `app/url_processing.py:88`
 - **What happens**: `r"^https://(open\.)?spotify.com"` escapes the first dot but not the one in
   `spotify.com`; in regex, an unescaped `.` matches *any* character, not just a literal dot.
@@ -351,6 +372,9 @@ Numbering continues from the findings above.
 
 ### 24. URL extraction captures trailing punctuation and Markdown syntax (Low) [P3/D1]
 
+**Status: Fixed (2026-08-21)** — each match now has trailing
+`.,;:!?)]}'"` characters trimmed before processing.
+
 - **Location**: `app/bot.py:38` (`url_pattern = r"(https?://\S+)"`)
 - **What happens**: `\S+` is greedy and has no allowance for sentence punctuation or enclosing
   brackets/quotes, so `Look at https://x.com/a).` extracts `https://x.com/a).` as the URL.
@@ -361,6 +385,8 @@ Numbering continues from the findings above.
 
 ### 25. The reply-to-bot shrug is malformed (Low) [P3/D1]
 
+**Status: Fixed (2026-08-21)** — the text now sends `"¯\_(ツ)_/¯"`.
+
 - **Location**: `app/bot.py:33`
 - **What happens**: The easter-egg reply text is `"\_ (ツ)_/"` — both `¯` macrons are missing and
   there's a stray space, unlike the intended `¯\_(ツ)_/¯` shrug emoticon (as described in
@@ -370,6 +396,9 @@ Numbering continues from the findings above.
 - **Suggested fix**: send `"¯\\_(ツ)_/¯"`.
 
 ### 26. YouTube rewrite misses Shorts, `m.`, and bare-domain forms (Medium) [P2/D2]
+
+**Status: Fixed (2026-08-21)** — patterns now accept an optional `www.`/`m.`
+host prefix, bare `youtube.com`, and a `/shorts/<id>` path form.
 
 - **Location**: `app/url_processing.py:58-71` (`transform_youtube_url`)
 - **What happens**: The three patterns require a literal `https://www.youtube.com/watch?v=`,
@@ -385,6 +414,9 @@ Numbering continues from the findings above.
 
 ### 27. Raw pydantic `ValidationError` text is replied to the user (Low) [P3/D1]
 
+**Status: Fixed (2026-08-21)** — `e` is still logged at `warning` level, but the
+user now gets a fixed short message instead of the raw exception text.
+
 - **Location**: `app/bot.py:61` (`await message.reply(f"Invalid URL provided: {e}")`)
 - **What happens**: `e` is the full `pydantic.ValidationError`, whose `str()` includes a
   multi-line error summary and a `https://errors.pydantic.dev/...` documentation link.
@@ -392,3 +424,34 @@ Numbering continues from the findings above.
   message.
 - **Suggested fix**: log `e` at `warning` level (already done) and reply with a fixed short
   message, e.g. `"That doesn't look like a valid URL."`
+
+## Test suite audit (2026-08-21 follow-up)
+
+Two further defects surfaced while making `tests/` genuinely green (i.e. removing the
+`xfail`/`skip` markers added by the 2026-08-20/21 audits). Numbering continues from the findings
+above; do not renumber #1–#27.
+
+### 28. `yt_dlp.PostProcessingError` is not a real attribute (Low) [P2/D1]
+
+**Status: Fixed (2026-08-21)** — changed to `yt_dlp.utils.PostProcessingError`.
+
+- **Location**: `app/download.py:98` (`except yt_dlp.PostProcessingError as e:`)
+- **What happens**: `PostProcessingError` is not a top-level attribute of the `yt_dlp` package —
+  only `yt_dlp.utils.PostProcessingError` exists. Evaluating the `except` clause itself raises
+  `AttributeError` instead of catching the real error.
+- **Impact**: A post-processing failure (e.g. a merge/remux error) never gets mapped to the
+  intended `RuntimeError`; it crashes with an unrelated `AttributeError` instead.
+- **Suggested fix**: `except yt_dlp.utils.PostProcessingError as e:` (done).
+
+### 29. Unreachable generic `except Exception` in `process_url_request` (Low) [P3/D2]
+
+**Status: Fixed (2026-08-21)** — the dead branch was removed.
+
+- **Location**: `app/url_processing.py:167-179` (removed)
+- **What happens**: `attempt_download()` was the only call inside the `try` block in
+  `process_url_request`, and it already converts every exception into `UnsupportedUrlError`
+  (`app/url_processing.py:108-112`), so the `except UnsupportedUrlError` branch above always won —
+  the generic `except Exception` branch could never execute.
+- **Impact**: Dead code that also pushed `process_url_request` over flake8's `C901` complexity
+  threshold.
+- **Suggested fix**: remove the unreachable branch (done).

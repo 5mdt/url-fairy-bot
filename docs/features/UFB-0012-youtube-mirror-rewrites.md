@@ -30,15 +30,20 @@ always applies, independent of the download allow-list.
 
 ## Status
 
-Implemented — with known gaps:
+Implemented — with a known gap:
 
 - Only reachable when `youtube.com`/`youtu.be` happens to be on the download
   allow-list, because the rewrite lives on a code path gated behind it —
   the opposite of "always applies"
   ([BUGS #23](../BUGS.md#23-youtubes-mirror-link-alternative-is-incorrectly-gated-behind-download_allowed_domains-high-p1d2)).
-- Even when reached, matching requires the literal `www.`/`music.` prefix
-  and a `?v=` query, so `youtube.com/watch?v=ID` (no `www.`), `m.youtube.com`,
-  and Shorts links never match
-  ([BUGS #26](../BUGS.md#26-youtube-rewrite-misses-shorts-m-and-bare-domain-forms-medium-p2d2)).
-- Query-string stripping upstream removes `?v=` before matching even runs
-  ([BUGS #1](../BUGS.md#1-redirect-resolution-strips-query-strings-breaking-youtube-rewrites-high-p1d2)).
+
+Fixed:
+
+- Matching now accepts an optional `www.`/`m.` host prefix, bare
+  `youtube.com`, and a `/shorts/<id>` path form, in addition to the existing
+  `www.`/`music.` + `?v=` forms
+  ([BUGS #26](../BUGS.md#26-youtube-rewrite-misses-shorts-m-and-bare-domain-forms-medium-p2d2),
+  fixed 2026-08-21).
+- Query-string stripping upstream no longer removes `?v=` before matching
+  runs ([BUGS #1](../BUGS.md#1-redirect-resolution-strips-query-strings-breaking-youtube-rewrites-high-p1d2),
+  fixed 2026-08-21).

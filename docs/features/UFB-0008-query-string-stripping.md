@@ -24,10 +24,11 @@ mirror-rewrite patterns. Query parameters that identify the actual content
 
 ## Status
 
-Implemented — with known gaps:
-
-- The entire query string is unconditionally dropped, not just
-  tracking parameters — this breaks any content-identifying query parameter,
-  most notably YouTube's `?v=` id, before it reaches the
-  [YouTube rewrite](UFB-0012-youtube-mirror-rewrites.md)
-  ([BUGS #1](../BUGS.md#1-redirect-resolution-strips-query-strings-breaking-youtube-rewrites-high-p1d2)).
+Implemented. The entire query string used to be unconditionally dropped,
+not just tracking parameters — breaking any content-identifying query
+parameter, most notably YouTube's `?v=` id, before it reached the
+[YouTube rewrite](UFB-0012-youtube-mirror-rewrites.md); fixed by rebuilding
+the query string against an allow-list of content-identifying parameter
+names (`v`, `list`, `t`, `index`, `id`) instead of dropping it entirely
+([BUGS #1](../BUGS.md#1-redirect-resolution-strips-query-strings-breaking-youtube-rewrites-high-p1d2),
+fixed 2026-08-21).

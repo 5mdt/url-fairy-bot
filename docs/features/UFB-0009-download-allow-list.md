@@ -31,10 +31,11 @@ suppresses a mirror-link alternative (see
 
 ## Status
 
-Implemented — with known gaps:
-
-- Matching is a raw string-suffix check with no domain-boundary or
-  whitespace handling: `tiktok.com` also matches `evil-tiktok.com`, a
-  trailing comma makes every domain match, and untrimmed whitespace can
-  silently exclude an intended entry
-  ([BUGS #5](../BUGS.md#5-domain-allow-list-can-be-bypassed-or-trivially-disabled-medium-p1d2)).
+Implemented. Matching used to be a raw string-suffix check with no
+domain-boundary or whitespace handling (`tiktok.com` also matched
+`evil-tiktok.com`, a trailing comma made every domain match, and untrimmed
+whitespace could silently exclude an intended entry); fixed by trimming and
+lower-casing each allow-list entry, dropping empties, and requiring an exact
+or label-boundary (`.`-prefixed subdomain) match
+([BUGS #5](../BUGS.md#5-domain-allow-list-can-be-bypassed-or-trivially-disabled-medium-p1d2),
+fixed 2026-08-21).

@@ -24,11 +24,15 @@ reply text contains a URL.
 
 ## Status
 
-Implemented — with known gaps:
+Implemented — with a known gap:
 
-- The emoticon sent is malformed (`\_ (ツ)_/`, missing both `¯` marks and
-  with a stray space) rather than `¯\_(ツ)_/¯`
-  ([BUGS #25](../BUGS.md#25-the-reply-to-bot-shrug-is-malformed-low-p3d1)).
 - Sent with legacy Markdown parsing, which can fail to render or reject the
   message depending on surrounding characters
   ([BUGS #16](../BUGS.md#16-markdown-replies-can-break-telegrams-parser-low-p2d2)).
+
+Fixed:
+
+- The emoticon sent used to be malformed (`\_ (ツ)_/`, missing both `¯` marks
+  and with a stray space); now sends the intended `¯\_(ツ)_/¯`
+  ([BUGS #25](../BUGS.md#25-the-reply-to-bot-shrug-is-malformed-low-p3d1),
+  fixed 2026-08-21).

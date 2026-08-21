@@ -25,7 +25,8 @@ included.
 
 ## Status
 
-Implemented — with known gaps:
-
-- The extraction regex captures trailing punctuation as part of the URL
-  ([BUGS #24](../BUGS.md#24-url-extraction-captures-trailing-punctuation-and-markdown-syntax-low-p3d1)).
+Implemented. The extraction regex used to capture trailing punctuation as
+part of the URL; fixed by trimming trailing `.,;:!?)]}'"` characters from
+each match
+([BUGS #24](../BUGS.md#24-url-extraction-captures-trailing-punctuation-and-markdown-syntax-low-p3d1),
+fixed 2026-08-21).

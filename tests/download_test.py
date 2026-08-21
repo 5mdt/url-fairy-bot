@@ -179,16 +179,6 @@ async def test_yt_dlp_download_other_download_error_maps_to_runtime_error(
             await yt_dlp_download("https://tiktok.com/@user/video/1")
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Not yet in docs/BUGS.md: app/download.py:98 catches `yt_dlp.PostProcessingError`, "
-        "but that name is not a top-level attribute of the `yt_dlp` package (only "
-        "`yt_dlp.utils.PostProcessingError` exists), so evaluating the except clause "
-        "itself raises AttributeError instead of catching the real error and mapping it "
-        "to RuntimeError."
-    ),
-)
 @pytest.mark.asyncio
 async def test_yt_dlp_download_postprocessing_error_maps_to_runtime_error(
     tmp_path, monkeypatch

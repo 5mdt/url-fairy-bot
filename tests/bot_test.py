@@ -93,10 +93,6 @@ async def test_reply_to_bot_in_group_sends_shrug():
     assert kwargs.get("parse_mode") == ParseMode.MARKDOWN
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUGS.md #25: the shrug reply text is malformed ('\\_ (ツ)_/' instead of '¯\\_(ツ)_/¯')",
-)
 @pytest.mark.asyncio
 async def test_reply_to_bot_shrug_text_is_well_formed():
     from app.bot import bot
@@ -136,13 +132,6 @@ async def test_invalid_url_logs_and_replies():
     assert "Invalid URL provided" in args[0]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "BUGS.md #27: the raw pydantic ValidationError (multi-line summary + a "
-        "errors.pydantic.dev link) is sent to the user instead of a short friendly message"
-    ),
-)
 @pytest.mark.asyncio
 async def test_invalid_url_reply_is_user_friendly():
     message = make_message("https:///", chat_type="private")
@@ -155,10 +144,6 @@ async def test_invalid_url_reply_is_user_friendly():
 # --- URL extraction edge cases ---
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUGS.md #24: URL extraction captures trailing punctuation/Markdown syntax",
-)
 @pytest.mark.asyncio
 async def test_url_extraction_trims_trailing_punctuation():
     message = make_message("Look at https://x.com/a).", chat_type="private")
@@ -167,4 +152,4 @@ async def test_url_extraction_trims_trailing_punctuation():
     ) as mock_process:
         await handle_message(message)
     called_url = mock_process.await_args.args[0]
-    assert called_url == "https://x.com/a"
+    assert str(called_url) == "https://x.com/a"

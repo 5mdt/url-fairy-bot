@@ -30,17 +30,22 @@ just specific sub-paths.
 
 ## Status
 
-Implemented — with known gaps:
+Implemented — with a known gap:
 
-- The `INSTAGRAM_REWRITE_ENABLED` / `REDDIT_REWRITE_ENABLED` /
-  `SPOTIFY_REWRITE_ENABLED` / `TIKTOK_REWRITE_ENABLED` /
-  `TWITTER_REWRITE_ENABLED` toggles are read but never consulted — every
-  match is rewritten unconditionally
-  ([BUGS #2](../BUGS.md#2-_rewrite_enabled-settings-are-defined-documented-and-never-read-high-p1d2)).
-- The Spotify pattern has an unescaped `.` in `spotify.com`, so it also
-  matches any single-character substitute for that dot (e.g.
-  `spotifyXcom.evil.tld`)
-  ([BUGS #22](../BUGS.md#22-unescaped--in-the-spotify-rewrite-pattern-low-p2d1)).
 - Instagram is matched only under `/p/` and `/reel/`, unlike every other
   platform's whole-domain match — a profile or story link gets no rewrite
   (see `TODO.md`, Business logic).
+
+Fixed:
+
+- The `INSTAGRAM_REWRITE_ENABLED` / `REDDIT_REWRITE_ENABLED` /
+  `SPOTIFY_REWRITE_ENABLED` / `TIKTOK_REWRITE_ENABLED` /
+  `TWITTER_REWRITE_ENABLED` toggles used to be read but never consulted;
+  each `rewrite_map` entry is now gated on its corresponding setting
+  ([BUGS #2](../BUGS.md#2-_rewrite_enabled-settings-are-defined-documented-and-never-read-high-p1d2),
+  fixed 2026-08-21).
+- The Spotify pattern had an unescaped `.` in `spotify.com`, so it also
+  matched any single-character substitute for that dot (e.g.
+  `spotifyXcom.evil.tld`); the dot is now escaped
+  ([BUGS #22](../BUGS.md#22-unescaped--in-the-spotify-rewrite-pattern-low-p2d1),
+  fixed 2026-08-21).

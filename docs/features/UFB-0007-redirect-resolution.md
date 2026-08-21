@@ -28,10 +28,16 @@ and the failure is logged — the user never sees a raw network-error message.
 
 ## Status
 
-Implemented — with known gaps:
+Implemented — with a known gap:
 
-- Only `requests.Timeout` is caught; other network failures (connection
-  errors, unreachable hosts, SSL errors) currently propagate uncaught
-  ([BUGS #11](../BUGS.md#11-follow_redirects-only-handles-the-timeout-case-low-p3d2)).
 - Runs as a blocking call directly on the event loop
   ([BUGS #6](../BUGS.md#6-blocking-networkcpu-calls-run-directly-on-the-asyncio-event-loop-medium-p2d3)).
+
+Fixed:
+
+- Previously only `requests.Timeout` was caught, so other network failures
+  (connection errors, unreachable hosts, SSL errors) propagated uncaught;
+  now `requests.RequestException` is caught broadly and the original URL is
+  returned unchanged
+  ([BUGS #11](../BUGS.md#11-follow_redirects-only-handles-the-timeout-case-low-p3d2),
+  fixed 2026-08-21).

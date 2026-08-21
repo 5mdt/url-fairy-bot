@@ -115,10 +115,6 @@ def test_transform_youtube_url_respects_overridden_settings(monkeypatch):
 # --- transform_youtube_url: coverage gaps (BUGS.md #26) ---
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUGS.md #26: YouTube rewrite misses Shorts/m./bare-domain forms",
-)
 @pytest.mark.parametrize(
     "url",
     [
@@ -153,10 +149,6 @@ def test_is_domain_allowed_empty_allowlist_rejects_everything(monkeypatch):
     assert is_domain_allowed("https://tiktok.com/@user/video/1") is False
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUGS.md #5: endswith() is a substring match, not a label-boundary match",
-)
 def test_is_domain_allowed_rejects_lookalike_domain(monkeypatch):
     monkeypatch.setattr(settings, "DOWNLOAD_ALLOWED_DOMAINS", "tiktok.com")
     assert is_domain_allowed("https://evil-tiktok.com/x") is False
@@ -190,10 +182,6 @@ def test_follow_redirects_returns_original_on_invalid_redirect_target():
         )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUGS.md #1: query string is unconditionally stripped, breaking YouTube rewrites",
-)
 def test_follow_redirects_preserves_query_string():
     mock_response = type("R", (), {"url": "https://www.youtube.com/watch?v=abc123"})()
     with patch("requests.head", return_value=mock_response):
@@ -202,10 +190,6 @@ def test_follow_redirects_preserves_query_string():
         )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="BUGS.md #11: only requests.Timeout is caught; other request errors propagate",
-)
 def test_follow_redirects_handles_connection_error():
     with patch("requests.head", side_effect=requests.ConnectionError):
         assert follow_redirects("https://unreachable.example.com/x") == (
@@ -216,9 +200,6 @@ def test_follow_redirects_handles_connection_error():
 # --- apply_rewrite_map: security case (BUGS.md #22) ---
 
 
-@pytest.mark.xfail(
-    strict=True, reason="BUGS.md #22: unescaped '.' in spotify.com pattern"
-)
 def test_apply_rewrite_map_does_not_match_spoofed_spotify_domain():
     url = "https://spotifyXcom.evil.tld/track/abc"
     assert apply_rewrite_map(url) == url
@@ -227,9 +208,6 @@ def test_apply_rewrite_map_does_not_match_spoofed_spotify_domain():
 # --- apply_rewrite_map: per-platform toggles (BUGS.md #2) ---
 
 
-@pytest.mark.xfail(
-    strict=True, reason="BUGS.md #2: *_REWRITE_ENABLED flags are never read"
-)
 def test_apply_rewrite_map_respects_tiktok_disabled(monkeypatch):
     monkeypatch.setattr(settings, "TIKTOK_REWRITE_ENABLED", False)
     url = "https://www.tiktok.com/@user/video/123"
@@ -396,16 +374,3 @@ async def test_process_url_request_allowed_download_unsupported_no_rewrite_group
     ):
         result = await process_url_request("https://example.com/x", is_group_chat=True)
     assert result is None
-
-
-@pytest.mark.skip(
-    reason=(
-        "app/url_processing.py:167-179 (the generic `except Exception` branch) is "
-        "unreachable: attempt_download() is the only call inside the try block and it "
-        "converts every exception into UnsupportedUrlError, so the `except "
-        "UnsupportedUrlError` branch above always wins. Not yet recorded in docs/BUGS.md."
-    )
-)
-@pytest.mark.asyncio
-async def test_process_url_request_allowed_download_unexpected_exception():
-    pass

@@ -3,7 +3,7 @@
 import logging
 import os
 import re
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
 
@@ -12,6 +12,11 @@ from app.config import settings
 from .download import UnsupportedUrlError, yt_dlp_download
 
 logger = logging.getLogger(__name__)
+
+# Query parameters that identify the actual content (e.g. a video id) rather
+# than tracking/affiliate noise. These are preserved when resolving redirects;
+# everything else is stripped. See docs/features/UFB-0008-query-string-stripping.md.
+CONTENT_QUERY_PARAMS = frozenset({"v", "list", "t", "index", "id"})
 
 
 def is_domain_allowed(url: str) -> bool:
@@ -27,9 +32,13 @@ def is_domain_allowed(url: str) -> bool:
     if domain.startswith("www."):
         domain = domain[4:]
 
-    # Check for exact match or subdomain match
+    # Normalize allow-list entries and drop empties (e.g. a trailing comma),
+    # then require an exact or label-boundary (subdomain) match.
     for allowed_domain in allowed_domains:
-        if domain.endswith(allowed_domain.lower()):
+        allowed_domain = allowed_domain.strip().lower()
+        if not allowed_domain:
+            continue
+        if domain == allowed_domain or domain.endswith("." + allowed_domain):
             return True
 
     return False
@@ -38,7 +47,13 @@ def is_domain_allowed(url: str) -> bool:
 def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
     try:
         response = requests.head(url, allow_redirects=True, timeout=timeout)
-        redirected_url = urlunparse(urlparse(response.url)._replace(query=""))
+        parsed = urlparse(response.url)
+        kept_params = [
+            (k, v)
+            for k, v in parse_qsl(parsed.query, keep_blank_values=True)
+            if k in CONTENT_QUERY_PARAMS
+        ]
+        redirected_url = urlunparse(parsed._replace(query=urlencode(kept_params)))
         if not urlparse(redirected_url).scheme or not urlparse(redirected_url).netloc:
             logger.warning(f"Invalid redirect URL: {redirected_url}")
             return url
@@ -46,14 +61,17 @@ def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
     except requests.Timeout:
         logger.warning(f"Timeout for URL: {url} after {timeout} seconds")
         return url
+    except requests.RequestException as e:
+        logger.warning(f"Request error resolving redirects for URL: {url} - {e}")
+        return url
 
 
 def transform_youtube_url(url: str) -> str:
     """
     Rewrite a YouTube URL to use a configured mirror domain.
-    
+
     Returns:
-    	The rewritten URL using the configured mirror domain if the input is a supported YouTube URL, None otherwise.
+        The rewritten URL using the configured mirror domain if the input is a supported YouTube URL, None otherwise.
     """
     youtube_patterns = [
         (
@@ -61,8 +79,12 @@ def transform_youtube_url(url: str) -> str:
             rf"https://music.{settings.YOUTUBE_MIRROR_DOMAIN}/watch?v=\1",
         ),
         (
-            r"^https://www\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
+            r"^https://(?:www\.|m\.)?youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
             rf"https://www.{settings.YOUTUBE_MIRROR_DOMAIN}/watch?v=\1",
+        ),
+        (
+            r"^https://(?:www\.|m\.)?youtube\.com/shorts/([a-zA-Z0-9_-]+)",
+            rf"https://www.{settings.YOUTUBE_MIRROR_DOMAIN}/shorts/\1",
         ),
         (
             r"^https://youtu\.be/([a-zA-Z0-9_-]+)",
@@ -78,23 +100,51 @@ def transform_youtube_url(url: str) -> str:
 def apply_rewrite_map(final_url: str) -> str:
     """
     Rewrites URLs from supported platforms to alternative mirror domains.
-    
+
     If the URL matches a pattern for Spotify, Instagram, Reddit, TikTok, Twitter, or X, returns the rewritten URL with the configured mirror domain. Otherwise returns the original URL unchanged.
-    
+
     Returns:
-    	str: The rewritten URL if a pattern matched, or the original URL
+        str: The rewritten URL if a pattern matched, or the original URL
     """
-    rewrite_map = {
-        r"^https://(open\.)?spotify.com": f"https://{settings.SPOTIFY_MIRROR_DOMAIN}",
-        r"^https://(www\.)?instagram\.com/p/": f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/p/",
-        r"^https://(www\.)?instagram\.com/reel/": f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/reel/",
-        r"^https://(www\.)?reddit\.com": f"https://{settings.REDDIT_MIRROR_DOMAIN}",
-        r"^https://(www\.)?tiktok\.com": f"https://{settings.TIKTOK_MIRROR_DOMAIN}",
-        r"^https://(www\.)?twitter\.com": f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
-        r"^https://(www\.)?x\.com": f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
-    }
-    for pattern, replacement in rewrite_map.items():
-        if re.match(pattern, final_url):
+    rewrite_map = [
+        (
+            settings.SPOTIFY_REWRITE_ENABLED,
+            r"^https://(open\.)?spotify\.com",
+            f"https://{settings.SPOTIFY_MIRROR_DOMAIN}",
+        ),
+        (
+            settings.INSTAGRAM_REWRITE_ENABLED,
+            r"^https://(www\.)?instagram\.com/p/",
+            f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/p/",
+        ),
+        (
+            settings.INSTAGRAM_REWRITE_ENABLED,
+            r"^https://(www\.)?instagram\.com/reel/",
+            f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/reel/",
+        ),
+        (
+            settings.REDDIT_REWRITE_ENABLED,
+            r"^https://(www\.)?reddit\.com",
+            f"https://{settings.REDDIT_MIRROR_DOMAIN}",
+        ),
+        (
+            settings.TIKTOK_REWRITE_ENABLED,
+            r"^https://(www\.)?tiktok\.com",
+            f"https://{settings.TIKTOK_MIRROR_DOMAIN}",
+        ),
+        (
+            settings.TWITTER_REWRITE_ENABLED,
+            r"^https://(www\.)?twitter\.com",
+            f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
+        ),
+        (
+            settings.TWITTER_REWRITE_ENABLED,
+            r"^https://(www\.)?x\.com",
+            f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
+        ),
+    ]
+    for enabled, pattern, replacement in rewrite_map:
+        if enabled and re.match(pattern, final_url):
             return re.sub(pattern, replacement, final_url, count=1)
     return final_url
 
@@ -163,17 +213,4 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
             "Here is an alternative link, which Telegram may parse better: "
             + f"\n\n[📎 Modified URL]({modified_url})"
             + f"\n\n[📎]({final_url})"
-        )
-    except Exception as e:
-        logger.error(f"Unknown error processing URL: {e}")
-        modified_url = apply_rewrite_map(final_url)
-
-        # Check if modified URL is the same as the original
-        if modified_url == final_url and is_group_chat:
-            return None  # Silent response for unmodified URLs in group/supergroup
-
-        return (
-            "Here is an alternative link, which Telegram may parse better: "
-            + f"\n\n[📎 Modified URL]({modified_url})"
-            + f"\n\n[📎 Original]({final_url})"
         )

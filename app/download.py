@@ -5,6 +5,7 @@ import glob
 import logging
 import os
 import tempfile
+
 import yt_dlp
 
 from app.config import settings
@@ -95,7 +96,7 @@ async def yt_dlp_download(url: str) -> str:
                 f"Failed to download video from URL: {url}. Check if the URL is correct and accessible."
             ) from e
 
-    except yt_dlp.PostProcessingError as e:
+    except yt_dlp.utils.PostProcessingError as e:
         logger.error(f"PostProcessingError for URL: {url} - {str(e)}")
         raise RuntimeError(
             f"An error occurred while processing the video file for URL: {url}."

@@ -22,8 +22,9 @@ error details are never shown to the user.
 
 ## Status
 
-Implemented — with known gaps:
-
-- The reply currently embeds the raw validation-library exception text,
-  including internal detail and a documentation URL, instead of a short fixed
-  message ([BUGS #27](../BUGS.md#27-raw-pydantic-validationerror-text-is-replied-to-the-user-low-p3d1)).
+Implemented. The reply used to embed the raw validation-library exception
+text, including internal detail and a documentation URL; fixed by replying
+with a short fixed message while still logging the full exception at
+`warning` level
+([BUGS #27](../BUGS.md#27-raw-pydantic-validationerror-text-is-replied-to-the-user-low-p3d1),
+fixed 2026-08-21).

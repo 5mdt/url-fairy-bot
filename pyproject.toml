@@ -10,7 +10,7 @@ authors = [
 
 dependencies = [
   "aiogram>=3.0.0,<4.0.0",
-  "fastapi>=0.111.0,<0.112.0",
+  "fastapi>=0.115.0,<1.0.0",
   "python-dotenv>=1.0.1,<2.0.0",
   "requests>=2.32.4,<3.0.0",
   "yt-dlp>=2025.2.19",
@@ -26,6 +26,7 @@ dev = [
   "yamllint>=1.35.1,<2.0.0",
   "httpx>=0.27.2,<0.28.0",
   "pytest-asyncio>=0.24.0,<0.25.0",
+  "isort>=8.0.1",
 ]
 
 [tool.hatch.build.targets.wheel]

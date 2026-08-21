@@ -34,13 +34,16 @@ async def handle_message(message: Message):
     if message.chat.type in GROUP_CHAT_TYPES and message.reply_to_message:
         if message.reply_to_message.from_user.id == bot.id:
             await message.reply(
-                "\_ (ツ)_/",
+                "¯\\_(ツ)_/¯",
                 parse_mode=ParseMode.MARKDOWN,
             )
             return
 
     url_pattern = r"(https?://\S+)"
-    urls = re.findall(url_pattern, message.text.strip())
+    urls = [
+        url.rstrip(".,;:!?)]}'\"")
+        for url in re.findall(url_pattern, message.text.strip())
+    ]
 
     if not urls:
         if message.chat.type in GROUP_CHAT_TYPES:
@@ -62,7 +65,9 @@ async def handle_message(message: Message):
 
         except ValidationError as e:
             logger.warning(f"Validation error for URL: {url} - {e}")
-            await message.reply(f"Invalid URL provided: {e}")
+            await message.reply(
+                "Invalid URL provided — that doesn't look like a valid URL."
+            )
 
 
 def start_bot():
