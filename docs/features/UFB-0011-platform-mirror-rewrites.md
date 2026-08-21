@@ -1,0 +1,46 @@
+# UFB-0011. Platform mirror-domain rewrites
+
+**Tags:** #rewrite
+
+## Behavior
+
+Links to Spotify, Instagram, Reddit, TikTok, and Twitter/X are rewritten to
+an equivalent link on a configured "mirror" domain that renders richer link
+previews/embeds than the original site. Rewriting a platform is only skipped
+when that platform's [toggle](UFB-0023-per-platform-rewrite-toggles.md) is
+disabled. Every URL path on a matched domain is eligible for rewriting, not
+just specific sub-paths.
+
+## Implementation
+
+- Domain-matching patterns per platform, each pointing at a configurable
+  mirror domain (see [UFB-0022](UFB-0022-configurable-mirror-domains.md)).
+- Matching requires an exact literal domain (no wildcard characters).
+
+## Testing
+
+### Unit
+
+- One representative URL per platform → rewritten to the platform's
+  configured mirror domain.
+- A domain that merely contains a platform's name as a substring (e.g.
+  `spotifyXcom.example`) → not rewritten.
+- A platform's rewrite disabled via its toggle → URL passed through
+  unchanged.
+
+## Status
+
+Implemented — with known gaps:
+
+- The `INSTAGRAM_REWRITE_ENABLED` / `REDDIT_REWRITE_ENABLED` /
+  `SPOTIFY_REWRITE_ENABLED` / `TIKTOK_REWRITE_ENABLED` /
+  `TWITTER_REWRITE_ENABLED` toggles are read but never consulted — every
+  match is rewritten unconditionally
+  ([BUGS #2](../BUGS.md#2-_rewrite_enabled-settings-are-defined-documented-and-never-read-high-p1d2)).
+- The Spotify pattern has an unescaped `.` in `spotify.com`, so it also
+  matches any single-character substitute for that dot (e.g.
+  `spotifyXcom.evil.tld`)
+  ([BUGS #22](../BUGS.md#22-unescaped--in-the-spotify-rewrite-pattern-low-p2d1)).
+- Instagram is matched only under `/p/` and `/reel/`, unlike every other
+  platform's whole-domain match — a profile or story link gets no rewrite
+  (see `TODO.md`, Business logic).
