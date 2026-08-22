@@ -40,6 +40,9 @@
   `yt_dlp.utils.PostProcessingError` (closes BUG-0028)
 - Fix: removed the unreachable generic `except Exception` branch in
   `process_url_request` (closes BUG-0029)
+- Fix: `dependabot.yml` moved from `.github/workflows/` to `.github/` (the
+  only path GitHub reads) and given valid `pip`/`docker`/`github-actions`
+  ecosystems instead of an empty `package-ecosystem` (closes BUG-0017)
 - UFB-0028: Multi-arch CI image publishing
 - UFB-0027: Docker Compose stack with Traefik routing
 - UFB-0026: Cached-file TTL cleanup

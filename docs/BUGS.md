@@ -92,12 +92,6 @@ Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
   file any user has ever had the bot download, including filenames that embed the original source
   URL (#BUG-0014) — a privacy leak of what URLs users have sent the bot. Turn off `autoindex`, or
   require an unguessable per-file path/token instead of a directory listing [P2/D1]
-- #BUG-0017 `.github/workflows/dependabot.yml` is inert — Dependabot config must live at
-  `.github/dependabot.yml` (top-level, not under `workflows/`), and even so
-  `package-ecosystem: ""` is not a valid value. No dependency update PRs are ever generated; GitHub
-  silently ignores the unrecognized file under `workflows/`. Move it to `.github/dependabot.yml`
-  and set `package-ecosystem: "pip"` (plus a `"github-actions"` entry) [P3/D1]
-
 ## Business logic
 
 - #BUG-0023 YouTube's mirror-link alternative is incorrectly gated behind
