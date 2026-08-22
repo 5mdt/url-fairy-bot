@@ -1,6 +1,19 @@
 # Changelog
 
-## Unreleased
+## 2026-08-22
+
+- Change: replaced the five `*_REWRITE_ENABLED` booleans with a single
+  `REWRITE_ALLOWED_DOMAINS` domain allow-list (empty = every platform
+  rewritten), and flipped `DOWNLOAD_ALLOWED_DOMAINS`'s empty-list meaning
+  from "nothing allowed" to "everything allowed" so both allow-lists are
+  opt-in restrictions with consistent semantics. YouTube is no longer
+  hard-blocked from real downloads or special-cased ahead of the allow-list
+  gate — it's folded into the shared rewrite map and governed by the same
+  two settings as every other platform (closes BUG-0023; note this changes
+  default behavior: a YouTube link is now downloaded via yt-dlp rather than
+  mirrored unless an operator restricts `DOWNLOAD_ALLOWED_DOMAINS`)
+
+## 2026-08-21
 
 - Fix: `follow_redirects` rebuilds the query string against an allow-list of
   content-identifying parameters instead of dropping it entirely (closes BUG-0001)

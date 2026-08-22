@@ -26,16 +26,12 @@ def pinned_settings(monkeypatch):
     (fixes BUGS.md #20 — "defaults" tests silently depending on ambient env).
     """
     monkeypatch.setattr(settings, "DOWNLOAD_ALLOWED_DOMAINS", "")
+    monkeypatch.setattr(settings, "REWRITE_ALLOWED_DOMAINS", "")
     monkeypatch.setattr(settings, "BASE_URL", "example.test")
     monkeypatch.setattr(settings, "CACHE_DIR", "/tmp/url-fairy-bot-cache-test/")
     monkeypatch.setattr(settings, "COOKIES_DIR", "/tmp/url-fairy-bot-cookies-test/")
     monkeypatch.setattr(settings, "FOLLOW_REDIRECT_TIMEOUT", 10)
     monkeypatch.setattr(settings, "COOKIE_JAR_ENABLED", False)
-    monkeypatch.setattr(settings, "INSTAGRAM_REWRITE_ENABLED", True)
-    monkeypatch.setattr(settings, "REDDIT_REWRITE_ENABLED", True)
-    monkeypatch.setattr(settings, "SPOTIFY_REWRITE_ENABLED", True)
-    monkeypatch.setattr(settings, "TIKTOK_REWRITE_ENABLED", True)
-    monkeypatch.setattr(settings, "TWITTER_REWRITE_ENABLED", True)
     monkeypatch.setattr(settings, "SPOTIFY_MIRROR_DOMAIN", "fxspotify.com")
     monkeypatch.setattr(settings, "INSTAGRAM_MIRROR_DOMAIN", "kkinstagram.com")
     monkeypatch.setattr(settings, "REDDIT_MIRROR_DOMAIN", "rxddit.com")

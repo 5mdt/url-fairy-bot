@@ -30,10 +30,10 @@ container that reads it, and services recover automatically from a crash.
 
 Implemented — with known gaps:
 
-- `CACHE_DIR`, `COOKIES_DIR`, `COOKIE_JAR_ENABLED`,
-  `FOLLOW_REDIRECT_TIMEOUT`, and the `*_REWRITE_ENABLED` toggles aren't
-  passed through in the shipped `docker-compose.yml`, so they can only ever
-  take their code defaults (see `TODO.md`, Docker / Deploy).
+- `CACHE_DIR`, `COOKIES_DIR`, `COOKIE_JAR_ENABLED`, `FOLLOW_REDIRECT_TIMEOUT`,
+  and `REWRITE_ALLOWED_DOMAINS` aren't passed through in the shipped
+  `docker-compose.yml`, so they can only ever take their code defaults (see
+  `TODO.md`, Docker / Deploy).
 - No service defines a `restart:` policy, so `app`/`nginx` also stay down
   after a crash (see `TODO.md`, Docker / Deploy, and
   [BUGS #9](../BUGS.md#9-cache-cleanup-cron-compose-service-runs-once-and-then-stops-forever-medium-p2d2)).

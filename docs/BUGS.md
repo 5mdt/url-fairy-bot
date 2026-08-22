@@ -92,19 +92,3 @@ Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
   file any user has ever had the bot download, including filenames that embed the original source
   URL (#BUG-0014) — a privacy leak of what URLs users have sent the bot. Turn off `autoindex`, or
   require an unguessable per-file path/token instead of a directory listing [P2/D1]
-## Business logic
-
-- #BUG-0023 YouTube's mirror-link alternative is incorrectly gated behind
-  `DOWNLOAD_ALLOWED_DOMAINS` — `process_url_request`'s `transform_youtube_url(final_url)` call
-  (`app/url_processing.py:193`) only runs *after* the `is_domain_allowed` branch (`:173-191`) has
-  already returned. `DOWNLOAD_ALLOWED_DOMAINS` defaults to empty, so `is_domain_allowed` returns
-  `False` for every domain by default, and `apply_rewrite_map` (called from the "not allowed"
-  branch) has no YouTube entries at all — those patterns live only in `transform_youtube_url`,
-  which this path never reaches on a default install. The test suite works around this today by
-  explicitly setting `DOWNLOAD_ALLOWED_DOMAINS=youtube.com` to exercise the short-circuit
-  (`tests/url_processing_test.py:307-317`) — a real deployment has no such override by default.
-  Unlike Spotify/Instagram/Reddit/TikTok/Twitter, YouTube's mirror link is unreachable unless an
-  operator explicitly allow-lists `youtube.com`/`music.youtube.com`/`youtu.be`, which is confusing
-  given the reply text says the video "cannot be downloaded." Move the `transform_youtube_url`
-  check ahead of (or independent of) the `is_domain_allowed` gate so it behaves like the other five
-  platforms [P1/D2]

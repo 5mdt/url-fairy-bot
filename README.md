@@ -105,14 +105,10 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 | `CACHE_DIR` | `/tmp/url-fairy-bot-cache/` | Directory for cached downloads |
 | `COOKIES_DIR` | `/config/` | Directory containing cookie files for authenticated downloads |
 | `COOKIE_JAR_ENABLED` | `false` | Use a persistent `cookie_jar.txt` so yt-dlp can save updated session tokens across requests. On first use, the jar is initialized by merging all `cookies*.txt` files in `COOKIES_DIR`. |
-| `DOWNLOAD_ALLOWED_DOMAINS` | _(empty)_ | Comma-separated list of domains allowed for video download (e.g. `instagram.com,twitter.com`) |
+| `DOWNLOAD_ALLOWED_DOMAINS` | _(empty)_ | Comma-separated list of domains real video downloads are restricted to. Empty means every domain is allowed (the default) — this setting only ever *restricts* downloads, it never affects whether a mirror link is offered (e.g. `instagram.com,twitter.com`) |
+| `REWRITE_ALLOWED_DOMAINS` | _(empty)_ | Comma-separated list of domains eligible for mirror-link rewriting (Spotify/Instagram/Reddit/TikTok/Twitter/X/YouTube). Empty means every platform is rewritten (the default). Independent of `DOWNLOAD_ALLOWED_DOMAINS` |
 | `FOLLOW_REDIRECT_TIMEOUT` | `10` | Timeout in seconds when following URL redirects |
 | `LOG_LEVEL` | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
-| `INSTAGRAM_REWRITE_ENABLED` | `true` | Rewrite Instagram URLs to `kkinstagram.com` when download fails |
-| `REDDIT_REWRITE_ENABLED` | `true` | Rewrite Reddit URLs to `rxddit.com` |
-| `SPOTIFY_REWRITE_ENABLED` | `true` | Rewrite Spotify URLs to `fxspotify.com` |
-| `TIKTOK_REWRITE_ENABLED` | `true` | Rewrite TikTok URLs to `tfxktok.com` |
-| `TWITTER_REWRITE_ENABLED` | `true` | Rewrite Twitter/X URLs to `fxtwitter.com` |
 
 ### Cookie Support
 

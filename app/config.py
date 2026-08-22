@@ -13,27 +13,13 @@ class Settings(BaseSettings):
     CACHE_DIR: str = os.getenv("CACHE_DIR", "/tmp/url-fairy-bot-cache/")
     COOKIES_DIR: str = os.getenv("COOKIES_DIR", "/config/")
     DOWNLOAD_ALLOWED_DOMAINS: str = os.getenv("DOWNLOAD_ALLOWED_DOMAINS", "")
+    REWRITE_ALLOWED_DOMAINS: str = os.getenv("REWRITE_ALLOWED_DOMAINS", "")
     FOLLOW_REDIRECT_TIMEOUT: int = int(os.getenv("FOLLOW_REDIRECT_TIMEOUT", 10))
     COOKIE_JAR_ENABLED: bool = os.getenv("COOKIE_JAR_ENABLED", "false").lower() not in (
         "false",
         "0",
         "no",
     )
-    INSTAGRAM_REWRITE_ENABLED: bool = os.getenv(
-        "INSTAGRAM_REWRITE_ENABLED", "true"
-    ).lower() not in ("false", "0", "no")
-    REDDIT_REWRITE_ENABLED: bool = os.getenv(
-        "REDDIT_REWRITE_ENABLED", "true"
-    ).lower() not in ("false", "0", "no")
-    SPOTIFY_REWRITE_ENABLED: bool = os.getenv(
-        "SPOTIFY_REWRITE_ENABLED", "true"
-    ).lower() not in ("false", "0", "no")
-    TIKTOK_REWRITE_ENABLED: bool = os.getenv(
-        "TIKTOK_REWRITE_ENABLED", "true"
-    ).lower() not in ("false", "0", "no")
-    TWITTER_REWRITE_ENABLED: bool = os.getenv(
-        "TWITTER_REWRITE_ENABLED", "true"
-    ).lower() not in ("false", "0", "no")
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
 
     # Domain-rewrite mirror destinations (source-matching regex stays in code)

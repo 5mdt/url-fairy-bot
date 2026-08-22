@@ -19,29 +19,33 @@ logger = logging.getLogger(__name__)
 CONTENT_QUERY_PARAMS = frozenset({"v", "list", "t", "index", "id"})
 
 
-def is_domain_allowed(url: str) -> bool:
-    allowed_domains = (
-        settings.DOWNLOAD_ALLOWED_DOMAINS.split(",")
-        if settings.DOWNLOAD_ALLOWED_DOMAINS
-        else []
-    )
-    domain = urlparse(url).netloc
+def _domain_in_allowlist(url: str, allowlist_csv: str) -> bool:
+    """
+    An empty allow-list means unrestricted (every domain matches); a
+    non-empty one requires an exact or label-boundary (subdomain) match.
+    """
+    allowed_domains = [d.strip().lower() for d in allowlist_csv.split(",") if d.strip()]
+    if not allowed_domains:
+        return True
 
-    # Normalize the domain by stripping 'www.' if present for comparison
-    domain = domain.lower()
+    domain = urlparse(url).netloc.lower()
     if domain.startswith("www."):
         domain = domain[4:]
 
-    # Normalize allow-list entries and drop empties (e.g. a trailing comma),
-    # then require an exact or label-boundary (subdomain) match.
-    for allowed_domain in allowed_domains:
-        allowed_domain = allowed_domain.strip().lower()
-        if not allowed_domain:
-            continue
-        if domain == allowed_domain or domain.endswith("." + allowed_domain):
-            return True
+    return any(
+        domain == allowed_domain or domain.endswith("." + allowed_domain)
+        for allowed_domain in allowed_domains
+    )
 
-    return False
+
+def is_domain_allowed(url: str) -> bool:
+    """Whether `url` may be downloaded via yt-dlp (DOWNLOAD_ALLOWED_DOMAINS)."""
+    return _domain_in_allowlist(url, settings.DOWNLOAD_ALLOWED_DOMAINS)
+
+
+def is_rewrite_allowed(url: str) -> bool:
+    """Whether `url` may be rewritten to a mirror link (REWRITE_ALLOWED_DOMAINS)."""
+    return _domain_in_allowlist(url, settings.REWRITE_ALLOWED_DOMAINS)
 
 
 def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
@@ -66,14 +70,50 @@ def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
         return url
 
 
-def transform_youtube_url(url: str) -> str:
+def apply_rewrite_map(final_url: str) -> str:
     """
-    Rewrite a YouTube URL to use a configured mirror domain.
+    Rewrites URLs from supported platforms to alternative mirror domains.
+
+    If the URL matches a pattern for Spotify, Instagram, Reddit, TikTok,
+    Twitter/X, or YouTube, returns the rewritten URL with the configured
+    mirror domain. Otherwise (or if REWRITE_ALLOWED_DOMAINS excludes the
+    domain) returns the original URL unchanged.
 
     Returns:
-        The rewritten URL using the configured mirror domain if the input is a supported YouTube URL, None otherwise.
+        str: The rewritten URL if a pattern matched, or the original URL
     """
-    youtube_patterns = [
+    if not is_rewrite_allowed(final_url):
+        return final_url
+
+    rewrite_map = [
+        (
+            r"^https://(open\.)?spotify\.com",
+            f"https://{settings.SPOTIFY_MIRROR_DOMAIN}",
+        ),
+        (
+            r"^https://(www\.)?instagram\.com/p/",
+            f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/p/",
+        ),
+        (
+            r"^https://(www\.)?instagram\.com/reel/",
+            f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/reel/",
+        ),
+        (
+            r"^https://(www\.)?reddit\.com",
+            f"https://{settings.REDDIT_MIRROR_DOMAIN}",
+        ),
+        (
+            r"^https://(www\.)?tiktok\.com",
+            f"https://{settings.TIKTOK_MIRROR_DOMAIN}",
+        ),
+        (
+            r"^https://(www\.)?twitter\.com",
+            f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
+        ),
+        (
+            r"^https://(www\.)?x\.com",
+            f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
+        ),
         (
             r"^https://music\.youtube\.com/watch\?v=([a-zA-Z0-9_-]+)",
             rf"https://music.{settings.YOUTUBE_MIRROR_DOMAIN}/watch?v=\1",
@@ -91,60 +131,8 @@ def transform_youtube_url(url: str) -> str:
             rf"https://{settings.YOUTUBE_SHORT_MIRROR_DOMAIN}/\1",
         ),
     ]
-    for pattern, replacement in youtube_patterns:
-        if re.match(pattern, url):
-            return re.sub(pattern, replacement, url)
-    return None
-
-
-def apply_rewrite_map(final_url: str) -> str:
-    """
-    Rewrites URLs from supported platforms to alternative mirror domains.
-
-    If the URL matches a pattern for Spotify, Instagram, Reddit, TikTok, Twitter, or X, returns the rewritten URL with the configured mirror domain. Otherwise returns the original URL unchanged.
-
-    Returns:
-        str: The rewritten URL if a pattern matched, or the original URL
-    """
-    rewrite_map = [
-        (
-            settings.SPOTIFY_REWRITE_ENABLED,
-            r"^https://(open\.)?spotify\.com",
-            f"https://{settings.SPOTIFY_MIRROR_DOMAIN}",
-        ),
-        (
-            settings.INSTAGRAM_REWRITE_ENABLED,
-            r"^https://(www\.)?instagram\.com/p/",
-            f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/p/",
-        ),
-        (
-            settings.INSTAGRAM_REWRITE_ENABLED,
-            r"^https://(www\.)?instagram\.com/reel/",
-            f"https://www.{settings.INSTAGRAM_MIRROR_DOMAIN}/reel/",
-        ),
-        (
-            settings.REDDIT_REWRITE_ENABLED,
-            r"^https://(www\.)?reddit\.com",
-            f"https://{settings.REDDIT_MIRROR_DOMAIN}",
-        ),
-        (
-            settings.TIKTOK_REWRITE_ENABLED,
-            r"^https://(www\.)?tiktok\.com",
-            f"https://{settings.TIKTOK_MIRROR_DOMAIN}",
-        ),
-        (
-            settings.TWITTER_REWRITE_ENABLED,
-            r"^https://(www\.)?twitter\.com",
-            f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
-        ),
-        (
-            settings.TWITTER_REWRITE_ENABLED,
-            r"^https://(www\.)?x\.com",
-            f"https://www.{settings.TWITTER_MIRROR_DOMAIN}",
-        ),
-    ]
-    for enabled, pattern, replacement in rewrite_map:
-        if enabled and re.match(pattern, final_url):
+    for pattern, replacement in rewrite_map:
+        if re.match(pattern, final_url):
             return re.sub(pattern, replacement, final_url, count=1)
     return final_url
 
@@ -187,14 +175,6 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
         return (
             "This domain is not allowed for downloading, but here's an alternative link:"
             + f"\n\n[📎 Modified URL]({modified_url})"
-            + f"\n\n[📎 Original]({final_url})"
-        )
-
-    youtube_alternative = transform_youtube_url(final_url)
-    if youtube_alternative:
-        return (
-            "YouTube video cannot be downloaded, but here’s an alternative link:"
-            + f"\n\n[📎 Modified URL]({youtube_alternative})"
             + f"\n\n[📎 Original]({final_url})"
         )
 

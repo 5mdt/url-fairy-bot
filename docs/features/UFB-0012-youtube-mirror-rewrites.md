@@ -4,19 +4,31 @@
 
 ## Behavior
 
-YouTube is never downloaded via yt-dlp — any recognized YouTube video link
-(standard watch pages, Shorts, `music.youtube.com`, `youtu.be`, `m.youtube.com`,
-with or without `www.`) is immediately answered with a mirror-domain
-alternative that renders a richer embed, alongside the original link. This
-always applies, independent of the download allow-list.
+Any recognized YouTube video link (standard watch pages, Shorts,
+`music.youtube.com`, `youtu.be`, `m.youtube.com`, with or without `www.`) can
+be rewritten to a mirror-domain alternative that renders a richer embed,
+alongside the original link. YouTube is just another entry in the shared
+[platform rewrite map](UFB-0011-platform-mirror-rewrites.md): it is no
+longer specially exempted from real downloads, and the mirror is only
+offered when a download isn't attempted or fails — see
+[UFB-0009](UFB-0009-download-allow-list.md) (download gate) and
+[UFB-0010](UFB-0010-mirror-link-disallowed-domains.md) /
+[UFB-0013](UFB-0013-download-failure-fallback.md) (when the mirror is
+offered). With the default (empty) `DOWNLOAD_ALLOWED_DOMAINS`, a YouTube URL
+is downloaded via yt-dlp like any other supported domain rather than
+mirrored, unless the operator restricts `DOWNLOAD_ALLOWED_DOMAINS` to
+exclude it. Whether the mirror itself is offered is governed by
+[`REWRITE_ALLOWED_DOMAINS`](UFB-0023-rewrite-domain-allowlist.md), same as
+every other platform.
 
 ## Implementation
 
-- URL-pattern matching against the resolved URL, rewriting the host to
-  `YOUTUBE_MIRROR_DOMAIN` (long-form URLs) or `YOUTUBE_SHORT_MIRROR_DOMAIN`
-  (`youtu.be` short links).
-- Runs before any download is attempted, taking priority over the
-  [allow-list gate](UFB-0009-download-allow-list.md).
+- URL-pattern matching in the shared `rewrite_map` (`apply_rewrite_map`,
+  `app/url_processing.py`), rewriting the host to `YOUTUBE_MIRROR_DOMAIN`
+  (long-form URLs) or `YOUTUBE_SHORT_MIRROR_DOMAIN` (`youtu.be` short
+  links).
+- No longer has its own early-return special case — it runs through the
+  same allow-list-gated fallback path as every other platform.
 
 ## Testing
 
@@ -25,17 +37,21 @@ always applies, independent of the download allow-list.
 - `youtube.com/watch?v=ID`, `www.youtube.com/watch?v=ID`,
   `music.youtube.com/watch?v=ID`, `m.youtube.com/watch?v=ID`,
   `youtube.com/shorts/ID`, `youtu.be/ID` → each rewritten to the
-  matching mirror domain.
-- Runs unconditionally, regardless of `DOWNLOAD_ALLOWED_DOMAINS`.
+  matching mirror domain when a download isn't attempted/fails and
+  `REWRITE_ALLOWED_DOMAINS` permits it.
+- `REWRITE_ALLOWED_DOMAINS` excluding YouTube's domains → no rewrite offered
+  (download proceeds normally if `DOWNLOAD_ALLOWED_DOMAINS` permits it).
 
 ## Status
 
-Implemented — with a known gap:
+Implemented
 
-- Only reachable when `youtube.com`/`youtu.be` happens to be on the download
-  allow-list, because the rewrite lives on a code path gated behind it —
-  the opposite of "always applies"
-  ([BUGS #23](../BUGS.md#23-youtubes-mirror-link-alternative-is-incorrectly-gated-behind-download_allowed_domains-high-p1d2)).
+Changed:
+
+- YouTube is no longer hard-blocked from real downloads or special-cased
+  ahead of the allow-list gate. It is now folded into the shared
+  `rewrite_map` and governed by `REWRITE_ALLOWED_DOMAINS`/
+  `DOWNLOAD_ALLOWED_DOMAINS` like every other platform (2026-08-22).
 
 Fixed:
 

@@ -4,10 +4,13 @@
 
 ## Behavior
 
-When a download is attempted (domain allowed, not a YouTube link) but fails
-for any reason, the user still gets a usable reply: the same mirror-rewrite
-logic used for disallowed domains is applied, offering a mirror link when
-one exists for that platform. If no mirror link is available, the reply
+When a download is attempted (domain allowed per
+[`DOWNLOAD_ALLOWED_DOMAINS`](UFB-0009-download-allow-list.md), YouTube
+included) but fails for any reason, the user still gets a usable reply: the
+same mirror-rewrite logic used for disallowed domains is applied, offering a
+mirror link when one exists for that platform and it isn't excluded by
+[`REWRITE_ALLOWED_DOMAINS`](UFB-0023-rewrite-domain-allowlist.md). If no
+mirror link is available, the reply
 explains the download failed and gives only the original link (or, in a
 group chat, nothing — see [UFB-0004](UFB-0004-group-chat-quietness.md)).
 The reply never claims to offer an "alternative" link that is identical to

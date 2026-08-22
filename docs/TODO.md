@@ -2,7 +2,7 @@
 
 Cleanups, simplifications, and missing coverage. Behavior actually misbehaving today goes in
 `docs/BUGS.md` instead. Entries are deleted when done (the fix gets a `docs/CHANGELOG.md` bullet);
-IDs are never reused or renumbered, so deletions leave gaps. Next free ID: **TODO-0037**.
+IDs are never reused or renumbered, so deletions leave gaps. Next free ID: **TODO-0038**.
 
 Each entry ends with a `[P#/D#]` marker:
 
@@ -14,30 +14,34 @@ Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
 ## Business logic
 
 Design intent, confirmed against `process_url_request`'s decision tree: `DOWNLOAD_ALLOWED_DOMAINS`
-gates real `yt-dlp` downloads only; mirror-link rewriting should always be available regardless of
-the allow-list (see `docs/BUGS.md` BUG-0023, still open, for the one place this isn't true yet).
+gates real `yt-dlp` downloads only — empty means every domain is allowed, the default. Mirror-link
+rewriting is a separate, independent gate, `REWRITE_ALLOWED_DOMAINS` (see
+[UFB-0023](features/UFB-0023-rewrite-domain-allowlist.md)) — empty there also means every platform
+is rewritten. Neither list affects the other, and YouTube is no longer special-cased: it is subject
+to both gates exactly like every other platform (2026-08-22).
 
 - #TODO-0001 Instagram is the only mirror platform scoped to specific paths — `apply_rewrite_map`
-  (`app/url_processing.py:109-145`) matches Spotify/Reddit/TikTok/Twitter against their whole
+  (`app/url_processing.py`) matches Spotify/Reddit/TikTok/Twitter/YouTube against their whole
   domain, but Instagram only against `/p/` and `/reel/`. A plain Instagram profile or story link
   therefore gets no mirror treatment at all, unlike every other platform. Either document why
   Instagram is deliberately narrower or widen it to the domain-wide pattern used for the rest
   [P3/D1]
 - #TODO-0002 Spotify has no yt-dlp extractor, so if an operator ever allow-lists `spotify.com` for
   real downloads, every request pays for a full `yt-dlp` startup and failure
-  (`attempt_download` → `UnsupportedUrlError`, `app/url_processing.py:152-163`) before falling back
+  (`attempt_download` → `UnsupportedUrlError`, `app/url_processing.py`) before falling back
   to the mirror link — pure overhead with no chance of succeeding. Special-case Spotify (and any
   other known non-video platform) to skip the download attempt and go straight to the mirror
   rewrite [P3/D2]
-- #TODO-0003 no `YOUTUBE_REWRITE_ENABLED` toggle — `app/config.py` defines a `*_REWRITE_ENABLED`
-  setting for Instagram/Reddit/Spotify/TikTok/Twitter, and `apply_rewrite_map` gates each of those
-  on its setting, but YouTube's rewrite (`transform_youtube_url`) has no equivalent switch — an
-  operator can't disable the YouTube mirror the way they can disable the other five [P3/D1]
 - #TODO-0004 the download-failure fallback overclaims an "alternative" that isn't one —
   `process_url_request`'s reply when `modified_url == final_url` after a download failure
   (`app/url_processing.py:212-216`) still says "Here is an alternative link, which Telegram may
   parse better," even though the link offered is byte-for-byte identical to the original. Either
   drop the "alternative" framing for this case or state plainly that the download failed [P3/D1]
+- #TODO-0037 the platform/YouTube rewrite rules in `apply_rewrite_map` (`app/url_processing.py`)
+  are a hardcoded list of `(regex, replacement)` tuples, one per platform — adding a new mirror
+  site means editing code. Consider making rewrite rules dynamically configurable, e.g. an
+  operator-supplied list of `{match_regex, mirror_domain}` rules (via env var or config file)
+  instead of one Python tuple per platform [P3/D3]
 
 ## Config (`app/config.py`)
 
@@ -69,9 +73,9 @@ the allow-list (see `docs/BUGS.md` BUG-0023, still open, for the one place this 
 - #TODO-0009 `attempt_download`'s success-path reconstruction of the filename
   (`os.path.join(*video_os_path.split(os.path.sep)[-1:])`, `app/url_processing.py:156`) is a
   convoluted way to write `os.path.basename(video_os_path)` [P3/D1]
-- #TODO-0010 `is_domain_allowed` and `follow_redirects` (`app/url_processing.py:22-66`) each
-  re-derive `urlparse(...)` multiple times on the same string; minor, but worth consolidating now
-  that the allow-list matching itself is correct [P3/D1]
+- #TODO-0010 `is_domain_allowed`, `is_rewrite_allowed`, and `follow_redirects`
+  (`app/url_processing.py`) each re-derive `urlparse(...)` multiple times on the same string;
+  minor, but worth consolidating now that the allow-list matching itself is correct [P3/D1]
 
 ## Tooling / CI
 
@@ -120,9 +124,8 @@ the allow-list (see `docs/BUGS.md` BUG-0023, still open, for the one place this 
   never accidentally added) [P2/D1]
 - #TODO-0022 `docker-compose.yml`'s `app` service does not pass through most of the settings
   documented in `README.md`: `CACHE_DIR`, `COOKIES_DIR`, `COOKIE_JAR_ENABLED`,
-  `FOLLOW_REDIRECT_TIMEOUT`, and all five `*_REWRITE_ENABLED` flags are absent from its
-  `environment:` block, so they can only ever take their code defaults in the shipped compose file
-  [P2/D2]
+  `FOLLOW_REDIRECT_TIMEOUT`, and `REWRITE_ALLOWED_DOMAINS` are absent from its `environment:`
+  block, so they can only ever take their code defaults in the shipped compose file [P2/D2]
 - #TODO-0023 no service in `docker-compose.yml` has a `restart:` policy — beyond the `cron`
   service (see `docs/BUGS.md` BUG-0009), `app` and `nginx` will also stay down after a crash until
   manually restarted [P2/D1]

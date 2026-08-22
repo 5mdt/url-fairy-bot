@@ -34,7 +34,7 @@ fit together end to end:
 - [UFB-0020. In-process bot polling](features/UFB-0020-in-process-bot-polling.md) - `#runtime`
 - [UFB-0021. Environment-based configuration](features/UFB-0021-environment-based-configuration.md) - `#config`
 - [UFB-0022. Configurable mirror domains](features/UFB-0022-configurable-mirror-domains.md) - `#config` `#rewrite`
-- [UFB-0023. Per-platform rewrite toggles](features/UFB-0023-per-platform-rewrite-toggles.md) - `#config` `#rewrite`
+- [UFB-0023. Rewrite domain allow-list](features/UFB-0023-rewrite-domain-allowlist.md) - `#config` `#rewrite` `#allowlist`
 - [UFB-0024. Configurable log level](features/UFB-0024-configurable-log-level.md) - `#config` `#ops`
 - [UFB-0025. Themed download file server](features/UFB-0025-themed-download-file-server.md) - `#ops` `#hosting`
 - [UFB-0026. Cached-file TTL cleanup](features/UFB-0026-cached-file-ttl-cleanup.md) - `#ops` `#cache`
@@ -54,7 +54,7 @@ fit together end to end:
 - `#privacy`: UFB-0008
 - `#config`: UFB-0009, UFB-0018, UFB-0021, UFB-0022, UFB-0023, UFB-0024
 - `#download`: UFB-0009, UFB-0013, UFB-0015, UFB-0016, UFB-0017, UFB-0018
-- `#allowlist`: UFB-0009
+- `#allowlist`: UFB-0009, UFB-0023
 - `#rewrite`: UFB-0010, UFB-0011, UFB-0012, UFB-0013, UFB-0022, UFB-0023
 - `#youtube`: UFB-0012
 - `#fallback`: UFB-0013

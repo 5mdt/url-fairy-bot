@@ -14,9 +14,8 @@ silent default.
 
 - Settings are loaded once at startup from the environment / `.env`.
 - Documented variables: `BOT_TOKEN`, `BASE_URL`, `CACHE_DIR`, `COOKIES_DIR`,
-  `COOKIE_JAR_ENABLED`, `DOWNLOAD_ALLOWED_DOMAINS`,
-  `FOLLOW_REDIRECT_TIMEOUT`, `LOG_LEVEL`, the `*_REWRITE_ENABLED` toggles,
-  and the `*_MIRROR_DOMAIN` values.
+  `COOKIE_JAR_ENABLED`, `DOWNLOAD_ALLOWED_DOMAINS`, `REWRITE_ALLOWED_DOMAINS`,
+  `FOLLOW_REDIRECT_TIMEOUT`, `LOG_LEVEL`, and the `*_MIRROR_DOMAIN` values.
 
 ## Testing
 
