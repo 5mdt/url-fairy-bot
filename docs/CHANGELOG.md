@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix: `COOKIES_DIR` now reads the `COOKIES_DIR` environment variable instead
+  of the mismatched `COOKIES_FILE` (see `docs/BUGS.md` #3)
 - UFB-0028: Multi-arch CI image publishing
 - UFB-0027: Docker Compose stack with Traefik routing
 - UFB-0026: Cached-file TTL cleanup

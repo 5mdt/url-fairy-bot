@@ -37,6 +37,9 @@ gated on their corresponding `*_REWRITE_ENABLED` setting.
 
 ## 3. `COOKIES_DIR` reads the wrong environment variable (High) [P1/D1]
 
+**Status: Fixed (2026-08-22)** — `COOKIES_DIR` now reads the `COOKIES_DIR`
+environment variable.
+
 - **Location**: `app/config.py:14`
 - **What happens**: `COOKIES_DIR: str = os.getenv("COOKIES_FILE", "/config/")` — the field is
   named `COOKIES_DIR` but reads env var `COOKIES_FILE`.

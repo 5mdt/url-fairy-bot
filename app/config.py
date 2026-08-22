@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     BASE_URL: str = os.getenv("BASE_URL", "")
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
     CACHE_DIR: str = os.getenv("CACHE_DIR", "/tmp/url-fairy-bot-cache/")
-    COOKIES_DIR: str = os.getenv("COOKIES_FILE", "/config/")
+    COOKIES_DIR: str = os.getenv("COOKIES_DIR", "/config/")
     DOWNLOAD_ALLOWED_DOMAINS: str = os.getenv("DOWNLOAD_ALLOWED_DOMAINS", "")
     FOLLOW_REDIRECT_TIMEOUT: int = int(os.getenv("FOLLOW_REDIRECT_TIMEOUT", 10))
     COOKIE_JAR_ENABLED: bool = os.getenv("COOKIE_JAR_ENABLED", "false").lower() not in (
