@@ -2,8 +2,44 @@
 
 ## Unreleased
 
+- Fix: `follow_redirects` rebuilds the query string against an allow-list of
+  content-identifying parameters instead of dropping it entirely (closes BUG-0001)
+- Fix: `apply_rewrite_map` now gates each mirror-domain rewrite on its
+  corresponding `*_REWRITE_ENABLED` setting (closes BUG-0002)
 - Fix: `COOKIES_DIR` now reads the `COOKIES_DIR` environment variable instead
-  of the mismatched `COOKIES_FILE` (see `docs/BUGS.md` #3)
+  of the mismatched `COOKIES_FILE` (closes BUG-0003)
+- Fix: domain allow-list entries are trimmed, lower-cased, and empties
+  dropped; matching requires an exact or subdomain-boundary match instead of a
+  raw `endswith` (closes BUG-0005)
+- Fix: `black`/`isort` re-run and committed against `app/` so CI lint is green
+  again (closes BUG-0008)
+- Fix: `follow_redirects` also catches `requests.RequestException` broadly
+  instead of only `requests.Timeout` (closes BUG-0011)
+- Fix: the test suite no longer requires a real `BOT_TOKEN` to collect —
+  `tests/conftest.py` sets a dummy token before any `app.*` module import
+  (closes BUG-0018)
+- Fix: `bot_test.py` was rewritten to parametrize over chat type and mocked
+  `process_url_request` results instead of asserting on an unreachable code
+  path (closes BUG-0019)
+- Fix: `url_processing_test.py`'s "defaults" tests are now isolated from
+  ambient environment variables via an autouse `conftest.py` fixture (closes
+  BUG-0020)
+- Fix: `api_test.py` now mocks `process_url_request` instead of performing
+  live outbound network I/O (closes BUG-0021)
+- Fix: escaped the literal dot in the Spotify rewrite pattern (`spotify\.com`)
+  (closes BUG-0022)
+- Fix: URL extraction trims trailing `.,;:!?)]}'"` characters before
+  processing (closes BUG-0024)
+- Fix: the reply-to-bot shrug now sends the correct `"¯\_(ツ)_/¯"` text
+  (closes BUG-0025)
+- Fix: YouTube rewrite patterns accept an optional `www.`/`m.` host prefix,
+  bare `youtube.com`, and `/shorts/<id>` (closes BUG-0026)
+- Fix: raw pydantic `ValidationError` text is no longer replied to the user; a
+  fixed short message is sent instead (closes BUG-0027)
+- Fix: `yt_dlp.PostProcessingError` reference corrected to
+  `yt_dlp.utils.PostProcessingError` (closes BUG-0028)
+- Fix: removed the unreachable generic `except Exception` branch in
+  `process_url_request` (closes BUG-0029)
 - UFB-0028: Multi-arch CI image publishing
 - UFB-0027: Docker Compose stack with Traefik routing
 - UFB-0026: Cached-file TTL cleanup
