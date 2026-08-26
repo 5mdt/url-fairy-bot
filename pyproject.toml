@@ -20,7 +20,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "black>=24.4.2,<25.0.0",
+  "black>=24.4.2,<27.0.0",
   "flake8>=7.0.0,<8.0.0",
   "pytest>=8.2.0,<10.0.0",
   "yamllint>=1.35.1,<2.0.0",
