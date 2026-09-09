@@ -44,7 +44,10 @@ Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
   this file already exist" (`:59-61`), and `settings.CACHE_DIR` is never created (`os.makedirs`)
   before use. A sufficiently long URL can exceed the filesystem's ~255-byte filename limit and raise
   `OSError`; two concurrent requests for the same not-yet-cached URL both start a download; a
-  missing `CACHE_DIR` fails the first write outright. Hash the URL (e.g. truncated sha256) instead
+  missing `CACHE_DIR` fails the first write outright. Now that the cache has a deliberate public
+  index at `/cache/` ([UFB-0031](features/UFB-0031-landing-page-and-cache-index.md)), these
+  URL-derived filenames are also the entire remaining privacy exposure — anyone browsing the index
+  can read exactly which URLs users sent the bot. Hash the URL (e.g. truncated sha256) instead
   of transliterating it, add an `asyncio.Lock` per in-flight URL, and
   `os.makedirs(..., exist_ok=True)` at startup [P2/D2]
 - #BUG-0015 downloaded files are always saved with a `.mp4` extension — `outtmpl`
@@ -73,9 +76,3 @@ Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
   (`app/models.py:6`) validates the URL, but the API's `URLRequest.url: str` (`app/api.py:12`) does
   not. Validate `URLRequest.url` as `HttpUrl` too, block private/link-local/loopback ranges before
   outbound requests, and add auth/rate limiting [P2/D3]
-- #BUG-0013 the public nginx autoindex exposes every downloaded file — `autoindex on`
-  (`nginx/conf.d/default.conf`) is set at the web root (`root /tmp/url-fairy-bot-cache/`), the
-  shared download cache. Anyone who can reach `BASE_URL` can browse a directory listing of every
-  file any user has ever had the bot download, including filenames that embed the original source
-  URL (#BUG-0014) — a privacy leak of what URLs users have sent the bot. Turn off `autoindex`, or
-  require an unguessable per-file path/token instead of a directory listing [P2/D1]

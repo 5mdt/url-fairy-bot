@@ -5,10 +5,9 @@
 ## Behavior
 
 Cached downloaded files are served over plain HTTP at `BASE_URL`, wrapped in
-a themed header/footer, with a custom 404 page for missing files. Only
-someone who already knows (or is given) a file's exact path can retrieve it
-— the cache is not browsable, since directory listings would expose every
-URL any user has ever had the bot process.
+a themed header/footer, with a custom 404 page for missing files. Each file
+is retrievable at its exact path. A browsable index of the cache lives at
+`/cache/`, see [UFB-0031](UFB-0031-landing-page-and-cache-index.md).
 
 ## Implementation
 
@@ -22,14 +21,8 @@ URL any user has ever had the bot process.
 - Requesting a known cached file's URL → file served with the themed
   wrapper.
 - Requesting an unknown path → themed 404 page.
-- Requesting the cache root or a directory path → not a listing of cached
-  files.
+- Requesting `/` → the landing page, not a listing of cached files.
 
 ## Status
 
-Implemented — with known gaps:
-
-- Directory autoindexing is enabled at the cache root, so anyone who can
-  reach `BASE_URL` can browse every cached file's name — including
-  filenames that embed the source URL
-  ([BUGS #13](../BUGS.md#13-public-autoindex-exposes-every-downloaded-file-lowcontextual-p2d1)).
+Implemented.

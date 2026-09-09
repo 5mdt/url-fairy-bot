@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- UFB-0031: the file server now has a landing page at `/` and a deliberate,
+  themed cache listing at `/cache/`, instead of the root accidentally being a
+  directory listing of every downloaded file (BUG-0013). Existing file URLs at
+  the root are unchanged.
 - UFB-0001: `/start` now actually reachable — the handler is registered at
   module import, ahead of the catch-all text handler, instead of only inside
   the unused `start_bot()`; `start_bot()` removed (BUG-0004).
