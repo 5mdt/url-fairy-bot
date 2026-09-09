@@ -90,6 +90,7 @@ def test_render_watch_page_keeps_inline_video_at_or_under_threshold(cache_dir):
     assert 'property="og:video"' in html
     assert 'name="twitter:card" content="player"' in html
     assert "<video" in html
+    assert "<p><video" not in html
 
 
 def test_render_watch_page_drops_inline_video_over_threshold(cache_dir):

@@ -45,8 +45,17 @@ the template first.
    ~version: "2.1"
    title: //meta[@property='og:title']/@content
    cover: //video
+   cover: /html/head/meta[@property="og:image"]/@content[string()]
    body: //body
    ```
+
+   `cover` is two lines on purpose: IV tries the first selector, and only
+   falls through to the second if it matched nothing. A file over
+   `INLINE_VIDEO_MAX_MB` has no `<video>` element
+   ([UFB-0032](features/UFB-0032-telegram-instant-view-embeds.md)), so the
+   first line matches nothing and the second (the page's `og:image`, always
+   present) supplies the cover instead. `[string()]` guards against ever
+   treating an empty `content=""` as a match.
 
    The `~version` line matters: a template with no version pragma defaults
    to the long-deprecated `1.0` engine (the editor flags this with

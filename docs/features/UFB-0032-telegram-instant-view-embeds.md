@@ -29,10 +29,13 @@ non-functional `og:video` tag is worse than none.
   `og:video:secure_url`, `og:image`, and `twitter:player` tags pointing at
   the file's existing root-level URL (see
   [UFB-0025](UFB-0025-themed-download-file-server.md)), plus an inline
-  `<video>` element and a download link for browsers. `og:video:type`
-  matches the file's real extension; `og:image` is a per-file preview frame
-  when one exists ([UFB-0035](UFB-0035-per-file-preview-images.md)),
-  otherwise the bundled `preview.png`.
+  `<video>` element and a download link for browsers. The `<video>` element
+  is not wrapped in a `<p>` — Telegram's Instant View content model rejects
+  `<video>` nested inside `<p>` ("Element `<video>` is not supported in
+  `<p>`"). `og:video:type` matches the file's real extension; `og:image` is
+  a per-file preview frame when one exists
+  ([UFB-0035](UFB-0035-per-file-preview-images.md)), otherwise the bundled
+  `preview.png`.
 - `render_watch_page` (`app/pages.py`) stats the media file on disk; when
   its size exceeds `INLINE_VIDEO_MAX_MB` (default `10`), the template omits
   every `og:video`/`twitter:player` tag and the inline `<video>` element —

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fix: `app/templates/watch.html`'s `<video>` element is no longer wrapped
+  in a `<p>` — Telegram's Instant View content model rejects `<video>`
+  nested inside `<p>` ("Element `<video>` is not supported in `<p>`"),
+  which broke IV rendering for every download.
 - UFB-0033: `seed_static_pages` now re-renders the watch page of every
   pre-existing media file in `CACHE_DIR` on startup, not just the sample —
   so a template or embed-logic change (like the `INLINE_VIDEO_MAX_MB`

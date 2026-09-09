@@ -19,7 +19,7 @@
 {% block content %}
     <h1>Hi, this is ✨URL Fairy✨:</h1>
     {% if inline_video %}
-    <p><video controls preload="metadata" src="{{ media_url }}"></video></p>
+    <video controls preload="metadata" src="{{ media_url }}"></video>
     {% endif %}
     <p>⬇️ <a href="{{ media_url }}">Download the file</a></p>
 {% endblock %}
