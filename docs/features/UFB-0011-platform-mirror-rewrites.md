@@ -4,8 +4,8 @@
 
 ## Behavior
 
-Links to Spotify, Instagram, Reddit, TikTok, Twitter/X, and YouTube are
-rewritten to an equivalent link on a configured "mirror" domain that renders
+Links to Spotify, Instagram, Reddit, Threads, TikTok, Twitter/X, and YouTube
+are rewritten to an equivalent link on a configured "mirror" domain that renders
 richer link previews/embeds than the original site. Rewriting a domain is
 only skipped when it's excluded by the
 [rewrite allow-list](UFB-0023-rewrite-domain-allowlist.md)

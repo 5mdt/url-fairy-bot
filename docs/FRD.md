@@ -40,6 +40,7 @@ fit together end to end:
 - [UFB-0026. Cached-file TTL cleanup](features/UFB-0026-cached-file-ttl-cleanup.md) - `#ops` `#cache`
 - [UFB-0027. Docker Compose stack with Traefik routing](features/UFB-0027-compose-stack-traefik-routing.md) - `#ops` `#deploy`
 - [UFB-0028. Multi-arch CI image publishing](features/UFB-0028-multi-arch-ci-image-publishing.md) - `#ops` `#ci`
+- [UFB-0029. Threads mirror-domain rewrites](features/UFB-0029-threads-mirror-rewrites.md) - `#rewrite`
 
 ## Tags
 
@@ -55,7 +56,7 @@ fit together end to end:
 - `#config`: UFB-0009, UFB-0018, UFB-0021, UFB-0022, UFB-0023, UFB-0024
 - `#download`: UFB-0009, UFB-0013, UFB-0015, UFB-0016, UFB-0017, UFB-0018
 - `#allowlist`: UFB-0009, UFB-0023
-- `#rewrite`: UFB-0010, UFB-0011, UFB-0012, UFB-0013, UFB-0022, UFB-0023
+- `#rewrite`: UFB-0010, UFB-0011, UFB-0012, UFB-0013, UFB-0022, UFB-0023, UFB-0029
 - `#youtube`: UFB-0012
 - `#fallback`: UFB-0013
 - `#media`: UFB-0015

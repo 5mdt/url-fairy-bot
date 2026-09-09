@@ -74,8 +74,8 @@ def apply_rewrite_map(final_url: str) -> str:
     """
     Rewrites URLs from supported platforms to alternative mirror domains.
 
-    If the URL matches a pattern for Spotify, Instagram, Reddit, TikTok,
-    Twitter/X, or YouTube, returns the rewritten URL with the configured
+    If the URL matches a pattern for Spotify, Instagram, Reddit, Threads,
+    TikTok, Twitter/X, or YouTube, returns the rewritten URL with the configured
     mirror domain. Otherwise (or if REWRITE_ALLOWED_DOMAINS excludes the
     domain) returns the original URL unchanged.
 
@@ -101,6 +101,10 @@ def apply_rewrite_map(final_url: str) -> str:
         (
             r"^https://(www\.)?reddit\.com",
             f"https://{settings.REDDIT_MIRROR_DOMAIN}",
+        ),
+        (
+            r"^https://(www\.)?threads\.com",
+            f"https://{settings.THREADS_MIRROR_DOMAIN}",
         ),
         (
             r"^https://(www\.)?tiktok\.com",

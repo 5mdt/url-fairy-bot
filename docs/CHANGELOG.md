@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- UFB-0029: Threads mirror-domain rewrites
+
 ## 2026-08-22
 
 - Change: replaced the five `*_REWRITE_ENABLED` booleans with a single

@@ -28,6 +28,7 @@ class Settings(BaseSettings):
         "INSTAGRAM_MIRROR_DOMAIN", "kkinstagram.com"
     )
     REDDIT_MIRROR_DOMAIN: str = os.getenv("REDDIT_MIRROR_DOMAIN", "rxddit.com")
+    THREADS_MIRROR_DOMAIN: str = os.getenv("THREADS_MIRROR_DOMAIN", "fx.akitsuki.me")
     TIKTOK_MIRROR_DOMAIN: str = os.getenv("TIKTOK_MIRROR_DOMAIN", "tfxktok.com")
     TWITTER_MIRROR_DOMAIN: str = os.getenv("TWITTER_MIRROR_DOMAIN", "fxtwitter.com")
     YOUTUBE_MIRROR_DOMAIN: str = os.getenv("YOUTUBE_MIRROR_DOMAIN", "yfxtube.com")
