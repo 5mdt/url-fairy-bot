@@ -16,6 +16,8 @@ _ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 SAMPLE_MEDIA_FILENAME = "sample.mp4"
 PREVIEW_IMAGE_FILENAME = "preview.png"
 
+pages_seeded = False
+
 _env = Environment(
     loader=PackageLoader("app", "templates"),
     autoescape=select_autoescape(),
@@ -78,3 +80,5 @@ def seed_static_pages() -> None:
         os.path.join(settings.CACHE_DIR, SAMPLE_MEDIA_FILENAME),
     )
     write_watch_page(SAMPLE_MEDIA_FILENAME)
+    global pages_seeded
+    pages_seeded = True

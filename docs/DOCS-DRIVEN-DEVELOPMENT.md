@@ -1,6 +1,6 @@
 # Docs-Driven Development Approach
 
-**Version:** 1.1 · **Last updated:** 2026-09-02
+**Version:** 1.2 · **Last updated:** 2026-09-09
 
 <!-- Bump both whenever this document's rules or templates change. -->
 
@@ -175,21 +175,34 @@ Remove the line once promoted to a feature doc.
 ```markdown
 # Bugs & debt
 
+Next free ID: **BUG-0001**.
+
+Each entry ends with a `[P#/D#]` marker:
+
+Priority:   P1 = high     P2 = medium   P3 = low
+Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
+
 ## Bugs & quirks
 
-- <feature ID>: <one-line defect>
+- #BUG-0001 <one-line defect> [P#/D#]
 
 ## Tech debt
 
-- <one-line debt item>
+- #BUG-0002 <one-line debt item> [P#/D#]
 
 ## Chores
 
-- <one-line chore>
+- #BUG-0003 <one-line chore> [P#/D#]
 ```
 
 Defects, quirks, tech debt, and chores on already-shipped behavior go here, not in
-`TODO.md` (new behavior only).
+`TODO.md` (new behavior only). Every entry gets a stable `#BUG-NNNN` ID from the same
+sequence regardless of which section it lands in — IDs are never reused or renumbered,
+so deleting a fixed entry leaves a gap. Every entry ends with a `[P#/D#]` marker (see
+above) so entries can be triaged and sorted by priority/difficulty at a glance. Group
+entries under an area-specific `###` subheading (e.g. `### Downloads / cache`) when a
+section covers more than a handful of items — the three `##` sections are mandatory,
+the subheadings under them are just for navigation.
 
 ## CHANGELOG.md template
 

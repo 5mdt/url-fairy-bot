@@ -30,11 +30,8 @@ stops cleanly.
 
 ## Status
 
-Implemented — with known gaps:
-
-- The polling task's return value is discarded with no completion callback,
-  and shutdown never cancels it or calls `stop_polling()` — a polling
-  failure is silent and undetectable from outside the process
-  ([BUGS #7](../BUGS.md#7-bot-polling-failures-are-silent-medium-p2d2)).
-- No `/health` endpoint or container healthcheck exists to expose this at
-  all (see `TODO.md`, Docker / Deploy).
+Implemented — the polling task is now owned by `app/bot.py`
+(`start_polling()` / `stop_polling()` / `is_polling_alive()`), observed via
+a completion callback that logs unexpected failures, and cancelled
+cleanly on shutdown. See [UFB-0034](UFB-0034-health-endpoints.md) for the
+`/health` endpoint that exposes this state externally.

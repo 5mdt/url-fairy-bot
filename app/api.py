@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from fastapi import APIRouter, Body, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from . import pages
+from .bot import is_polling_alive
 from .url_processing import process_url_request
 
 
@@ -22,3 +25,21 @@ async def process_url(request: URLRequest = Body(...)):
         return {"status": "success", "data": result}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+
+@api_router.get("/health")
+async def health():
+    polling = is_polling_alive()
+    seeded = pages.pages_seeded
+    ok = polling and seeded
+    body = {
+        "status": "ok" if ok else "degraded",
+        "polling": polling,
+        "pages_seeded": seeded,
+    }
+    return JSONResponse(content=body, status_code=200 if ok else 503)

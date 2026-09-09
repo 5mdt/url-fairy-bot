@@ -1,7 +1,6 @@
 # main.py
 # -*- coding: utf-8 -*-
 
-import asyncio
 import logging
 from contextlib import asynccontextmanager
 
@@ -9,9 +8,8 @@ from fastapi import FastAPI
 
 from app.config import settings
 
-from . import pages
+from . import bot, pages
 from .api import api_router
-from .bot import bot, dp  # Import the bot and dispatcher directly
 
 # Logging configuration
 logging.basicConfig(level=settings.LOG_LEVEL)
@@ -24,12 +22,9 @@ async def lifespan(app: FastAPI):
         pages.seed_static_pages()
     except OSError as e:
         logger.warning(f"Failed to seed static pages: {e}")
-    # Start the bot's polling in a background task
-    asyncio.create_task(dp.start_polling(bot))
+    bot.start_polling()
     yield
-    # Shutdown the dispatcher when FastAPI stops
-    await dp.storage.close()
-    await bot.session.close()
+    await bot.stop_polling()
 
 
 # Initialize FastAPI app

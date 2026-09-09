@@ -65,3 +65,7 @@ Implemented — with a known gap:
   ([BUGS #15](../BUGS.md#15-downloaded-files-are-always-saved-with-a-mp4-extension-low-p3d2)).
   A cached webm/mkv wearing an `.mp4` name will not play in the Telegram
   card.
+- Large downloads don't render inline at all — reported against a 34 MB
+  file with an otherwise-correct page and file response
+  ([BUGS #61](../BUGS.md)). The exact size where Telegram stops playing an
+  `og:video`/Instant View video is unconfirmed.

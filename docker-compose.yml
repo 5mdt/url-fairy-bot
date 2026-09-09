@@ -42,16 +42,6 @@ services:
       - 8000:8000
     networks:
       - default
-    healthcheck:
-      test:
-        - CMD-SHELL
-        - >-
-          test -f
-          "${CACHE_DIR:-/tmp/url-fairy-bot-cache/}/watch/sample.html"
-      interval: 2s
-      timeout: 2s
-      retries: 30
-      start_period: 5s
 
   nginx:
     image: nginx:stable-alpine-slim
@@ -90,16 +80,6 @@ services:
       com.centurylinklabs.watchtower.enable: "true"
     logging:
       driver: none
-
-  # cobalt-api:
-  #   image: ghcr.io/imputnet/cobalt:10
-  #   restart: unless-stopped
-  #   labels:
-  #     com.centurylinklabs.watchtower.enable: "true"
-  #   networks:
-  #     - default
-  #   environment:
-  #     API_URL: cobalt-api
 
 volumes:
   cache:

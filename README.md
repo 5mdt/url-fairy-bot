@@ -175,6 +175,17 @@ curl -X POST "http://localhost:8000/process_url/" -H "Content-Type: application/
 
 This flexibility allows you to use URLFairyBot in various applications outside of Telegram, making it a versatile tool for URL cleaning and transformation.
 
+#### Health Endpoints
+
+- **`GET /healthz`**: liveness probe, always returns `200 {"status": "ok"}` while the process is up.
+- **`GET /health`**: readiness probe. Returns `200 {"status": "ok", "polling": true, "pages_seeded": true}`
+  when the Telegram bot's polling loop is alive and the static pages have been seeded, or
+  `503 {"status": "degraded", ...}` with the failing flag(s) set to `false` otherwise.
+
+```bash
+curl -i "http://localhost:8000/health"
+```
+
 ## Contributing
 
 Join the enchanting circle! If you stumble upon a bug or have an idea for a new spell, conjure an issue or send a magical pull request.

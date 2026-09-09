@@ -1,4 +1,5 @@
 # bot.py
+import asyncio
 import logging
 import re
 
@@ -18,6 +19,40 @@ dp = Dispatcher()
 logger = logging.getLogger(__name__)
 
 GROUP_CHAT_TYPES = [ChatType.GROUP, ChatType.SUPERGROUP]
+
+polling_task: asyncio.Task | None = None
+
+
+def _on_polling_done(task: asyncio.Task) -> None:
+    if task.cancelled():
+        logger.info("Bot polling cancelled")
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.error("Bot polling stopped unexpectedly", exc_info=exc)
+
+
+def start_polling() -> None:
+    """Start the bot's polling loop as an observable background task."""
+    global polling_task
+    polling_task = asyncio.create_task(dp.start_polling(bot))
+    polling_task.add_done_callback(_on_polling_done)
+
+
+async def stop_polling() -> None:
+    """Cancel the polling task (if running) and close its resources."""
+    if polling_task is not None:
+        polling_task.cancel()
+        try:
+            await polling_task
+        except asyncio.CancelledError:
+            pass
+    await dp.storage.close()
+    await bot.session.close()
+
+
+def is_polling_alive() -> bool:
+    return polling_task is not None and not polling_task.done()
 
 
 @dp.message(CommandStart())

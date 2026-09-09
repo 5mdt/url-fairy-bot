@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- Docs: `docs/TODO.md` and `docs/BUGS.md` had drifted from
+  `docs/DOCS-DRIVEN-DEVELOPMENT.md`'s spec — `TODO.md` had become a
+  tech-debt list (the doc reserves it for new, not-yet-built behavior) and
+  `FRD.md` was missing the `[x]`/`[ ]` status checkboxes the template
+  requires. Moved every existing `TODO.md` entry into `BUGS.md` under
+  `## Tech debt` or `## Chores` (new IDs `#BUG-0031`–`#BUG-0059`, continuing
+  the shared ID sequence; `TODO.md` is now empty, ready for genuine new-
+  feature ideas), added `[x]` to every `FRD.md` entry (all 34 features are
+  `Implemented`), and documented the `[P#/D#]` priority/difficulty marker
+  convention in `DOCS-DRIVEN-DEVELOPMENT.md` (bumped to v1.2), since that
+  convention was already in active use but undocumented. Also logged
+  `#BUG-0060`: `CLAUDE.md`'s "FRD feature id must be added to functions as
+  comments" rule is barely followed in practice.
+- UFB-0034: added `GET /healthz` (liveness) and `GET /health` (readiness)
+  endpoints. `/health` reports whether the bot's Telegram polling loop is
+  alive and whether the static pages have been seeded, returning 503 when
+  either is false. The polling task is no longer fire-and-forget: `app/bot.py`
+  now keeps a reference to it, logs unexpected failures via a completion
+  callback, and cancels it cleanly on shutdown, fixing BUG-0007 (silent
+  polling death). The `app` image's `Dockerfile` now declares a
+  `HEALTHCHECK` that calls `/health` over HTTP (via busybox `wget`, since
+  `curl` isn't in the runtime image) instead of `docker-compose.yml`
+  testing for the seeded sample file directly — the check now travels
+  with the image for anyone running it outside this compose file too.
 - UFB-0030/UFB-0028: dropped the custom `url-fairy-bot-nginx` image — nginx
   now runs completely unmodified from the stock `nginx:stable-alpine-slim`
   image, with the shared cache volume mounted read-only directly at its
