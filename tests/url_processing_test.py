@@ -37,6 +37,14 @@ from app.url_processing import (
             "https://rxddit.com/r/foo/comments/abc",
         ),
         (
+            "https://www.threads.com/@user/post/abc123",
+            "https://fx.akitsuki.me/@user/post/abc123",
+        ),
+        (
+            "https://threads.com/@user/post/abc123",
+            "https://fx.akitsuki.me/@user/post/abc123",
+        ),
+        (
             "https://www.tiktok.com/@user/video/123",
             "https://tfxktok.com/@user/video/123",
         ),
@@ -81,6 +89,7 @@ def test_apply_rewrite_map_youtube_missing_forms(url):
 
 def test_apply_rewrite_map_respects_overridden_settings(monkeypatch):
     monkeypatch.setattr(settings, "SPOTIFY_MIRROR_DOMAIN", "spotify.mirror.example")
+    monkeypatch.setattr(settings, "THREADS_MIRROR_DOMAIN", "threads.mirror.example")
     monkeypatch.setattr(settings, "TWITTER_MIRROR_DOMAIN", "twitter.mirror.example")
     monkeypatch.setattr(settings, "YOUTUBE_MIRROR_DOMAIN", "yt.mirror.example")
     monkeypatch.setattr(settings, "YOUTUBE_SHORT_MIRROR_DOMAIN", "yt.short.example")
@@ -88,6 +97,10 @@ def test_apply_rewrite_map_respects_overridden_settings(monkeypatch):
     assert (
         apply_rewrite_map("https://open.spotify.com/track/abc")
         == "https://spotify.mirror.example/track/abc"
+    )
+    assert (
+        apply_rewrite_map("https://www.threads.com/@user/post/abc123")
+        == "https://threads.mirror.example/@user/post/abc123"
     )
     assert (
         apply_rewrite_map("https://x.com/user/status/123")
@@ -231,6 +244,11 @@ def test_follow_redirects_handles_connection_error():
 
 def test_apply_rewrite_map_does_not_match_spoofed_spotify_domain():
     url = "https://spotifyXcom.evil.tld/track/abc"
+    assert apply_rewrite_map(url) == url
+
+
+def test_apply_rewrite_map_does_not_match_spoofed_threads_domain():
+    url = "https://threadsXcom.evil.tld/@user/post/abc"
     assert apply_rewrite_map(url) == url
 
 

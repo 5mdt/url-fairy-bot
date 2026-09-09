@@ -10,7 +10,7 @@ flowchart TD
 
     B --> C{"is_domain_allowed(final_url)?<br/>(DOWNLOAD_ALLOWED_DOMAINS,<br/>empty = every domain allowed)"}
 
-    C -- "not allowed" --> D["apply_rewrite_map(final_url)<br/>(gated by REWRITE_ALLOWED_DOMAINS)<br/>Spotify/Instagram/Reddit/TikTok/Twitter/YouTube → mirror domain"]
+    C -- "not allowed" --> D["apply_rewrite_map(final_url)<br/>(gated by REWRITE_ALLOWED_DOMAINS)<br/>Spotify/Instagram/Reddit/Threads/TikTok/Twitter/YouTube → mirror domain"]
     D --> E{"Rewrite changed the URL?"}
     E -- no --> F{"Group chat?"}
     F -- yes --> G["Stay silent"]
@@ -44,7 +44,8 @@ flowchart TD
    and cache the media file. On success, the reply links to the cached file served over HTTP.
 4. **Fallback / mirror rewrite** — a mirror link is offered whenever a download isn't attempted
    (domain excluded by `DOWNLOAD_ALLOWED_DOMAINS`) or fails (unsupported site, network error,
-   yt-dlp error). `apply_rewrite_map()` rewrites Spotify/Instagram/Reddit/TikTok/Twitter/X/YouTube
+   yt-dlp error). `apply_rewrite_map()` rewrites
+   Spotify/Instagram/Reddit/Threads/TikTok/Twitter/X/YouTube
    links to their configured mirror domain, gated by `REWRITE_ALLOWED_DOMAINS` (empty = every
    platform rewritten). The two allow-lists are independent: excluding a domain from one has no
    effect on the other.
