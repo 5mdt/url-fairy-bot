@@ -1,8 +1,9 @@
 .DEFAULT_GOAL := help
 .PHONY: help install sync fmt lint yamllint check test test-cov run pre-commit \
-	docker-build docker-up docker-down docker-logs docker-restart clean
+	docker-build docker-up docker-down docker-logs docker-restart deploy-check clean
 
 UV := uv
+COMPOSE_DEV := sudo docker compose -f docker-compose.yml -f compose.dev.yml
 
 ## help: Show this help
 help:
@@ -26,7 +27,7 @@ lint:
 
 ## yamllint: Lint YAML files (project files only, .venv excluded)
 yamllint:
-	$(UV) run yamllint --no-warnings -s docker-compose.yml .github .pre-commit-config.yaml
+	$(UV) run yamllint --no-warnings -s docker-compose.yml compose.dev.yml .github .pre-commit-config.yaml
 
 ## check: Run fmt, lint, yamllint and tests (use before/after any change)
 check: fmt lint yamllint test
@@ -43,24 +44,28 @@ run:
 pre-commit:
 	$(UV) run pre-commit run --all-files
 
-## docker-build: Build the app image
+## docker-build: Build the app image from source (dev override)
 docker-build:
-	sudo docker compose build
+	$(COMPOSE_DEV) build
 
-## docker-up: Start the stack in the background
+## docker-up: Start the stack in the background, built from source (dev override)
 docker-up:
-	sudo docker compose up -d
+	$(COMPOSE_DEV) up -d
 
 ## docker-down: Stop and remove the stack
 docker-down:
-	sudo docker compose down
+	$(COMPOSE_DEV) down
 
 ## docker-logs: Follow app logs
 docker-logs:
-	sudo docker compose logs -f app
+	$(COMPOSE_DEV) logs -f app
 
 ## docker-restart: Restart the stack
 docker-restart: docker-down docker-up
+
+## deploy-check: Validate the registry-only production compose file alone
+deploy-check:
+	sudo docker compose -f docker-compose.yml config -q
 
 ## clean: Remove caches and build artifacts
 clean:

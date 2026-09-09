@@ -1,0 +1,20 @@
+# compose.dev.yml
+# Local-development override: build images from source instead of pulling
+# from GHCR. Usage: docker compose -f docker-compose.yml -f compose.dev.yml ...
+
+---
+services:
+
+  app:
+    build:
+      context: ./
+    image: url-fairy-bot:dev
+    develop:
+      watch:
+        - action: rebuild
+          path: app/
+
+  nginx:
+    build:
+      context: ./nginx
+    image: url-fairy-bot-nginx:dev

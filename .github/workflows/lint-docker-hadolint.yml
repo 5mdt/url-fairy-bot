@@ -12,9 +12,15 @@ jobs:
   lint-docker-hadolint:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        dockerfile:
+          - ./Dockerfile
+          - ./nginx/Dockerfile
+
     steps:
       - uses: actions/checkout@v7
       - uses: hadolint/hadolint-action@v3.5.0
         with:
-          dockerfile: "./Dockerfile"
+          dockerfile: ${{ matrix.dockerfile }}
           ignore: DL3018

@@ -65,19 +65,15 @@ Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
 
 ## Deploy / infra
 
-- #BUG-0009 the `cron` compose service's cache cleanup runs once and then stops forever — its
-  command is `find ... -delete; find ... -delete; sleep 60m` with no loop, and no service in
-  `docker-compose.yml` has a `restart:` policy. The cache is cleaned exactly once, then the
-  container sleeps 60 minutes and exits, so the `cache` volume grows unbounded until someone
-  manually restarts it. Also note the double slash in `/tmp/url-fairy-bot-cache//`, and that
-  `FILE_TTL` is commented `#days` here but treated as **seconds** by the (unused) `cleanup.sh:135`
-  — the two cleanup mechanisms disagree on units. Add `restart: unless-stopped` and wrap the command
-  in a loop, or switch to `cleanup.sh --serve` (see #BUG-0010) [P2/D2]
 - #BUG-0010 `cleanup.sh` (repo root, 207 lines) is a complete, argument-parsing, env-validating
-  cache-cleanup script — more correct than the inline `cron` service's `find` one-liner
-  (#BUG-0009) — but it is never `COPY`'d into the Docker image and no compose service invokes it,
+  cache-cleanup script — more correct than the inline `cron` service's `find` one-liner, which now
+  relies on `restart: unless-stopped` re-running it every ~60 minutes after `sleep 60m` exits the
+  container, rather than looping internally. Note the double slash in
+  `/tmp/url-fairy-bot-cache//`, and that `FILE_TTL` is commented `#days` in `docker-compose.yml`
+  but treated as **seconds** by `cleanup.sh:135` — the two cleanup mechanisms disagree on units.
+  `cleanup.sh` itself is never `COPY`'d into the Docker image and no compose service invokes it,
   so it has no effect at runtime. Either wire it into the `cron` service (`entrypoint: ["/cleanup.sh",
-  "--serve"]`) or remove it if superseded [P3/D2]
+  "--serve"]`, resolving the unit mismatch in the process) or remove it if superseded [P3/D2]
 - #BUG-0012 the unauthenticated API is an SSRF-capable open proxy — `POST /process_url/`
   (`app/api.py:11-24`) takes an arbitrary string URL with no auth or rate limit, and
   `follow_redirects()` (`app/url_processing.py:47-66`) issues a server-side `HEAD` request to it.

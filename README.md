@@ -21,19 +21,26 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 
 ### Installation
 
-1. Begin your adventure by cloning this repository:
+The bot deploys straight from published images — no repository checkout
+needed, just two files.
+
+1. Fetch the compose file and an example `.env`:
 
    ```bash
-   git clone https://github.com/5mdt/urlfairy-bot.git
-   cd urlfairy-bot
+   curl -sO https://raw.githubusercontent.com/5mdt/url-fairy-bot/main/docker-compose.yml
+   curl -so .env https://raw.githubusercontent.com/5mdt/url-fairy-bot/main/.env.example
    ```
 
-2. Craft a `.env` file in the root directory and set the necessary enchantments:
+2. Edit `.env` and set the necessary enchantments (at minimum):
 
    ```dotenv
    BOT_TOKEN=your_bot_token
    BASE_URL=your_base_url
    ```
+
+   The full list of variables `.env.example` ships with — all optional
+   beyond `BOT_TOKEN`/`BASE_URL` — is documented in
+   [Environment variables](#environment-variables) below.
 
    The bot also lets you override the "mirror" domains it rewrites URLs to
    (e.g. when a platform's domain isn't downloadable). All are optional;
@@ -51,7 +58,8 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
    | `YOUTUBE_MIRROR_DOMAIN`         | `yfxtube.com`        | `music.youtube.com` / `www.youtube.com`    |
    | `YOUTUBE_SHORT_MIRROR_DOMAIN`   | `fxyoutu.be`         | `youtu.be`                               |
 
-3. Create a Traefik reverse proxy `docker-compose.yml` file:
+3. If you don't already run one, create a Traefik reverse proxy stack in a
+   separate `docker-compose.yml` (own directory, own project):
 
    ```yaml
    ---
@@ -71,7 +79,7 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
          - --certificatesResolvers.le.acme.httpChallenge.entryPoint=web
          - --entrypoints.web.http.redirections.entrypoint.to=websecure
          - --entrypoints.web.http.redirections.entrypoint.scheme=https
-         - --providers.docker.network=traefik_default1
+         - --providers.docker.network=traefik_default
       image: "traefik:latest"
       labels:
          com.centurylinklabs.watchtower.enable: "true"
@@ -92,8 +100,11 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 4. Brew your concoction of Docker spells to awaken the bot and API:
 
    ```shell
-   docker-compose up -d
+   docker compose up -d
    ```
+
+   This pulls the published `url-fairy-bot` and `url-fairy-bot-nginx` images
+   from GHCR — no build step, no local source needed.
 
 ## Configuration
 
@@ -103,6 +114,12 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 |---|---|---|
 | `BOT_TOKEN` | _(required)_ | Telegram bot token |
 | `BASE_URL` | _(required)_ | Public base URL for serving downloaded files |
+| `IMAGE_TAG` | `latest` | Tag of the `url-fairy-bot`/`url-fairy-bot-nginx` GHCR images to deploy |
+| `PUBLIC_PORT` | `80:80` | Host:container port mapping for the `nginx` service |
+| `GLOBAL_DATA_FOLDER` | `/Data` | Host directory whose `<folder>/url-fairy-bot/config` is mounted at `/config` (cookie files) |
+| `LETSENCRYPT_RESOLVER_NAME` | `letsencrypt-cloudflare-dns-challenge` | Traefik certresolver name used for TLS |
+| `FILE_TTL` | `3` | Age (in days, or the unit `FILE_TTL_TYPE` selects) after which cached downloads are deleted |
+| `FILE_TTL_TYPE` | `mtime` | `find`-style time predicate suffix used for `FILE_TTL` (e.g. `mtime`, `ctime`) |
 | `CACHE_DIR` | `/tmp/url-fairy-bot-cache/` | Directory for cached downloads |
 | `COOKIES_DIR` | `/config/` | Directory containing cookie files for authenticated downloads |
 | `COOKIE_JAR_ENABLED` | `false` | Use a persistent `cookie_jar.txt` so yt-dlp can save updated session tokens across requests. On first use, the jar is initialized by merging all `cookies*.txt` files in `COOKIES_DIR`. |
@@ -110,6 +127,9 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 | `REWRITE_ALLOWED_DOMAINS` | _(empty)_ | Comma-separated list of domains eligible for mirror-link rewriting (Spotify/Instagram/Reddit/TikTok/Twitter/X/YouTube). Empty means every platform is rewritten (the default). Independent of `DOWNLOAD_ALLOWED_DOMAINS` |
 | `FOLLOW_REDIRECT_TIMEOUT` | `10` | Timeout in seconds when following URL redirects |
 | `LOG_LEVEL` | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+
+See [`.env.example`](.env.example) for a ready-to-copy file with every
+variable, including the mirror-domain overrides above.
 
 ### Cookie Support
 

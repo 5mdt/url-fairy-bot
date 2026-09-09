@@ -3,6 +3,27 @@
 ## Unreleased
 
 - UFB-0029: Threads mirror-domain rewrites
+- Fix: `uvicorn` was missing from `pyproject.toml`'s dependencies — dropped
+  during the Poetry→uv migration (`f083941`) and never noticed because every
+  build since had been reusing an older, still-uvicorn-containing image
+  layer/venv. `entrypoint.sh` requires it directly; a genuinely fresh build
+  from `main` could not start. Re-added as `uvicorn[standard]>=0.30.0,<1.0.0`
+  and regenerated `uv.lock`. Found while verifying UFB-0030 below by building
+  and booting the image from a clean checkout.
+- UFB-0030: registry-only deployment — `app` and a new `url-fairy-bot-nginx`
+  image (built from `nginx/Dockerfile`, baking in `nginx/conf.d/` and
+  `nginx/theme/`) are pulled from GHCR instead of building/bind-mounting from
+  the repo; `docker-compose.yml` no longer needs a checkout to deploy. Fixed
+  `build-and-push.yml`'s GHCR login (missing `registry: ghcr.io`, the reason
+  no image had ever published), replaced deprecated `::set-output` tagging
+  with `docker/metadata-action`, and added `permissions: packages: write`.
+  Also: `restart: unless-stopped` on `app`/`nginx`/`cron` (closes BUG-0009's
+  compose half; TODO-0023), full env pass-through on `app` (TODO-0022),
+  `uv.lock` copied + `uv sync --frozen` at build and `uv run --no-sync` at
+  runtime for reproducible, network-free startup (TODO-0016, TODO-0018), a
+  `.dockerignore` (TODO-0021), a new `.env.example`, and a `compose.dev.yml`
+  override for local source builds. Closes TODO-0014, TODO-0015, TODO-0033,
+  TODO-0034.
 
 ## 2026-08-22
 

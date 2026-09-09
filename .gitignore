@@ -2,6 +2,8 @@ __pycache__
 .*
 *.pyc
 *.zip
+!.dockerignore
+!.env.example
 !.gitea
 !.github
 !.gitignore

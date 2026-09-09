@@ -11,9 +11,9 @@ RUN apk add --no-cache --virtual .build-deps \
 
 WORKDIR /app
 
-COPY ./pyproject.toml ./README.md /app/
+COPY ./pyproject.toml ./uv.lock ./README.md /app/
 
-RUN uv sync --no-dev --no-editable \
+RUN uv sync --frozen --no-dev --no-editable \
     && rm -rf /root/.cache/uv
 
 COPY ./app /app/app

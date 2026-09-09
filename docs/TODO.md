@@ -92,43 +92,18 @@ to both gates exactly like every other platform (2026-08-22).
   every test file in the repo uses the `*_test.py` suffix (`api_test.py`, `bot_test.py`,
   `config_test.py`, `download_test.py`, `url_processing_test.py`) — this hook must be failing (or
   was never actually run) since the tests were added [P3/D1]
-- #TODO-0014 `build-and-push.yml` uses deprecated GitHub Actions patterns: `::set-output` (removed
-  by GitHub, replaced by `$GITHUB_OUTPUT`), `actions/checkout@v2`,
-  `docker/setup-qemu-action@v1`/`setup-buildx-action@v1`, `docker/build-push-action@v2`. Bump to
-  current major versions [P2/D2]
-- #TODO-0015 the `PUSH_DOCKER_IMAGE` step in `build-and-push.yml` ("Set default value for
-  env.PUSH_DOCKER_IMAGE if not defined") exports a variable into a subshell that exits immediately
-  after — it has no effect, and `build-push-action`'s `push: true` is unconditional anyway. Remove
-  the dead step or wire it up for real [P3/D1]
-
 ## Docker / Deploy
 
-- #TODO-0016 `Dockerfile` never copies `uv.lock`, so `uv sync` re-resolves dependencies at build
-  time instead of using the locked versions — builds are not reproducible across time [P2/D1]
 - #TODO-0017 `uv sync --no-dev --no-editable` (`Dockerfile:16`) runs *before* `COPY ./app /app/app`
   (`:19`), so the project's own package is installed empty/stale; the app only works at all because
   `ENV PYTHONPATH="/app"` makes the later-copied `app/` importable directly, bypassing the
   installed (empty) distribution. Reorder the `COPY`s or accept that `uv sync` is only installing
   third-party deps (fine, but worth a comment) [P3/D1]
-- #TODO-0018 `entrypoint.sh` runs `uv run uvicorn ...`, which can trigger `uv` to re-sync/re-resolve
-  at container start. Use `uv run --frozen` (or `--no-sync`) to guarantee the image's locked
-  dependency set is used verbatim at runtime [P2/D1]
 - #TODO-0019 the container runs as root (no `USER` directive in `Dockerfile`). Add a non-root user
   [P2/D2]
 - #TODO-0020 no `HEALTHCHECK` in `Dockerfile` and no `/health` endpoint in `app/main.py` —
   combined with `docs/BUGS.md` BUG-0007 (silent polling death), there's no way for an orchestrator
   to detect a stuck bot [P2/D2]
-- #TODO-0021 no `.dockerignore` — `docker build` context includes `.venv/`, `__pycache__/`,
-  `.ruff_cache/`, `.env`, `.git/`, etc., inflating the build context needlessly (and `.env` in the
-  build context next to `COPY ./pyproject.toml ./README.md /app/` is worth double-checking is
-  never accidentally added) [P2/D1]
-- #TODO-0022 `docker-compose.yml`'s `app` service does not pass through most of the settings
-  documented in `README.md`: `CACHE_DIR`, `COOKIES_DIR`, `COOKIE_JAR_ENABLED`,
-  `FOLLOW_REDIRECT_TIMEOUT`, and `REWRITE_ALLOWED_DOMAINS` are absent from its `environment:`
-  block, so they can only ever take their code defaults in the shipped compose file [P2/D2]
-- #TODO-0023 no service in `docker-compose.yml` has a `restart:` policy — beyond the `cron`
-  service (see `docs/BUGS.md` BUG-0009), `app` and `nginx` will also stay down after a crash until
-  manually restarted [P2/D1]
 
 ## Cookie handling (`app/download.py`)
 
@@ -174,12 +149,6 @@ to both gates exactly like every other platform (2026-08-22).
 
 - #TODO-0032 `README.md`'s License section links `[LICENSE](LICENSE)`, but the file in the repo is
   named `LICENCE` (British spelling) — the link is broken on GitHub (case/path-sensitive) [P3/D1]
-- #TODO-0033 `README.md` step 4 says `docker-compose up -d` (the standalone v1 binary/hyphenated
-  command); the rest of the project (and the user's own tooling conventions) uses `docker compose`
-  (v2 plugin syntax) [P3/D1]
-- #TODO-0034 `README.md` does not document `FILE_TTL`, `FILE_TTL_TYPE`, `PUBLIC_PORT`, or
-  `GLOBAL_DATA_FOLDER`, all of which are used in `docker-compose.yml` and needed for a working
-  deployment. Also doesn't mention `cleanup.sh` at all (see `docs/BUGS.md` BUG-0010) [P3/D1]
 - #TODO-0035 the README's "Example Response" for the REST API
   (`{"status": "success", "data": "https://example.com/processed-url"}`) doesn't match the actual
   response shape produced by `process_url_request` (a Markdown string with emoji and

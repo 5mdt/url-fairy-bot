@@ -8,20 +8,18 @@ networks:
 services:
 
   app:
-    build:
-      context: ./
-    develop:
-      watch:
-        - action: rebuild
-          path: app/
+    image: ghcr.io/5mdt/url-fairy-bot:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     environment:
       BASE_URL: ${BASE_URL:-localhost}
       BOT_TOKEN: ${BOT_TOKEN:-YOUR_BOT_TOKEN}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-""}
+      CACHE_DIR: ${CACHE_DIR:-/tmp/url-fairy-bot-cache/}
+      COOKIES_DIR: ${COOKIES_DIR:-/config/}
+      COOKIE_JAR_ENABLED: ${COOKIE_JAR_ENABLED:-false}
+      FOLLOW_REDIRECT_TIMEOUT: ${FOLLOW_REDIRECT_TIMEOUT:-10}
       DOWNLOAD_ALLOWED_DOMAINS: ${DOWNLOAD_ALLOWED_DOMAINS:-}
+      REWRITE_ALLOWED_DOMAINS: ${REWRITE_ALLOWED_DOMAINS:-}
       SPOTIFY_MIRROR_DOMAIN: ${SPOTIFY_MIRROR_DOMAIN:-fxspotify.com}
       INSTAGRAM_MIRROR_DOMAIN: ${INSTAGRAM_MIRROR_DOMAIN:-kkinstagram.com}
       REDDIT_MIRROR_DOMAIN: ${REDDIT_MIRROR_DOMAIN:-rxddit.com}
@@ -44,7 +42,8 @@ services:
       - default
 
   nginx:
-    image: nginx:stable-alpine-slim
+    image: ghcr.io/5mdt/url-fairy-bot-nginx:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     environment:
       BASE_URL: ${BASE_URL:-localhost}
     labels:
@@ -64,12 +63,11 @@ services:
     networks:
       - traefik_default
     volumes:
-      - ./nginx/conf.d/:/etc/nginx/conf.d
-      - ./nginx/theme/:/theme/:ro
       - cache:/tmp/url-fairy-bot-cache/:ro
 
   cron:
     image: busybox:stable
+    restart: unless-stopped
     environment:
       - FILE_TTL=${FILE_TTL:-3} #days
     volumes:

@@ -17,6 +17,9 @@ container that reads it, and services recover automatically from a crash.
   through it.
 - Compose environment blocks forward every operator-facing setting to the
   service that consumes it.
+- `app` and `nginx` run `restart: unless-stopped`; see
+  [UFB-0030](UFB-0030-registry-only-deployment.md) for images sourced from
+  a registry instead of a local build.
 
 ## Testing
 
@@ -28,12 +31,4 @@ container that reads it, and services recover automatically from a crash.
 
 ## Status
 
-Implemented — with known gaps:
-
-- `CACHE_DIR`, `COOKIES_DIR`, `COOKIE_JAR_ENABLED`, `FOLLOW_REDIRECT_TIMEOUT`,
-  and `REWRITE_ALLOWED_DOMAINS` aren't passed through in the shipped
-  `docker-compose.yml`, so they can only ever take their code defaults (see
-  `TODO.md`, Docker / Deploy).
-- No service defines a `restart:` policy, so `app`/`nginx` also stay down
-  after a crash (see `TODO.md`, Docker / Deploy, and
-  [BUGS #9](../BUGS.md#9-cache-cleanup-cron-compose-service-runs-once-and-then-stops-forever-medium-p2d2)).
+Implemented.
