@@ -11,6 +11,7 @@ from .url_processing import process_url_request
 
 
 # Define a request model to parse JSON body
+# #UFB-0019
 class URLRequest(BaseModel):
     url: str
 
@@ -18,6 +19,7 @@ class URLRequest(BaseModel):
 api_router = APIRouter()
 
 
+# #UFB-0019
 @api_router.post("/process_url/")
 async def process_url(request: URLRequest = Body(...)):
     try:
@@ -27,11 +29,13 @@ async def process_url(request: URLRequest = Body(...)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# #UFB-0034
 @api_router.get("/healthz")
 async def healthz():
     return {"status": "ok"}
 
 
+# #UFB-0034
 @api_router.get("/health")
 async def health():
     polling = is_polling_alive()

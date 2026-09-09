@@ -23,6 +23,7 @@ GROUP_CHAT_TYPES = [ChatType.GROUP, ChatType.SUPERGROUP]
 polling_task: asyncio.Task | None = None
 
 
+# #UFB-0020
 def _on_polling_done(task: asyncio.Task) -> None:
     if task.cancelled():
         logger.info("Bot polling cancelled")
@@ -32,6 +33,7 @@ def _on_polling_done(task: asyncio.Task) -> None:
         logger.error("Bot polling stopped unexpectedly", exc_info=exc)
 
 
+# #UFB-0020
 def start_polling() -> None:
     """Start the bot's polling loop as an observable background task."""
     global polling_task
@@ -39,6 +41,7 @@ def start_polling() -> None:
     polling_task.add_done_callback(_on_polling_done)
 
 
+# #UFB-0020
 async def stop_polling() -> None:
     """Cancel the polling task (if running) and close its resources."""
     if polling_task is not None:
@@ -51,15 +54,18 @@ async def stop_polling() -> None:
     await bot.session.close()
 
 
+# #UFB-0020, #UFB-0034
 def is_polling_alive() -> bool:
     return polling_task is not None and not polling_task.done()
 
 
+# #UFB-0001
 @dp.message(CommandStart())
 async def start(message: Message):
     await message.reply("Hello! Send me a URL to process!")
 
 
+# #UFB-0002, #UFB-0003, #UFB-0004, #UFB-0005, #UFB-0006, #UFB-0014
 @dp.message(F.text)
 async def handle_message(message: Message):
     """

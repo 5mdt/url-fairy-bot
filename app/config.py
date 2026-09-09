@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings  # Updated import
 load_dotenv()
 
 
+# #UFB-0021
 class Settings(BaseSettings):
     BASE_URL: str = os.getenv("BASE_URL", "")
     IV_RHASH: str = os.getenv("IV_RHASH", "")
@@ -26,6 +27,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
 
     # Domain-rewrite mirror destinations (source-matching regex stays in code)
+    # #UFB-0022
     SPOTIFY_MIRROR_DOMAIN: str = os.getenv("SPOTIFY_MIRROR_DOMAIN", "fxspotify.com")
     INSTAGRAM_MIRROR_DOMAIN: str = os.getenv(
         "INSTAGRAM_MIRROR_DOMAIN", "kkinstagram.com"

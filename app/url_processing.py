@@ -16,10 +16,12 @@ logger = logging.getLogger(__name__)
 
 # Query parameters that identify the actual content (e.g. a video id) rather
 # than tracking/affiliate noise. These are preserved when resolving redirects;
-# everything else is stripped. See docs/features/UFB-0008-query-string-stripping.md.
+# everything else is stripped.
+# #UFB-0008
 CONTENT_QUERY_PARAMS = frozenset({"v", "list", "t", "index", "id"})
 
 
+# #UFB-0009, #UFB-0023
 def _domain_in_allowlist(url: str, allowlist_csv: str) -> bool:
     """
     An empty allow-list means unrestricted (every domain matches); a
@@ -39,16 +41,19 @@ def _domain_in_allowlist(url: str, allowlist_csv: str) -> bool:
     )
 
 
+# #UFB-0009
 def is_domain_allowed(url: str) -> bool:
     """Whether `url` may be downloaded via yt-dlp (DOWNLOAD_ALLOWED_DOMAINS)."""
     return _domain_in_allowlist(url, settings.DOWNLOAD_ALLOWED_DOMAINS)
 
 
+# #UFB-0023
 def is_rewrite_allowed(url: str) -> bool:
     """Whether `url` may be rewritten to a mirror link (REWRITE_ALLOWED_DOMAINS)."""
     return _domain_in_allowlist(url, settings.REWRITE_ALLOWED_DOMAINS)
 
 
+# #UFB-0007, #UFB-0008
 def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
     try:
         response = requests.head(url, allow_redirects=True, timeout=timeout)
@@ -71,6 +76,7 @@ def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
         return url
 
 
+# #UFB-0010, #UFB-0011, #UFB-0012, #UFB-0022, #UFB-0023, #UFB-0029
 def apply_rewrite_map(final_url: str) -> str:
     """
     Rewrites URLs from supported platforms to alternative mirror domains.
@@ -142,6 +148,7 @@ def apply_rewrite_map(final_url: str) -> str:
     return final_url
 
 
+# #UFB-0015, #UFB-0032, #UFB-0033
 async def attempt_download(final_url: str) -> str:
     try:
         video_os_path = await yt_dlp_download(final_url)
@@ -166,6 +173,7 @@ async def attempt_download(final_url: str) -> str:
     return None
 
 
+# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0013, #UFB-0014
 async def process_url_request(url: str, is_group_chat: bool = False) -> str:
     url = str(url)  # Ensure url is a string
 

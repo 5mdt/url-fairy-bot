@@ -240,8 +240,3 @@ Maintenance work — CI, dependencies, test/doc hygiene — with no runtime beha
   `docker-compose.yml`. Either it's a leftover from a removed/never-finished feature (e.g. error
   reporting to an admin chat) and should be dropped from `.env`, or it's an undocumented planned
   feature that should be implemented and documented [P3/D1]
-- #BUG-0060 `CLAUDE.md` requires "FRD feature id must be added to functions as comments for easier
-  tracking," but the codebase barely follows it — only one `UFB-` reference exists under `app/`
-  (`app/url_processing.py:19`, and it points at a doc, not a function). Either add the ID comments
-  the convention calls for across `app/`, or drop the rule from `CLAUDE.md` if it isn't meant to be
-  enforced [P3/D2]

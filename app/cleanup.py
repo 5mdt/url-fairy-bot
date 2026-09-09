@@ -1,6 +1,6 @@
 # cleanup.py
 # -*- coding: utf-8 -*-
-# UFB-0026
+# #UFB-0026
 
 import logging
 import os
@@ -16,6 +16,7 @@ _thread: threading.Thread | None = None
 _stop = threading.Event()
 
 
+# #UFB-0026
 def protected_paths() -> set[str]:
     """Absolute paths that must never be swept, regardless of age."""
     return {
@@ -27,6 +28,7 @@ def protected_paths() -> set[str]:
     }
 
 
+# #UFB-0026
 def _is_stale(path: str, ttl_seconds: float) -> bool:
     try:
         atime = os.stat(path).st_atime
@@ -36,6 +38,7 @@ def _is_stale(path: str, ttl_seconds: float) -> bool:
     return (time.time() - atime) > ttl_seconds
 
 
+# #UFB-0026
 def _delete(path: str) -> bool:
     try:
         os.remove(path)
@@ -46,6 +49,7 @@ def _delete(path: str) -> bool:
         return False
 
 
+# #UFB-0026
 def _watch_media_path(watch_html_path: str) -> str | None:
     """Best-effort reverse of watch_page_path: the media file a watch page
     was generated for, by stem match against CACHE_DIR's top level."""
@@ -59,6 +63,7 @@ def _watch_media_path(watch_html_path: str) -> str | None:
     return None
 
 
+# #UFB-0026
 def _sweep_watch_page(path: str, ttl_seconds: float) -> bool:
     """A watch page is swept once its media file is stale, or is gone."""
     media_path = _watch_media_path(path)
@@ -66,6 +71,7 @@ def _sweep_watch_page(path: str, ttl_seconds: float) -> bool:
     return stale and _delete(path)
 
 
+# #UFB-0026
 def _sweep_media_file(path: str, filename: str, protected: set[str]) -> bool:
     watch_path = watch_page_path(filename)
     if watch_path not in protected and os.path.exists(watch_path):
@@ -73,6 +79,7 @@ def _sweep_media_file(path: str, filename: str, protected: set[str]) -> bool:
     return _delete(path)
 
 
+# #UFB-0026
 def _prune_empty_dirs() -> None:
     for root, dirs, filenames in os.walk(settings.CACHE_DIR, topdown=False):
         if root == settings.CACHE_DIR or dirs or filenames:
@@ -84,6 +91,7 @@ def _prune_empty_dirs() -> None:
             logger.warning(f"Failed to remove empty directory {root}: {e}")
 
 
+# #UFB-0026
 def sweep_once() -> int:
     """Delete cache files untouched longer than FILE_TTL. Returns the number
     of files deleted."""
@@ -107,6 +115,7 @@ def sweep_once() -> int:
     return deleted
 
 
+# #UFB-0026
 def _run() -> None:
     logger.info(
         f"Cache cleanup thread started (FILE_TTL={settings.FILE_TTL}d, "
@@ -123,6 +132,7 @@ def _run() -> None:
     logger.info("Cache cleanup thread stopped")
 
 
+# #UFB-0026
 def start_cleanup() -> None:
     """Start the cleanup thread as an observable background worker."""
     global _thread
@@ -131,6 +141,7 @@ def start_cleanup() -> None:
     _thread.start()
 
 
+# #UFB-0026
 def stop_cleanup() -> None:
     """Signal the cleanup thread to stop and wait for it to exit."""
     _stop.set()
@@ -138,5 +149,6 @@ def stop_cleanup() -> None:
         _thread.join(timeout=5)
 
 
+# #UFB-0026, #UFB-0034
 def is_cleanup_alive() -> bool:
     return _thread is not None and _thread.is_alive()

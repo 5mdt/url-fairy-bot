@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Tooling: every top-level function/class in `app/` now carries the `#UFB-NNNN`
+  feature-id comment(s) `CLAUDE.md` requires (fixing `#BUG-0060`); a new
+  `tests/frd_traceability_test.py` fails if one is missing or points at an ID not in
+  `docs/FRD.md`. `docs/DOCS-DRIVEN-DEVELOPMENT.md` bumped to 1.3 to spell out the format.
 - UFB-0026: replaced both cache-cleanup mechanisms (the `cron` compose service's `find -mtime`
   one-liner, which deleted actively-served files and the seeded static pages —
   fixing `#BUG-0030` — and the unused, never-shipped `cleanup.sh`, whose `FILE_TTL` unit

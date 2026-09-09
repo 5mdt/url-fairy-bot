@@ -1,6 +1,6 @@
 # Docs-Driven Development Approach
 
-**Version:** 1.2 · **Last updated:** 2026-09-09
+**Version:** 1.3 · **Last updated:** 2026-09-09
 
 <!-- Bump both whenever this document's rules or templates change. -->
 
@@ -25,6 +25,10 @@
   prose mentions that aren't linking to the doc itself (e.g. `paging #MDV-0018`).
   When linking to the feature doc from within `docs/`, use a real Markdown link
   (`[<PREFIX>-NNNN](<PREFIX>-NNNN-slug.md)`), not a bare mention.
+- Every top-level function/class implementing a feature carries the `#<PREFIX>-NNNN`
+  IDs it implements, either as a comment directly above it or as the first line of its
+  docstring (multiple IDs, comma-separated). This is what CLAUDE.md's "FRD feature id
+  must be added to functions as comments" rule means in practice.
 
 ## Directory layout
 

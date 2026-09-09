@@ -16,12 +16,14 @@ logger = logging.getLogger(__name__)
 COOKIE_JAR_PATH = os.path.join(settings.COOKIES_DIR, "cookie_jar.txt")
 
 
+# #UFB-0013
 class UnsupportedUrlError(Exception):
     """Custom exception for unsupported URLs"""
 
     pass
 
 
+# #UFB-0017
 def _write_merged_cookies(dest: str, cookie_files: list[str]) -> None:
     with open(dest, "w", encoding="utf-8") as out:
         out.write("# Netscape HTTP Cookie File\n")
@@ -35,6 +37,7 @@ def _write_merged_cookies(dest: str, cookie_files: list[str]) -> None:
                 logger.warning(f"Failed to read cookies file {path}: {e}")
 
 
+# #UFB-0017, #UFB-0018
 def _resolve_cookie_path(cookie_files: list[str]) -> tuple[str, bool]:
     """Returns (cookie_file_path, should_delete_after)."""
     if settings.COOKIE_JAR_ENABLED:
@@ -54,8 +57,9 @@ def _resolve_cookie_path(cookie_files: list[str]) -> tuple[str, bool]:
     return tmp.name, True
 
 
+# #UFB-0026
 def _touch_atime(path: str) -> None:
-    """UFB-0026: mark a cache hit as a touch so it isn't swept as stale."""
+    """Mark a cache hit as a touch so it isn't swept as stale."""
     try:
         st = os.stat(path)
         os.utime(path, (time.time(), st.st_mtime))
@@ -63,6 +67,7 @@ def _touch_atime(path: str) -> None:
         logger.warning(f"Failed to refresh atime for {path}: {e}")
 
 
+# #UFB-0015, #UFB-0016, #UFB-0017
 async def yt_dlp_download(url: str) -> str:
     video_path = os.path.join(settings.CACHE_DIR, f"{sanitize_subfolder_name(url)}.mp4")
 
@@ -120,5 +125,6 @@ async def yt_dlp_download(url: str) -> str:
         ) from e
 
 
+# #UFB-0016
 def sanitize_subfolder_name(url: str) -> str:
     return "".join(c if c.isalnum() else "_" for c in url)
