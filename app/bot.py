@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 GROUP_CHAT_TYPES = [ChatType.GROUP, ChatType.SUPERGROUP]
 
 
+@dp.message(CommandStart())
 async def start(message: Message):
     await message.reply("Hello! Send me a URL to process!")
 
@@ -68,8 +69,3 @@ async def handle_message(message: Message):
             await message.reply(
                 "Invalid URL provided — that doesn't look like a valid URL."
             )
-
-
-def start_bot():
-    dp.message.register(start, CommandStart())
-    dp.run_polling(bot, skip_updates=False)

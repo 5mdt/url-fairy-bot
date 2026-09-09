@@ -38,5 +38,3 @@ Implemented — with known gaps:
   ([BUGS #7](../BUGS.md#7-bot-polling-failures-are-silent-medium-p2d2)).
 - No `/health` endpoint or container healthcheck exists to expose this at
   all (see `TODO.md`, Docker / Deploy).
-- `/start` isn't registered on this startup path either
-  ([BUGS #4](../BUGS.md#4-start-command-handler-is-unreachable-medium-p2d1)).

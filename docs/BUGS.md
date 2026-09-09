@@ -13,15 +13,6 @@ Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
 
 ## Bot / entrypoint
 
-- #BUG-0004 `/start` is unreachable — `start_bot()` (`app/bot.py:73-75`) is the only place that
-  registers it (`dp.message.register(start, CommandStart())`) before calling
-  `dp.run_polling(bot, skip_updates=False)`, but nothing calls `start_bot()`. The real entrypoint,
-  `app/main.py`'s `lifespan()` (`:20-27`), imports `bot, dp` directly from `.bot` and starts polling
-  itself (`asyncio.create_task(dp.start_polling(bot))`, `:23`) without ever registering the
-  `CommandStart()` handler. Sending `/start` falls through to `handle_message`'s plain-text handler
-  ("Please send a valid URL to process!") instead of the intended greeting; `start_bot()`/`start()`
-  are dead code in production. Register the handler inside `lifespan()`, or at module import time in
-  `bot.py` [P2/D1]
 - #BUG-0006 blocking network/CPU calls run directly on the asyncio event loop — the
   redirect-following `requests.head()` (`app/url_processing.py:49`) and yt-dlp's `ydl.download()`
   (`app/download.py:74-84`) are both synchronous calls invoked from `async def` functions with no

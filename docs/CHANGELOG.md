@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- UFB-0001: `/start` now actually reachable — the handler is registered at
+  module import, ahead of the catch-all text handler, instead of only inside
+  the unused `start_bot()`; `start_bot()` removed (BUG-0004).
 - UFB-0029: Threads mirror-domain rewrites
 - Fix: `uvicorn` was missing from `pyproject.toml`'s dependencies — dropped
   during the Poetry→uv migration (`f083941`) and never noticed because every

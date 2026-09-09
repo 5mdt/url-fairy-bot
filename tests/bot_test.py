@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiogram.enums import ParseMode
 
-from app.bot import handle_message
+from app.bot import dp, handle_message, start
 
 
 def make_message(text, chat_type="private", reply_to_message=None):
@@ -15,6 +15,36 @@ def make_message(text, chat_type="private", reply_to_message=None):
     message.reply_to_message = reply_to_message
     message.reply = AsyncMock()
     return message
+
+
+# --- /start greeting (BUG-0004) ---
+
+
+@pytest.mark.asyncio
+async def test_start_in_private_chat_gets_greeting():
+    message = make_message("/start", chat_type="private")
+    await start(message)
+    message.reply.assert_awaited_once_with("Hello! Send me a URL to process!")
+
+
+@pytest.mark.asyncio
+async def test_start_in_group_chat_gets_greeting():
+    message = make_message("/start", chat_type="group")
+    await start(message)
+    message.reply.assert_awaited_once_with("Hello! Send me a URL to process!")
+
+
+def test_start_is_registered_before_the_catch_all_text_handler():
+    """
+    Regression test for BUG-0004: `start` must be registered ahead of
+    `handle_message` (`@dp.message(F.text)`), or `/start` — which is valid
+    text — gets routed to the catch-all handler first, since aiogram
+    dispatches to the first registered handler whose filters match.
+    """
+    callbacks = [h.callback for h in dp.message.handlers]
+    assert start in callbacks
+    assert handle_message in callbacks
+    assert callbacks.index(start) < callbacks.index(handle_message)
 
 
 # --- no URL in the message ---

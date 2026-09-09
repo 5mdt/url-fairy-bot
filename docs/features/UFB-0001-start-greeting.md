@@ -22,8 +22,4 @@ the user to send a URL.
 
 ## Status
 
-Implemented — with known gaps:
-
-- The handler is only registered inside a function nothing calls; in the
-  actual running process `/start` falls through to the generic
-  no-URL-found reply instead ([BUGS #4](../BUGS.md#4-start-command-handler-is-unreachable-medium-p2d1)).
+Implemented
