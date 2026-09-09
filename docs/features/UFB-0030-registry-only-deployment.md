@@ -10,14 +10,21 @@ sufficient to bring up `app`, `nginx`, and `cron`.
 
 ## Implementation
 
-- `app` and `nginx` both pull `image:` references from GHCR
-  (`ghcr.io/5mdt/url-fairy-bot` and `ghcr.io/5mdt/url-fairy-bot-nginx`)
-  instead of building from the working tree.
-- `nginx/conf.d/` and `nginx/theme/` are baked into the `url-fairy-bot-nginx`
-  image (`nginx/Dockerfile`) instead of bind-mounted from the repo — see
+- `app` pulls its `image:` reference from GHCR (`ghcr.io/5mdt/url-fairy-bot`)
+  instead of building from the working tree; see
   [UFB-0028](UFB-0028-multi-arch-ci-image-publishing.md).
-- Local development keeps building from source via a `compose.dev.yml`
-  override (`docker compose -f docker-compose.yml -f compose.dev.yml`).
+- `nginx` uses the stock `nginx:stable-alpine-slim` image.
+- `app` declares a `healthcheck` (checks that
+  `<CACHE_DIR>/watch/sample.html` exists) and `nginx` has
+  `depends_on: app: condition: service_healthy`, so nginx never starts
+  before the app has finished seeding the shared volume. Without this,
+  nginx's very first lookup of a not-yet-written path can leave that path
+  404ing indefinitely on some filesystems, even after the app writes the
+  file — observed with `overlayfs` in testing.
+- Local development keeps building the app from source via a
+  `compose.dev.yml` override (`docker compose -f docker-compose.yml -f
+  compose.dev.yml`); nginx needs no dev override since it isn't built at
+  all.
 
 ## Testing
 
@@ -26,9 +33,12 @@ sufficient to bring up `app`, `nginx`, and `cron`.
 - From a directory with only `docker-compose.yml` and a filled-in `.env`
   (no repo checkout): `docker compose pull && docker compose up -d` brings
   up all three services.
-- A cached file requested through `nginx` still gets the themed
-  header/footer, and an unknown path still gets the themed 404 — proof the
-  baked-in image serves the same config/theme the bind mounts used to.
+- A cached file requested through `nginx` is served unchanged, and an
+  unknown path still gets the app-generated 404.
+- A cold `docker compose up -d` (empty volume) → `/`, `/watch/sample.html`,
+  and every seeded static asset return 200 immediately, with no manual
+  intervention, across repeated fresh starts — the regression case for the
+  startup race above.
 
 ## Status
 

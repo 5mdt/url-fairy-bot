@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 
+from . import pages
 from .api import api_router
 from .bot import bot, dp  # Import the bot and dispatcher directly
 
@@ -19,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    try:
+        pages.seed_static_pages()
+    except OSError as e:
+        logger.warning(f"Failed to seed static pages: {e}")
     # Start the bot's polling in a background task
     asyncio.create_task(dp.start_polling(bot))
     yield

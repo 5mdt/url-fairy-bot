@@ -19,7 +19,8 @@ container that reads it, and services recover automatically from a crash.
   service that consumes it.
 - `app` and `nginx` run `restart: unless-stopped`; see
   [UFB-0030](UFB-0030-registry-only-deployment.md) for images sourced from
-  a registry instead of a local build.
+  a registry instead of a local build, and for why `nginx` waits on `app`'s
+  healthcheck before starting.
 
 ## Testing
 

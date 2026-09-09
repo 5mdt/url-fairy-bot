@@ -256,15 +256,48 @@ def test_apply_rewrite_map_does_not_match_spoofed_threads_domain():
 
 
 @pytest.mark.asyncio
-async def test_attempt_download_success(monkeypatch):
+async def test_attempt_download_success(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "BASE_URL", "example.test")
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
     with patch(
         "app.url_processing.yt_dlp_download",
         new=AsyncMock(return_value="/cache/some_video.mp4"),
     ):
         result = await attempt_download("https://tiktok.com/@user/video/1")
 
-    assert "example.test/some_video.mp4" in result
+    assert "https://example.test/watch/some_video.html" in result
+    assert "https://tiktok.com/@user/video/1" in result
+    assert (tmp_path / "watch" / "some_video.html").exists()
+
+
+@pytest.mark.asyncio
+async def test_attempt_download_percent_encodes_watch_page_url(monkeypatch, tmp_path):
+    monkeypatch.setattr(settings, "BASE_URL", "example.test")
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    with patch(
+        "app.url_processing.yt_dlp_download",
+        new=AsyncMock(return_value="/cache/some video (1).mp4"),
+    ):
+        result = await attempt_download("https://tiktok.com/@user/video/1")
+
+    assert "https://example.test/watch/some%20video%20%281%29.html" in result
+
+
+@pytest.mark.asyncio
+async def test_attempt_download_uses_instant_view_link_when_rhash_set(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(settings, "BASE_URL", "example.test")
+    monkeypatch.setattr(settings, "IV_RHASH", "abc123")
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    with patch(
+        "app.url_processing.yt_dlp_download",
+        new=AsyncMock(return_value="/cache/some_video.mp4"),
+    ):
+        result = await attempt_download("https://tiktok.com/@user/video/1")
+
+    expected_page_url = "https%3A%2F%2Fexample.test%2Fwatch%2Fsome_video.html"
+    assert f"https://t.me/iv?url={expected_page_url}&rhash=abc123" in result
     assert "https://tiktok.com/@user/video/1" in result
 
 
@@ -346,10 +379,13 @@ async def test_process_url_request_disallowed_with_rewrite_group(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_process_url_request_disallowed_download_allows_everything_by_default():
+async def test_process_url_request_disallowed_download_allows_everything_by_default(
+    monkeypatch, tmp_path
+):
     # Default (empty) DOWNLOAD_ALLOWED_DOMAINS means every domain is allowed
     # for download — a real download is attempted rather than a mirror
     # offered.
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
     with (
         patch(
             "app.url_processing.follow_redirects",
@@ -362,15 +398,16 @@ async def test_process_url_request_disallowed_download_allows_everything_by_defa
     ):
         result = await process_url_request("https://example.com/x", is_group_chat=False)
     mock_download.assert_called_once()
-    assert "vid.mp4" in result
+    assert "vid.html" in result
 
 
 @pytest.mark.asyncio
-async def test_process_url_request_youtube_downloads_by_default(monkeypatch):
+async def test_process_url_request_youtube_downloads_by_default(monkeypatch, tmp_path):
     # YouTube is no longer special-cased: with the default (empty)
     # DOWNLOAD_ALLOWED_DOMAINS, a YouTube URL is downloaded like any other
     # platform rather than mirrored.
     monkeypatch.setattr(settings, "BASE_URL", "example.test")
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
     with (
         patch(
             "app.url_processing.follow_redirects",
@@ -385,7 +422,7 @@ async def test_process_url_request_youtube_downloads_by_default(monkeypatch):
             "https://www.youtube.com/watch?v=abc123", is_group_chat=False
         )
     mock_download.assert_called_once()
-    assert "example.test/vid.mp4" in result
+    assert "example.test/watch/vid.html" in result
 
 
 @pytest.mark.asyncio
@@ -427,13 +464,14 @@ async def test_process_url_request_youtube_no_mirror_when_both_disallowed(
 
 @pytest.mark.asyncio
 async def test_process_url_request_youtube_falls_through_to_download_when_rewrite_disallowed(
-    monkeypatch,
+    monkeypatch, tmp_path
 ):
     # REWRITE_ALLOWED_DOMAINS excludes YouTube, but DOWNLOAD_ALLOWED_DOMAINS
     # is left at its permissive default — the download proceeds instead of
     # being mirrored.
     monkeypatch.setattr(settings, "REWRITE_ALLOWED_DOMAINS", "tiktok.com")
     monkeypatch.setattr(settings, "BASE_URL", "example.test")
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
     with (
         patch(
             "app.url_processing.follow_redirects",
@@ -448,7 +486,7 @@ async def test_process_url_request_youtube_falls_through_to_download_when_rewrit
             "https://www.youtube.com/watch?v=abc123", is_group_chat=False
         )
     mock_download.assert_called_once()
-    assert "example.test/vid.mp4" in result
+    assert "example.test/watch/vid.html" in result
 
 
 @pytest.mark.asyncio
@@ -473,9 +511,10 @@ async def test_process_url_request_youtube_mirrored_on_download_failure():
 
 
 @pytest.mark.asyncio
-async def test_process_url_request_allowed_download_succeeds(monkeypatch):
+async def test_process_url_request_allowed_download_succeeds(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "DOWNLOAD_ALLOWED_DOMAINS", "tiktok.com")
     monkeypatch.setattr(settings, "BASE_URL", "example.test")
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
     with (
         patch(
             "app.url_processing.follow_redirects",
@@ -489,7 +528,7 @@ async def test_process_url_request_allowed_download_succeeds(monkeypatch):
         result = await process_url_request(
             "https://www.tiktok.com/@user/video/1", is_group_chat=False
         )
-    assert "example.test/vid.mp4" in result
+    assert "example.test/watch/vid.html" in result
 
 
 @pytest.mark.asyncio

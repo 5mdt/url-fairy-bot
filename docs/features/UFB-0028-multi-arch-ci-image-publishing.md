@@ -12,18 +12,18 @@ when one applies.
 ## Implementation
 
 - A CI workflow builds `linux/amd64`, `linux/arm`, and `linux/arm64` images
-  for two targets — `Dockerfile` (the app) and `nginx/Dockerfile` (config +
-  theme baked in, see [UFB-0030](UFB-0030-registry-only-deployment.md)) —
-  and pushes both to GHCR under the repository owner's namespace as
-  `url-fairy-bot` and `url-fairy-bot-nginx`.
+  from `Dockerfile` (the app) and pushes to GHCR under the repository
+  owner's namespace as `url-fairy-bot`. There is no separate nginx image to
+  build; see [UFB-0030](UFB-0030-registry-only-deployment.md) for the image
+  it runs instead.
 - Tags are derived with `docker/metadata-action`.
 
 ## Testing
 
 ### Integration
 
-- A push to main → new `latest` and `<sha>`-tagged images published for
-  both `url-fairy-bot` and `url-fairy-bot-nginx`.
+- A push to main → new `latest` and `<sha>`-tagged `url-fairy-bot` images
+  published.
 - A tagged release → an additional matching-tag image published.
 
 ## Status

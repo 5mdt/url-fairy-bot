@@ -1,6 +1,9 @@
 # compose.dev.yml
-# Local-development override: build images from source instead of pulling
-# from GHCR. Usage: docker compose -f docker-compose.yml -f compose.dev.yml ...
+# Local-development override: build the app image from source instead of
+# pulling from GHCR. nginx has no image of its own to build — it's the
+# stock nginx image, completely unmodified, so dev and prod use it
+# identically. Usage:
+# docker compose -f docker-compose.yml -f compose.dev.yml ...
 
 ---
 services:
@@ -13,8 +16,3 @@ services:
       watch:
         - action: rebuild
           path: app/
-
-  nginx:
-    build:
-      context: ./nginx
-    image: url-fairy-bot-nginx:dev

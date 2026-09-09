@@ -5,6 +5,7 @@ networks:
   traefik_default:
     external: true
   default:
+
 services:
 
   app:
@@ -12,6 +13,7 @@ services:
     restart: unless-stopped
     environment:
       BASE_URL: ${BASE_URL:-localhost}
+      IV_RHASH: ${IV_RHASH:-}
       BOT_TOKEN: ${BOT_TOKEN:-YOUR_BOT_TOKEN}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CACHE_DIR: ${CACHE_DIR:-/tmp/url-fairy-bot-cache/}
@@ -40,12 +42,23 @@ services:
       - 8000:8000
     networks:
       - default
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          test -f
+          "${CACHE_DIR:-/tmp/url-fairy-bot-cache/}/watch/sample.html"
+      interval: 2s
+      timeout: 2s
+      retries: 30
+      start_period: 5s
 
   nginx:
-    image: ghcr.io/5mdt/url-fairy-bot-nginx:${IMAGE_TAG:-latest}
+    image: nginx:stable-alpine-slim
     restart: unless-stopped
-    environment:
-      BASE_URL: ${BASE_URL:-localhost}
+    depends_on:
+      app:
+        condition: service_healthy
     labels:
       com.centurylinklabs.watchtower.enable: "true"
       traefik.docker.network: traefik_default
@@ -63,7 +76,7 @@ services:
     networks:
       - traefik_default
     volumes:
-      - cache:/tmp/url-fairy-bot-cache/:ro
+      - cache:/usr/share/nginx/html:ro
 
   cron:
     image: busybox:stable

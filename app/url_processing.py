@@ -3,12 +3,13 @@
 import logging
 import os
 import re
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
 import requests
 
 from app.config import settings
 
+from . import pages
 from .download import UnsupportedUrlError, yt_dlp_download
 
 logger = logging.getLogger(__name__)
@@ -146,7 +147,17 @@ async def attempt_download(final_url: str) -> str:
         video_os_path = await yt_dlp_download(final_url)
         if video_os_path:
             video_path = os.path.join(*video_os_path.split(os.path.sep)[-1:])
-            return f"[⏯️ Watch or ⏬ Download](https://{settings.BASE_URL}/{video_path})\n\n[📎]({final_url})"
+            try:
+                pages.write_watch_page(video_path)
+            except OSError as e:
+                logger.error(f"Failed to write watch page for {video_path}: {e}")
+            page_url = pages.watch_page_url(video_path)
+            watch_url = (
+                f"https://t.me/iv?url={quote(page_url, safe='')}&rhash={settings.IV_RHASH}"
+                if settings.IV_RHASH
+                else page_url
+            )
+            return f"[⏯️ Watch or ⏬ Download]({watch_url})\n\n[📎]({final_url})"
     except UnsupportedUrlError:
         raise
     except Exception as e:

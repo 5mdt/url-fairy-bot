@@ -4,24 +4,22 @@
 
 ## Behavior
 
-Cached downloaded files are served over plain HTTP at `BASE_URL`, wrapped in
-a themed header/footer, with a custom 404 page for missing files. Each file
-is retrievable at its exact path. A browsable index of the cache lives at
-`/cache/`, see [UFB-0031](UFB-0031-landing-page-and-cache-index.md).
+Cached downloaded files are served over plain HTTP at `BASE_URL`. Each file
+is retrievable at its exact path, with a themed 404 page for missing files.
 
 ## Implementation
 
-- A reverse-proxying web server serves the cache directory read-only, with
-  header/footer/404 templates injected around file responses.
+- nginx serves the cache directory read-only as plain static files — no
+  server-side templating. The landing page, 404 page, and per-file watch
+  pages are pre-rendered by the app; see
+  [UFB-0033](UFB-0033-static-page-generation.md).
 
 ## Testing
 
 ### Integration
 
-- Requesting a known cached file's URL → file served with the themed
-  wrapper.
-- Requesting an unknown path → themed 404 page.
-- Requesting `/` → the landing page, not a listing of cached files.
+- Requesting a known cached file's URL → the file served as-is.
+- Requesting an unknown path → the generated 404 page.
 
 ## Status
 

@@ -2,11 +2,11 @@
 
 Automation/behavior misbehaving today. Complexity, cleanup, and missing coverage go in
 `docs/TODO.md` instead. Entries are deleted when fixed (the fix gets a `docs/CHANGELOG.md`
-bullet); IDs are never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0030**.
+bullet); IDs are never reused or renumbered, so deletions leave gaps. Next free ID: **BUG-0031**.
 
 Each entry ends with a `[P#/D#]` marker:
 
-```
+```text
 Priority:   P1 = high     P2 = medium   P3 = low
 Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
 ```
@@ -38,24 +38,33 @@ Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
 
 ## Downloads / cache
 
-- #BUG-0014 cache filenames are unbounded, non-deduplicated, and directory-unsafe — the output
-  filename (`app/download.py:56-57,112-113`, `sanitize_subfolder_name`) is the *entire* input URL
-  with non-alphanumeric characters replaced by `_`, with no length cap, no lock/mutex around "does
-  this file already exist" (`:59-61`), and `settings.CACHE_DIR` is never created (`os.makedirs`)
-  before use. A sufficiently long URL can exceed the filesystem's ~255-byte filename limit and raise
-  `OSError`; two concurrent requests for the same not-yet-cached URL both start a download; a
-  missing `CACHE_DIR` fails the first write outright. Now that the cache has a deliberate public
-  index at `/cache/` ([UFB-0031](features/UFB-0031-landing-page-and-cache-index.md)), these
-  URL-derived filenames are also the entire remaining privacy exposure — anyone browsing the index
-  can read exactly which URLs users sent the bot. Hash the URL (e.g. truncated sha256) instead
-  of transliterating it, add an `asyncio.Lock` per in-flight URL, and
-  `os.makedirs(..., exist_ok=True)` at startup [P2/D2]
+- #BUG-0014 cache filenames are unbounded and non-deduplicated — the output filename
+  (`app/download.py:56-57,112-113`, `sanitize_subfolder_name`) is the *entire* input URL with
+  non-alphanumeric characters replaced by `_`, with no length cap and no lock/mutex around "does
+  this file already exist" (`:59-61`). A sufficiently long URL can exceed the filesystem's
+  ~255-byte filename limit and raise `OSError`; two concurrent requests for the same
+  not-yet-cached URL both start a download. (The public `/cache/` listing that used to make these
+  URL-derived filenames browsable, and the missing `CACHE_DIR` creation, are both gone — see
+  [UFB-0031](features/UFB-0031-landing-page-and-cache-index.md) and
+  [UFB-0033](features/UFB-0033-static-page-generation.md).) Hash the URL (e.g. truncated sha256)
+  instead of transliterating it, and add an `asyncio.Lock` per in-flight URL [P2/D2]
 - #BUG-0015 downloaded files are always saved with a `.mp4` extension — `outtmpl`
   (`app/download.py:57,64-67`) is hardcoded to end in `.mp4` while `"format": "best"` lets yt-dlp
   choose whatever container the best available stream is in (webm, mkv, etc.), and the Docker image
   installs no `ffmpeg`, so yt-dlp can't remux/merge into a real `.mp4` when needed. Files are
-  frequently mislabeled and can fail to play in strict players/browsers. Let yt-dlp choose the real
+  frequently mislabeled and can fail to play in strict players/browsers. Now that
+  [UFB-0032](features/UFB-0032-telegram-instant-view-embeds.md)'s `/watch/<file>` page declares
+  `og:video:type: video/mp4` unconditionally, a mislabeled file also fails to play in Telegram's
+  inline preview card, not just in strict browsers. Let yt-dlp choose the real
   extension (`%(ext)s`) and install `ffmpeg` if format merging is desired [P3/D2]
+- #BUG-0030 seeded permanent pages only survive until the next TTL sweep — `seed_static_pages`
+  (`app/pages.py`) writes the landing page, 404 page, and the Instant View sample clip/page into
+  `CACHE_DIR` at startup only ([UFB-0033](features/UFB-0033-static-page-generation.md)), and the
+  cron cleanup (`docker-compose.yml`) deletes anything in `CACHE_DIR` older than `FILE_TTL` with no
+  exemption. On a long-running deployment that isn't restarted within `FILE_TTL` days, `/`,
+  the 404 page, and the registered Instant View sample URL all start 404ing until the app next
+  restarts. Exclude the seeded filenames from the cleanup `find`, or have the app re-seed on an
+  interval instead of only at startup [P2/D2]
 
 ## Deploy / infra
 

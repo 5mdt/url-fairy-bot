@@ -5,7 +5,7 @@ RUN apk add --no-cache --virtual .build-deps \
         libffi-dev \
         openssl-dev \
         curl \
-    && pip install --no-cache-dir uv \
+    && pip install --no-cache-dir uv==0.12.11 \
     && apk del .build-deps \
     && rm -rf /root/.cache/pip
 

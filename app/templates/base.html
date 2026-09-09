@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🪄 URL-Fairy</title>
+    <title>{% block title %}🪄 URL-Fairy{% endblock %}</title>
+    {% block meta %}{% endblock %}
     <style>
         body {
-            align-self: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
             background-color: #2e3440;
             color: #d8dee9;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 1.2em;
-            margin: 20px;
+            align-self: center;
+            font-size: larger;
             word-wrap: break-word;
         }
+
         @media (prefers-color-scheme: dark) {
             body {
                 background-color: #2e3440;
@@ -22,38 +24,40 @@
         }
 
         h1 {
-            display: none;
-        }
-        h2 {
             color: #88c0d0;
         }
 
-        pre {
-            background-color: #3b4252;
+        video {
+            max-width: 100%;
             border-radius: 5px;
+            background-color: #3b4252;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            background-color: #3b4252;
             color: #d8dee9;
             padding: 10px;
-            white-space: pre-wrap;
+            border-radius: 5px;
         }
 
         a {
             color: #81a1c1;
             text-decoration: underline;
-            line-height: 250%;
         }
 
         a[href$=".mp4"]::before {
             content: "⬇️ ";
         }
+
         a:hover {
             text-decoration: underline;
         }
-            </style>
+    </style>
 </head>
 <body>
-    <h2>Hi, this is ✨URL Fairy✨ speaking:</h1>
-    <p>I ✨magically✨ downloaded some files 📂</p>
-    <p>You can watch file, by tapping link with ⬇️ emojii down there</p>
-    <p>Or dowload it with long tap, my sweet cutie pie 💖</p>
+    {% block content %}{% endblock %}
+<hr>
+    {% include "_footer.html" %}
 </body>
 </html>

@@ -2,11 +2,11 @@
 
 Cleanups, simplifications, and missing coverage. Behavior actually misbehaving today goes in
 `docs/BUGS.md` instead. Entries are deleted when done (the fix gets a `docs/CHANGELOG.md` bullet);
-IDs are never reused or renumbered, so deletions leave gaps. Next free ID: **TODO-0038**.
+IDs are never reused or renumbered, so deletions leave gaps. Next free ID: **TODO-0040**.
 
 Each entry ends with a `[P#/D#]` marker:
 
-```
+```text
 Priority:   P1 = high     P2 = medium   P3 = low
 Difficulty: D1 = trivial  D2 = small    D3 = medium   D4 = large
 ```
@@ -42,6 +42,18 @@ to both gates exactly like every other platform (2026-08-22).
   site means editing code. Consider making rewrite rules dynamically configurable, e.g. an
   operator-supplied list of `{match_regex, mirror_domain}` rules (via env var or config file)
   instead of one Python tuple per platform [P3/D3]
+
+- #TODO-0038 evaluate [cobalt](https://github.com/imputnet/cobalt) as an alternative (or
+  additional) downloader to `yt-dlp` (`app/download.py`) — cobalt runs as its own API service,
+  which could simplify per-platform quirks currently handled via cookie merging and yt-dlp
+  extractor options, but would add a network dependency (or a second container) instead of the
+  current in-process `yt-dlp` call [P3/D3]
+- #TODO-0039 split the "head" (bot/API request handling) role from the "downloader" role into
+  separate processes/services, with queue management between them — currently `attempt_download`
+  runs `yt-dlp` synchronously in-process (`app/url_processing.py`), so a slow or stuck download
+  blocks the request path with no queueing, concurrency limits, or backpressure. Introduce a job
+  queue (e.g. a task queue or message broker) so the head enqueues download work and one or more
+  separate downloader workers process it [P2/D4]
 
 ## Config (`app/config.py`)
 
@@ -92,6 +104,7 @@ to both gates exactly like every other platform (2026-08-22).
   every test file in the repo uses the `*_test.py` suffix (`api_test.py`, `bot_test.py`,
   `config_test.py`, `download_test.py`, `url_processing_test.py`) — this hook must be failing (or
   was never actually run) since the tests were added [P3/D1]
+
 ## Docker / Deploy
 
 - #TODO-0017 `uv sync --no-dev --no-editable` (`Dockerfile:16`) runs *before* `COPY ./app /app/app`

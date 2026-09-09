@@ -47,16 +47,16 @@ needed, just two files.
    defaults shown below — values should be bare domains without `www.`/`music.`
    prefixes, since those are added automatically where needed:
 
-   | Variable                      | Default              | Applies to                           |
-   |--------------------------------|----------------------|---------------------------------------|
-   | `SPOTIFY_MIRROR_DOMAIN`         | `fxspotify.com`      | `open.spotify.com` / `spotify.com`         |
-   | `INSTAGRAM_MIRROR_DOMAIN`       | `kkinstagram.com`    | `instagram.com` `/p/` and `/reel/`       |
-   | `REDDIT_MIRROR_DOMAIN`          | `rxddit.com`         | `reddit.com`                             |
-   | `THREADS_MIRROR_DOMAIN`         | `fx.akitsuki.me`     | `threads.com`                             |
-   | `TIKTOK_MIRROR_DOMAIN`          | `tfxktok.com`        | `tiktok.com`                             |
-   | `TWITTER_MIRROR_DOMAIN`         | `fxtwitter.com`      | `twitter.com` / `x.com`                    |
-   | `YOUTUBE_MIRROR_DOMAIN`         | `yfxtube.com`        | `music.youtube.com` / `www.youtube.com`    |
-   | `YOUTUBE_SHORT_MIRROR_DOMAIN`   | `fxyoutu.be`         | `youtu.be`                               |
+   | Variable | Default | Applies to |
+   | ----------------------------- | ------------------ | ---------------------------------------- |
+   | `SPOTIFY_MIRROR_DOMAIN` | `fxspotify.com` | `open.spotify.com` / `spotify.com` |
+   | `INSTAGRAM_MIRROR_DOMAIN` | `kkinstagram.com` | `instagram.com` `/p/` and `/reel/` |
+   | `REDDIT_MIRROR_DOMAIN` | `rxddit.com` | `reddit.com` |
+   | `THREADS_MIRROR_DOMAIN` | `fx.akitsuki.me` | `threads.com` |
+   | `TIKTOK_MIRROR_DOMAIN` | `tfxktok.com` | `tiktok.com` |
+   | `TWITTER_MIRROR_DOMAIN` | `fxtwitter.com` | `twitter.com` / `x.com` |
+   | `YOUTUBE_MIRROR_DOMAIN` | `yfxtube.com` | `music.youtube.com` / `www.youtube.com` |
+   | `YOUTUBE_SHORT_MIRROR_DOMAIN` | `fxyoutu.be` | `youtu.be` |
 
 3. If you don't already run one, create a Traefik reverse proxy stack in a
    separate `docker-compose.yml` (own directory, own project):
@@ -103,18 +103,17 @@ needed, just two files.
    docker compose up -d
    ```
 
-   This pulls the published `url-fairy-bot` and `url-fairy-bot-nginx` images
-   from GHCR — no build step, no local source needed.
 
 ## Configuration
 
 ### Environment variables
 
 | Variable | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | `BOT_TOKEN` | _(required)_ | Telegram bot token |
 | `BASE_URL` | _(required)_ | Public base URL for serving downloaded files |
-| `IMAGE_TAG` | `latest` | Tag of the `url-fairy-bot`/`url-fairy-bot-nginx` GHCR images to deploy |
+| `IV_RHASH` | _(empty)_ | `rhash` of a Telegram Instant View template you created for `BASE_URL` at [instantview.telegram.org](https://instantview.telegram.org) — see [docs/telegram-instant-view-setup.md](docs/telegram-instant-view-setup.md). Empty (the default): watch links use a themed `og:video` page, which Telegram already renders as an inline-playable card with no template needed. Set: watch links become `https://t.me/iv?url=...&rhash=...` and open in true Instant View |
+| `IMAGE_TAG` | `latest` | Tag of the `url-fairy-bot` GHCR image to deploy |
 | `PUBLIC_PORT` | `80:80` | Host:container port mapping for the `nginx` service |
 | `GLOBAL_DATA_FOLDER` | `/Data` | Host directory whose `<folder>/url-fairy-bot/config` is mounted at `/config` (cookie files) |
 | `LETSENCRYPT_RESOLVER_NAME` | `letsencrypt-cloudflare-dns-challenge` | Traefik certresolver name used for TLS |
@@ -123,7 +122,7 @@ needed, just two files.
 | `CACHE_DIR` | `/tmp/url-fairy-bot-cache/` | Directory for cached downloads |
 | `COOKIES_DIR` | `/config/` | Directory containing cookie files for authenticated downloads |
 | `COOKIE_JAR_ENABLED` | `false` | Use a persistent `cookie_jar.txt` so yt-dlp can save updated session tokens across requests. On first use, the jar is initialized by merging all `cookies*.txt` files in `COOKIES_DIR`. |
-| `DOWNLOAD_ALLOWED_DOMAINS` | _(empty)_ | Comma-separated list of domains real video downloads are restricted to. Empty means every domain is allowed (the default) — this setting only ever *restricts* downloads, it never affects whether a mirror link is offered (e.g. `instagram.com,twitter.com`) |
+| `DOWNLOAD_ALLOWED_DOMAINS` | _(empty)_ | Comma-separated list of domains real video downloads are restricted to. Empty means every domain is allowed (the default) — this setting only ever _restricts_ downloads, it never affects whether a mirror link is offered (e.g. `instagram.com,twitter.com`) |
 | `REWRITE_ALLOWED_DOMAINS` | _(empty)_ | Comma-separated list of domains eligible for mirror-link rewriting (Spotify/Instagram/Reddit/TikTok/Twitter/X/YouTube). Empty means every platform is rewritten (the default). Independent of `DOWNLOAD_ALLOWED_DOMAINS` |
 | `FOLLOW_REDIRECT_TIMEOUT` | `10` | Timeout in seconds when following URL redirects |
 | `LOG_LEVEL` | `INFO` | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |

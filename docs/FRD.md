@@ -42,8 +42,9 @@ fit together end to end:
 - [UFB-0028. Multi-arch CI image publishing](features/UFB-0028-multi-arch-ci-image-publishing.md) - `#ops` `#ci`
 - [UFB-0029. Threads mirror-domain rewrites](features/UFB-0029-threads-mirror-rewrites.md) - `#rewrite`
 - [UFB-0030. Registry-only deployment](features/UFB-0030-registry-only-deployment.md) - `#ops` `#deploy`
-- [UFB-0031. Landing page and cache index](features/UFB-0031-landing-page-and-cache-index.md) - `#ops` `#hosting`
-- [UFB-0032. Telegram Instant View embeds](features/UFB-0032-telegram-instant-view-embeds.md) - `#telegram` `#ux` `#hosting` — **P1**, Planned
+- [UFB-0031. Landing page](features/UFB-0031-landing-page-and-cache-index.md) - `#ops` `#hosting`
+- [UFB-0032. Telegram Instant View embeds](features/UFB-0032-telegram-instant-view-embeds.md) - `#telegram` `#ux` `#hosting`
+- [UFB-0033. App-generated static pages](features/UFB-0033-static-page-generation.md) - `#hosting` `#ops`
 
 ## Tags
 
@@ -67,7 +68,7 @@ fit together end to end:
 - `#cookies`: UFB-0017, UFB-0018
 - `#api`: UFB-0019
 - `#runtime`: UFB-0020
-- `#ops`: UFB-0024, UFB-0025, UFB-0026, UFB-0027, UFB-0028, UFB-0030, UFB-0031
-- `#hosting`: UFB-0025, UFB-0031, UFB-0032
+- `#ops`: UFB-0024, UFB-0025, UFB-0026, UFB-0027, UFB-0028, UFB-0030, UFB-0031, UFB-0033
+- `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033
 - `#deploy`: UFB-0027, UFB-0030
 - `#ci`: UFB-0028
