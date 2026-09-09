@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- UFB-0033: `seed_static_pages` now re-renders the watch page of every
+  pre-existing media file in `CACHE_DIR` on startup, not just the sample —
+  so a template or embed-logic change (like the `INLINE_VIDEO_MAX_MB`
+  threshold below) takes effect for already-downloaded files on the next
+  bot restart instead of only whenever their URL is requested again.
+- UFB-0032: fixes `#BUG-0061` — a media file over the new
+  `INLINE_VIDEO_MAX_MB` setting (default `10`) now gets a plain watch page
+  with no `og:video`/`twitter:player` tags or inline `<video>` element,
+  since Telegram silently drops the inline player for large files anyway;
+  `og:image` and the download link are unaffected.
 - Fix: `Dockerfile` is now multi-stage — a `builder` stage installs `build-base`/`libffi-dev`/
   `openssl-dev`/`curl` and runs `uv sync`, then only the resulting `.venv`, `uv` binary, and app
   code are copied into a clean final stage; the compiler toolchain never reaches the runtime image

@@ -47,6 +47,21 @@ def watch_page_url(media_filename: str) -> str:
     return f"https://{settings.BASE_URL}/watch/{quote(stem)}.html"
 
 
+# #UFB-0032
+def _fits_inline_video(media_filename: str) -> bool:
+    """Whether the media file is small enough for an inline og:video/
+    twitter:player embed. A file that can't be stat'd (already swept,
+    permission error) is treated as small, so a missing file never blocks
+    the page from rendering."""
+    basename = os.path.basename(media_filename)
+    media_path = os.path.join(settings.CACHE_DIR, basename)
+    try:
+        size_mb = os.path.getsize(media_path) / (1024 * 1024)
+    except OSError:
+        return True
+    return size_mb <= settings.INLINE_VIDEO_MAX_MB
+
+
 # #UFB-0032, #UFB-0033, #UFB-0035
 def render_watch_page(media_filename: str) -> str:
     basename = os.path.basename(media_filename)
@@ -65,6 +80,7 @@ def render_watch_page(media_filename: str) -> str:
         image_url=image_url,
         image_type=image_type,
         video_type=video_type,
+        inline_video=_fits_inline_video(media_filename),
     )
 
 
@@ -83,6 +99,24 @@ def render_landing_page() -> str:
 # #UFB-0031, #UFB-0033
 def render_404_page() -> str:
     return _env.get_template("404.html").render()
+
+
+# #UFB-0033
+def _cached_media_filenames() -> list[str]:
+    """Basenames of media files already sitting at the top level of
+    CACHE_DIR (excluding the bundled preview image and any HTML files)."""
+    try:
+        names = os.listdir(settings.CACHE_DIR)
+    except OSError as e:
+        logger.warning(f"Failed to list {settings.CACHE_DIR}: {e}")
+        return []
+    return [
+        name
+        for name in names
+        if os.path.isfile(os.path.join(settings.CACHE_DIR, name))
+        and name != PREVIEW_IMAGE_FILENAME
+        and not name.endswith(".html")
+    ]
 
 
 # #UFB-0033, #UFB-0034, #UFB-0035
@@ -104,5 +138,12 @@ def seed_static_pages() -> None:
     except OSError as e:
         logger.warning(f"Failed to generate sample preview: {e}")
     write_watch_page(SAMPLE_MEDIA_FILENAME)
+    for filename in _cached_media_filenames():
+        if filename == SAMPLE_MEDIA_FILENAME:
+            continue
+        try:
+            write_watch_page(filename)
+        except OSError as e:
+            logger.warning(f"Failed to regenerate watch page for {filename}: {e}")
     global pages_seeded
     pages_seeded = True

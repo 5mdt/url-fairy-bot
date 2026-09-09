@@ -11,6 +11,7 @@ load_dotenv()
 class Settings(BaseSettings):
     BASE_URL: str = os.getenv("BASE_URL", "")
     IV_RHASH: str = os.getenv("IV_RHASH", "")
+    INLINE_VIDEO_MAX_MB: int = int(os.getenv("INLINE_VIDEO_MAX_MB", 10))
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
     CACHE_DIR: str = os.getenv("CACHE_DIR", "/tmp/url-fairy-bot-cache/")
     FILE_TTL: int = int(os.getenv("FILE_TTL", 3))  # days untouched before deletion

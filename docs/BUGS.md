@@ -46,17 +46,6 @@ Automation/behavior misbehaving today.
   [UFB-0031](features/UFB-0031-landing-page-and-cache-index.md) and
   [UFB-0033](features/UFB-0033-static-page-generation.md).) Hash the URL (e.g. truncated sha256)
   instead of transliterating it, and add an `asyncio.Lock` per in-flight URL [P2/D2]
-- #BUG-0061 large downloads don't render in Telegram's `og:video`/Instant View player —
-  reported against a 34 MB cached file (confirmed via `HEAD`: `content-length: 35818823`,
-  `content-type: video/mp4`, `accept-ranges: bytes`, so the file itself and its response headers
-  are correct) whose `/watch/<file>.html` page ([UFB-0032](features/UFB-0032-telegram-instant-view-embeds.md))
-  has structurally correct `og:video`/`twitter:player:stream` tags, yet Telegram shows no inline
-  player — only the plain download link works. No official Telegram documentation states an exact
-  `og:video`/Instant View size cutoff; a ~10 MB threshold is commonly cited informally but
-  unconfirmed. Reproduce with a range of file sizes to find where playback actually breaks, then
-  either transcode/cap downloads above that size or fall back to a plain (non-video) watch page
-  for files over the threshold [P2/D3]
-
 ### Previews
 
 - #BUG-0062 [UFB-0035](features/UFB-0035-per-file-preview-images.md)'s frame extraction always

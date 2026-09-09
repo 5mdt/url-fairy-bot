@@ -113,6 +113,7 @@ needed, just two files.
 | `BOT_TOKEN` | _(required)_ | Telegram bot token |
 | `BASE_URL` | _(required)_ | Public base URL for serving downloaded files |
 | `IV_RHASH` | _(empty)_ | `rhash` of a Telegram Instant View template you created for `BASE_URL` at [instantview.telegram.org](https://instantview.telegram.org) — see [docs/telegram-instant-view-setup.md](docs/telegram-instant-view-setup.md). Empty (the default): watch links use a themed `og:video` page, which Telegram already renders as an inline-playable card with no template needed. Set: watch links become `https://t.me/iv?url=...&rhash=...` and open in true Instant View |
+| `INLINE_VIDEO_MAX_MB` | `10` | A watch page for a media file larger than this omits `og:video`/`twitter:player` tags and the inline `<video>` element, since Telegram silently drops the inline player for large files anyway |
 | `IMAGE_TAG` | `latest` | Tag of the `url-fairy-bot` GHCR image to deploy |
 | `PUBLIC_PORT` | `80:80` | Host:container port mapping for the `nginx` service |
 | `GLOBAL_DATA_FOLDER` | `/Data` | Host directory whose `<folder>/url-fairy-bot/config` is mounted at `/config` (cookie files) |

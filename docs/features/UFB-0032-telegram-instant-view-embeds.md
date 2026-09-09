@@ -16,6 +16,12 @@ approval needed. An operator who creates an Instant View template for their
 `rhash` upgrades the same links to true Instant View, which Telegram opens
 even before the template is publicly approved.
 
+A file larger than `INLINE_VIDEO_MAX_MB` gets a plain watch page instead —
+no `og:video`/`twitter:player` tags, no inline `<video>` element, just the
+per-file image and a download link — since Telegram silently drops the
+inline player for large files anyway ([BUGS #61](../BUGS.md)) and a
+non-functional `og:video` tag is worse than none.
+
 ## Implementation
 
 - The watch page (`app/templates/watch.html`, rendered per
@@ -27,6 +33,12 @@ even before the template is publicly approved.
   matches the file's real extension; `og:image` is a per-file preview frame
   when one exists ([UFB-0035](UFB-0035-per-file-preview-images.md)),
   otherwise the bundled `preview.png`.
+- `render_watch_page` (`app/pages.py`) stats the media file on disk; when
+  its size exceeds `INLINE_VIDEO_MAX_MB` (default `10`), the template omits
+  every `og:video`/`twitter:player` tag and the inline `<video>` element —
+  only `og:image` and a download link render. A file that can't be stat'd
+  (already swept, permission error) is treated as small, so a missing file
+  never blocks the page from rendering.
 - The bot's download reply links to `https://BASE_URL/watch/<stem>.html`
   instead of the raw file. The raw file stays reachable at its existing
   `.../<stem>.mp4` path unchanged.
@@ -48,6 +60,12 @@ even before the template is publicly approved.
 - Successful download, `IV_RHASH` set → reply links to
   `https://t.me/iv?url=<percent-encoded page url>&rhash=<IV_RHASH>`.
 - A filename needing percent-encoding stays correctly encoded in both forms.
+- A media file at or under `INLINE_VIDEO_MAX_MB` → page keeps `og:video`/
+  `twitter:player` tags and the `<video>` element.
+- A media file over `INLINE_VIDEO_MAX_MB` → page has no `og:video`/
+  `twitter:player` tags and no `<video>` element, but keeps `og:image` and
+  the download link.
+- A missing media file → treated as small (tags kept), doesn't raise.
 
 ### Integration / Human
 
@@ -61,9 +79,4 @@ even before the template is publicly approved.
 
 ## Status
 
-Implemented — with a known gap:
-
-- Large downloads don't render inline at all — reported against a 34 MB
-  file with an otherwise-correct page and file response
-  ([BUGS #61](../BUGS.md)). The exact size where Telegram stops playing an
-  `og:video`/Instant View video is unconfirmed.
+Implemented.

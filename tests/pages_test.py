@@ -81,6 +81,35 @@ def test_render_watch_page_derives_video_type_from_real_extension():
     assert 'property="og:video:type" content="video/webm"' in html
 
 
+def test_render_watch_page_keeps_inline_video_at_or_under_threshold(cache_dir):
+    with open(cache_dir / "clip.mp4", "wb") as f:
+        f.write(b"0" * (settings.INLINE_VIDEO_MAX_MB * 1024 * 1024))
+
+    html = pages.render_watch_page("clip.mp4")
+
+    assert 'property="og:video"' in html
+    assert 'name="twitter:card" content="player"' in html
+    assert "<video" in html
+
+
+def test_render_watch_page_drops_inline_video_over_threshold(cache_dir):
+    with open(cache_dir / "clip.mp4", "wb") as f:
+        f.write(b"0" * (settings.INLINE_VIDEO_MAX_MB * 1024 * 1024 + 1))
+
+    html = pages.render_watch_page("clip.mp4")
+
+    assert 'property="og:video"' not in html
+    assert 'name="twitter:card"' not in html
+    assert "<video" not in html
+    assert 'property="og:image"' in html
+    assert 'href="https://example.test/clip.mp4"' in html
+
+
+def test_render_watch_page_treats_missing_media_file_as_small(cache_dir):
+    html = pages.render_watch_page("missing.mp4")
+    assert 'property="og:video"' in html
+
+
 # --- write_watch_page ---
 
 
@@ -156,3 +185,34 @@ def test_seeded_sample_page_matches_a_real_watch_page(cache_dir):
     seeded = (cache_dir / "watch" / "sample.html").read_text(encoding="utf-8")
     direct = pages.render_watch_page(pages.SAMPLE_MEDIA_FILENAME)
     assert seeded == direct
+
+
+def test_seed_static_pages_regenerates_watch_pages_for_pre_existing_media(cache_dir):
+    with open(cache_dir / "clip.mp4", "wb") as f:
+        f.write(b"fake video data")
+    watch_dir = cache_dir / "watch"
+    watch_dir.mkdir()
+    (watch_dir / "clip.html").write_text("stale", encoding="utf-8")
+
+    pages.seed_static_pages()
+
+    content = (watch_dir / "clip.html").read_text(encoding="utf-8")
+    assert content != "stale"
+    assert "clip.mp4" in content
+
+
+def test_seed_static_pages_skips_a_file_that_fails_to_regenerate(cache_dir):
+    with open(cache_dir / "clip.mp4", "wb") as f:
+        f.write(b"fake video data")
+
+    real_write_watch_page = pages.write_watch_page
+
+    def _raise_only_for_clip(media_filename):
+        if media_filename == "clip.mp4":
+            raise OSError("boom")
+        return real_write_watch_page(media_filename)
+
+    with patch("app.pages.write_watch_page", side_effect=_raise_only_for_clip):
+        pages.seed_static_pages()  # doesn't raise
+
+    assert (cache_dir / "watch" / "sample.html").is_file()
