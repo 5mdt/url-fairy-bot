@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Fix: `Dockerfile` is now multi-stage — a `builder` stage installs `build-base`/`libffi-dev`/
+  `openssl-dev`/`curl` and runs `uv sync`, then only the resulting `.venv`, `uv` binary, and app
+  code are copied into a clean final stage; the compiler toolchain never reaches the runtime image
+  (434MB → 415MB measured locally with the new `ffmpeg` dependency included). Copying `./app`
+  before `uv sync` in the builder also closes `#BUG-0042` (`uv sync --no-editable` was installing
+  the project's own package before its source existed, silently relying on `PYTHONPATH` instead).
+- UFB-0035: `/watch/<file>` pages now carry a per-file `og:image` — a JPEG frame extracted with
+  `ffmpeg` from the cached video — instead of the same bundled `preview.png` for every file, with
+  the bundled image kept as the fallback when extraction fails. `og:video:type` now derives from
+  the file's real extension. Fixes `#BUG-0015`: `outtmpl` now ends in `%(ext)s` and a remux
+  postprocessor repackages a compatible non-mp4 container into a real `.mp4`, so cached files no
+  longer wear a mismatched `.mp4` name; `ffmpeg` is a new runtime dependency (`Dockerfile`).
+  Previews live at `CACHE_DIR/preview/<stem>.jpg` and are swept/protected alongside their media
+  file's watch page.
 - Tooling: every top-level function/class in `app/` now carries the `#UFB-NNNN`
   feature-id comment(s) `CLAUDE.md` requires (fixing `#BUG-0060`); a new
   `tests/frd_traceability_test.py` fails if one is missing or points at an ID not in

@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from app import cleanup, pages
+from app import cleanup, pages, preview
 from app.config import settings
 
 
@@ -92,30 +92,67 @@ def test_orphaned_watch_page_without_media_is_deleted(cache_dir):
     assert not os.path.exists(watch_path)
 
 
+# --- preview image pairing ---
+
+
+def test_deleting_stale_media_also_deletes_its_preview(cache_dir):
+    media = cache_dir / "video.mp4"
+    media.write_text("data")
+    _age(str(media), days=10)
+
+    preview_path = preview.preview_path("video.mp4")
+    os.makedirs(os.path.dirname(preview_path), exist_ok=True)
+    with open(preview_path, "wb") as fh:
+        fh.write(b"jpeg")
+    _age(preview_path, days=10)
+
+    cleanup.sweep_once()
+
+    assert not media.exists()
+    assert not os.path.exists(preview_path)
+
+
+def test_orphaned_preview_without_media_is_deleted(cache_dir):
+    preview_path = preview.preview_path("gone.mp4")
+    os.makedirs(os.path.dirname(preview_path), exist_ok=True)
+    with open(preview_path, "wb") as fh:
+        fh.write(b"jpeg")
+    _age(preview_path, days=10)
+
+    cleanup.sweep_once()
+
+    assert not os.path.exists(preview_path)
+
+
 # --- seeded pages are exempt ---
 
 
 def test_seeded_pages_are_never_deleted_even_when_ancient(cache_dir):
     pages.seed_static_pages()
 
-    for path in (
+    # Real ffmpeg may be unavailable in CI, so write the sample preview
+    # directly rather than relying on seed_static_pages's best-effort
+    # generation to have actually produced it.
+    sample_preview = preview.preview_path(pages.SAMPLE_MEDIA_FILENAME)
+    os.makedirs(os.path.dirname(sample_preview), exist_ok=True)
+    with open(sample_preview, "wb") as fh:
+        fh.write(b"jpeg")
+
+    seeded_paths = [
         os.path.join(str(cache_dir), "index.html"),
         os.path.join(str(cache_dir), "404.html"),
         os.path.join(str(cache_dir), pages.PREVIEW_IMAGE_FILENAME),
         os.path.join(str(cache_dir), pages.SAMPLE_MEDIA_FILENAME),
         pages.watch_page_path(pages.SAMPLE_MEDIA_FILENAME),
-    ):
+        sample_preview,
+    ]
+
+    for path in seeded_paths:
         _age(path, days=3650)
 
     cleanup.sweep_once()
 
-    for path in (
-        os.path.join(str(cache_dir), "index.html"),
-        os.path.join(str(cache_dir), "404.html"),
-        os.path.join(str(cache_dir), pages.PREVIEW_IMAGE_FILENAME),
-        os.path.join(str(cache_dir), pages.SAMPLE_MEDIA_FILENAME),
-        pages.watch_page_path(pages.SAMPLE_MEDIA_FILENAME),
-    ):
+    for path in seeded_paths:
         assert os.path.exists(path)
 
 

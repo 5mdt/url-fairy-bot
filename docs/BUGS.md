@@ -3,7 +3,7 @@
 Defects, quirks, tech debt, and chores on already-shipped behavior. New, not-yet-built
 behavior goes in `docs/TODO.md` instead. Entries are deleted when fixed (the fix gets a
 `docs/CHANGELOG.md` bullet); IDs are never reused or renumbered, so deletions leave gaps.
-Next free ID: **BUG-0062**.
+Next free ID: **BUG-0065**.
 
 Each entry ends with a `[P#/D#]` marker:
 
@@ -46,15 +46,6 @@ Automation/behavior misbehaving today.
   [UFB-0031](features/UFB-0031-landing-page-and-cache-index.md) and
   [UFB-0033](features/UFB-0033-static-page-generation.md).) Hash the URL (e.g. truncated sha256)
   instead of transliterating it, and add an `asyncio.Lock` per in-flight URL [P2/D2]
-- #BUG-0015 downloaded files are always saved with a `.mp4` extension — `outtmpl`
-  (`app/download.py:57,64-67`) is hardcoded to end in `.mp4` while `"format": "best"` lets yt-dlp
-  choose whatever container the best available stream is in (webm, mkv, etc.), and the Docker image
-  installs no `ffmpeg`, so yt-dlp can't remux/merge into a real `.mp4` when needed. Files are
-  frequently mislabeled and can fail to play in strict players/browsers. Now that
-  [UFB-0032](features/UFB-0032-telegram-instant-view-embeds.md)'s `/watch/<file>` page declares
-  `og:video:type: video/mp4` unconditionally, a mislabeled file also fails to play in Telegram's
-  inline preview card, not just in strict browsers. Let yt-dlp choose the real
-  extension (`%(ext)s`) and install `ffmpeg` if format merging is desired [P3/D2]
 - #BUG-0061 large downloads don't render in Telegram's `og:video`/Instant View player —
   reported against a 34 MB cached file (confirmed via `HEAD`: `content-length: 35818823`,
   `content-type: video/mp4`, `accept-ranges: bytes`, so the file itself and its response headers
@@ -65,6 +56,18 @@ Automation/behavior misbehaving today.
   unconfirmed. Reproduce with a range of file sizes to find where playback actually breaks, then
   either transcode/cap downloads above that size or fall back to a plain (non-video) watch page
   for files over the threshold [P2/D3]
+
+### Previews
+
+- #BUG-0062 [UFB-0035](features/UFB-0035-per-file-preview-images.md)'s frame extraction always
+  grabs a fixed timestamp, so a black frame or a fade-in produces a useless preview for some
+  clips. Consider a smarter pick (skip near-black frames, sample a few candidates) if this turns
+  out to be common in practice [P3/D3]
+- #BUG-0063 [UFB-0035](features/UFB-0035-per-file-preview-images.md)'s `generate_preview` runs
+  synchronously inside `attempt_download` (`app/url_processing.py`), adding an `ffmpeg` invocation
+  to the reply latency of every successful download. Move it off the request path (background
+  task, or lazy generation on first `/preview/<file>` request) if this latency matters in practice
+  [P3/D2]
 
 ### Deploy / infra
 
@@ -153,11 +156,6 @@ to both gates exactly like every other platform (2026-08-22).
 
 ### Docker / Deploy
 
-- #BUG-0042 `uv sync --no-dev --no-editable` (`Dockerfile:16`) runs *before* `COPY ./app /app/app`
-  (`:19`), so the project's own package is installed empty/stale; the app only works at all because
-  `ENV PYTHONPATH="/app"` makes the later-copied `app/` importable directly, bypassing the
-  installed (empty) distribution. Reorder the `COPY`s or accept that `uv sync` is only installing
-  third-party deps (fine, but worth a comment) [P3/D1]
 - #BUG-0043 the container runs as root (no `USER` directive in `Dockerfile`). Add a non-root user
   [P2/D2]
 
@@ -192,6 +190,11 @@ Maintenance work — CI, dependencies, test/doc hygiene — with no runtime beha
   every test file in the repo uses the `*_test.py` suffix (`api_test.py`, `bot_test.py`,
   `config_test.py`, `download_test.py`, `url_processing_test.py`) — this hook must be failing (or
   was never actually run) since the tests were added [P3/D1]
+- #BUG-0064 `isort` and `black` disagree on multi-line import wrapping — neither `pyproject.toml`
+  nor any `.isort.cfg` sets `profile = "black"` (or equivalent `black`-compatible options), so
+  `make fmt`'s `isort` step (`app/cleanup.py`'s multi-name import, observed 2026-09-09) can produce
+  a wrap `black` would then reformat differently, making `make fmt` non-idempotent. Add
+  `[tool.isort] profile = "black"` to `pyproject.toml` [P3/D1]
 
 ### Dependencies (`pyproject.toml`)
 

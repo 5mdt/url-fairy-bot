@@ -26,10 +26,12 @@ the bot actually sends.
   request for that URL.
 - `seed_static_pages()` creates `CACHE_DIR`, writes the landing page
   (`index.html`) and 404 page (`404.html`), copies the bundled
-  `app/assets/preview.png` and `app/assets/sample.mp4` into the cache, and
-  calls `write_watch_page("sample.mp4")` — producing the Instant View
-  example page at `/watch/sample.html` via the real rendering path. Called
-  once from the `app/main.py` lifespan on startup.
+  `app/assets/preview.png` and `app/assets/sample.mp4` into the cache,
+  best-effort generates a per-file preview for `sample.mp4`
+  ([UFB-0035](UFB-0035-per-file-preview-images.md)), and calls
+  `write_watch_page("sample.mp4")` — producing the Instant View example
+  page at `/watch/sample.html` via the real rendering path. Called once
+  from the `app/main.py` lifespan on startup.
 - The public URL for a watch page is `https://BASE_URL/watch/<stem>.html`
   (not `.../<stem>.mp4`), so the web server's extension-based MIME lookup
   serves it as `text/html` — the raw media keeps its own `.../<stem>.mp4`

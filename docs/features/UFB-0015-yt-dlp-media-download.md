@@ -13,7 +13,15 @@ immediately without unnecessary work.
 
 ## Implementation
 
-- Downloads via yt-dlp, `format: best`.
+- Downloads via yt-dlp, `format: best`, output template ending in
+  `%(ext)s` so the saved file keeps its real container extension.
+- A remux postprocessor (`merge_output_format: mp4`) losslessly repackages
+  a compatible non-mp4 container into a real `.mp4`, using the `ffmpeg`
+  binary the image now installs (see [UFB-0035](UFB-0035-per-file-preview-images.md)).
+  Codecs `ffmpeg` cannot remux into mp4 are left in their original
+  container/extension.
+- The cache-hit check and the returned path resolve the file by globbing
+  `<stem>.*` rather than assuming `.mp4`.
 - Uses [cookies](UFB-0017-cookie-file-merging.md) when configured.
 - Unsupported URLs and other yt-dlp failures both surface as a single
   "can't download this" condition, handled by
@@ -25,6 +33,8 @@ immediately without unnecessary work.
 
 - Successful download → reply links to the cached file at the correct
   extension.
+- A cache hit resolves whatever extension the file actually has on disk
+  (e.g. `<stem>.webm`), not a hardcoded `.mp4`.
 - Unsupported URL → falls through to the failure fallback.
 - Any other yt-dlp exception → falls through to the failure fallback.
 
@@ -32,10 +42,6 @@ immediately without unnecessary work.
 
 Implemented — with known gaps:
 
-- The output file is always named with a hardcoded `.mp4` extension
-  regardless of yt-dlp's actual output format, and the image has no
-  `ffmpeg` to remux into a real `.mp4` when needed
-  ([BUGS #15](../BUGS.md#15-downloaded-files-are-always-saved-with-a-mp4-extension-low-p3d2)).
 - Runs as a blocking call directly on the event loop
   ([BUGS #6](../BUGS.md#6-blocking-networkcpu-calls-run-directly-on-the-asyncio-event-loop-medium-p2d3)).
 - No concurrency lock around "is this URL already downloading" — two

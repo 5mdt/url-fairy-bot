@@ -67,19 +67,39 @@ def _touch_atime(path: str) -> None:
         logger.warning(f"Failed to refresh atime for {path}: {e}")
 
 
+# Leftover fragments from an interrupted yt-dlp download; never a finished file.
+_INCOMPLETE_SUFFIXES = (".part", ".ytdl")
+
+
+# #UFB-0015
+def _cached_media_path(stem: str) -> str | None:
+    """The cached media file for `stem`, at whatever real extension it was
+    actually saved with (#BUG-0015: no longer assumed to be `.mp4`), or
+    None if nothing finished downloading for it yet."""
+    for match in glob.glob(os.path.join(settings.CACHE_DIR, f"{stem}.*")):
+        if not match.endswith(_INCOMPLETE_SUFFIXES):
+            return match
+    return None
+
+
 # #UFB-0015, #UFB-0016, #UFB-0017
 async def yt_dlp_download(url: str) -> str:
-    video_path = os.path.join(settings.CACHE_DIR, f"{sanitize_subfolder_name(url)}.mp4")
+    stem = sanitize_subfolder_name(url)
+    cached_path = _cached_media_path(stem)
 
-    if os.path.exists(video_path):
+    if cached_path:
         logger.info(f"File already exists for URL: {url}, skipping download.")
-        _touch_atime(video_path)
-        return video_path
+        _touch_atime(cached_path)
+        return cached_path
 
     try:
         ydl_opts = {
-            "outtmpl": video_path,
+            "outtmpl": os.path.join(settings.CACHE_DIR, f"{stem}.%(ext)s"),
             "format": "best",
+            # Losslessly repackage a compatible non-mp4 container into a
+            # real .mp4 instead of leaving the file mislabeled (#BUG-0015).
+            "merge_output_format": "mp4",
+            "postprocessors": [{"key": "FFmpegVideoRemuxer", "preferedformat": "mp4"}],
         }
 
         cookie_files = glob.glob(os.path.join(settings.COOKIES_DIR, "cookies*.txt"))
@@ -100,7 +120,7 @@ async def yt_dlp_download(url: str) -> str:
                 ydl.download([url])
 
         logger.info(f"Download successful for URL: {url}")
-        return video_path
+        return _cached_media_path(stem)
 
     except yt_dlp.DownloadError as e:
         if "Unsupported URL" in str(e):

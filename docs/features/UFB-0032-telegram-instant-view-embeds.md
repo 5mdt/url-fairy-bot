@@ -23,7 +23,10 @@ even before the template is publicly approved.
   `og:video:secure_url`, `og:image`, and `twitter:player` tags pointing at
   the file's existing root-level URL (see
   [UFB-0025](UFB-0025-themed-download-file-server.md)), plus an inline
-  `<video>` element and a download link for browsers.
+  `<video>` element and a download link for browsers. `og:video:type`
+  matches the file's real extension; `og:image` is a per-file preview frame
+  when one exists ([UFB-0035](UFB-0035-per-file-preview-images.md)),
+  otherwise the bundled `preview.png`.
 - The bot's download reply links to `https://BASE_URL/watch/<stem>.html`
   instead of the raw file. The raw file stays reachable at its existing
   `.../<stem>.mp4` path unchanged.
@@ -60,11 +63,6 @@ even before the template is publicly approved.
 
 Implemented — with a known gap:
 
-- `og:video:type` is stated as `video/mp4`, but cached files are always
-  named `.mp4` regardless of their actual container
-  ([BUGS #15](../BUGS.md#15-downloaded-files-are-always-saved-with-a-mp4-extension-low-p3d2)).
-  A cached webm/mkv wearing an `.mp4` name will not play in the Telegram
-  card.
 - Large downloads don't render inline at all — reported against a 34 MB
   file with an otherwise-correct page and file response
   ([BUGS #61](../BUGS.md)). The exact size where Telegram stops playing an

@@ -146,6 +146,55 @@ async def test_yt_dlp_download_cache_hit_skips_download(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_yt_dlp_download_cache_hit_resolves_real_extension(tmp_path, monkeypatch):
+    """A cache hit finds whatever extension the file actually has on disk,
+    not a hardcoded `.mp4` (#BUG-0015)."""
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
+    url = "https://tiktok.com/@user/video/1"
+    from app.download import sanitize_subfolder_name
+
+    cached_path = os.path.join(str(tmp_path), f"{sanitize_subfolder_name(url)}.webm")
+    with open(cached_path, "w") as f:
+        f.write("fake video data")
+
+    with patch("app.download.yt_dlp.YoutubeDL") as mock_ydl:
+        result = await yt_dlp_download(url)
+
+    assert result == cached_path
+    mock_ydl.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_yt_dlp_download_outtmpl_and_remuxer_configured(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
+    url = "https://tiktok.com/@user/video/1"
+    from app.download import sanitize_subfolder_name
+
+    mock_instance = MagicMock()
+
+    def _fake_download(urls):
+        stem = sanitize_subfolder_name(url)
+        with open(os.path.join(str(tmp_path), f"{stem}.mp4"), "w") as f:
+            f.write("fake video data")
+
+    mock_instance.download.side_effect = _fake_download
+    mock_ydl = MagicMock()
+    mock_ydl.__enter__.return_value = mock_instance
+
+    with patch(
+        "app.download.yt_dlp.YoutubeDL", return_value=mock_ydl
+    ) as mock_ydl_class:
+        result = await yt_dlp_download(url)
+
+    ydl_opts = mock_ydl_class.call_args[0][0]
+    assert ydl_opts["outtmpl"].endswith("%(ext)s")
+    assert ydl_opts["merge_output_format"] == "mp4"
+    assert result.endswith(".mp4")
+
+
+@pytest.mark.asyncio
 async def test_yt_dlp_download_cache_hit_refreshes_atime_not_mtime(
     tmp_path, monkeypatch
 ):

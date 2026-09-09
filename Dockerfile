@@ -1,4 +1,6 @@
-FROM python:3.11-alpine
+ARG PYTHON_VERSION=3.11
+
+FROM python:${PYTHON_VERSION}-alpine AS builder
 
 RUN apk add --no-cache --virtual .build-deps \
         build-base  \
@@ -6,17 +8,25 @@ RUN apk add --no-cache --virtual .build-deps \
         openssl-dev \
         curl \
     && pip install --no-cache-dir uv==0.12.11 \
-    && apk del .build-deps \
     && rm -rf /root/.cache/pip
 
 WORKDIR /app
 
 COPY ./pyproject.toml ./uv.lock ./README.md /app/
+COPY ./app /app/app
 
 RUN uv sync --frozen --no-dev --no-editable \
     && rm -rf /root/.cache/uv
 
-COPY ./app /app/app
+
+FROM python:${PYTHON_VERSION}-alpine
+
+RUN apk add --no-cache ffmpeg
+
+WORKDIR /app
+
+COPY --from=builder /usr/local/bin/uv /usr/local/bin/uv
+COPY --from=builder /app /app
 COPY entrypoint.sh /
 
 VOLUME [ "/tmp/url-fairy-bot-cache/" ]

@@ -1,10 +1,11 @@
 # pages_test.py
 
 import os
+from unittest.mock import patch
 
 import pytest
 
-from app import pages
+from app import pages, preview
 from app.config import settings
 
 
@@ -56,6 +57,28 @@ def test_render_watch_page_escapes_filename_metacharacters():
     html = pages.render_watch_page('a"b&c.mp4')
     assert "a%22b%26c.mp4" in html
     assert '"b&c' not in html
+
+
+def test_render_watch_page_uses_per_file_preview_when_present(cache_dir):
+    preview_path = preview.preview_path("clip.mp4")
+    os.makedirs(os.path.dirname(preview_path), exist_ok=True)
+    with open(preview_path, "wb") as f:
+        f.write(b"fake jpeg data")
+
+    html = pages.render_watch_page("clip.mp4")
+
+    assert 'property="og:image" content="https://example.test/preview/clip.jpg"' in html
+    assert "https://example.test/preview.png" not in html
+
+
+def test_render_watch_page_falls_back_to_bundled_preview_when_absent(cache_dir):
+    html = pages.render_watch_page("clip.mp4")
+    assert 'property="og:image" content="https://example.test/preview.png"' in html
+
+
+def test_render_watch_page_derives_video_type_from_real_extension():
+    html = pages.render_watch_page("clip.webm")
+    assert 'property="og:video:type" content="video/webm"' in html
 
 
 # --- write_watch_page ---
@@ -110,6 +133,22 @@ def test_seed_static_pages_landing_page_has_no_cache_listing_link(cache_dir):
     pages.seed_static_pages()
     content = (cache_dir / "index.html").read_text(encoding="utf-8")
     assert "/cache/" not in content
+
+
+def test_seed_static_pages_generates_a_preview_for_the_sample_clip(cache_dir):
+    with patch("app.pages.preview.generate_preview") as mock_generate:
+        pages.seed_static_pages()
+
+    mock_generate.assert_called_once_with(
+        str(cache_dir / pages.SAMPLE_MEDIA_FILENAME)
+    )
+
+
+def test_seed_static_pages_survives_preview_generation_failure(cache_dir):
+    with patch("app.pages.preview.generate_preview", side_effect=OSError("boom")):
+        pages.seed_static_pages()
+
+    assert (cache_dir / "watch" / "sample.html").is_file()
 
 
 def test_seeded_sample_page_matches_a_real_watch_page(cache_dir):

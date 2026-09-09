@@ -46,10 +46,11 @@ fit together end to end:
 - [x] [UFB-0032. Telegram Instant View embeds](features/UFB-0032-telegram-instant-view-embeds.md) - `#telegram` `#ux` `#hosting`
 - [x] [UFB-0033. App-generated static pages](features/UFB-0033-static-page-generation.md) - `#hosting` `#ops`
 - [x] [UFB-0034. Health endpoints](features/UFB-0034-health-endpoints.md) - `#api` `#ops` `#runtime`
+- [x] [UFB-0035. Per-file preview images](features/UFB-0035-per-file-preview-images.md) - `#hosting` `#telegram` `#media`
 
 ## Tags
 
-- `#telegram`: UFB-0001, UFB-0002, UFB-0003, UFB-0004, UFB-0005, UFB-0006, UFB-0014, UFB-0032
+- `#telegram`: UFB-0001, UFB-0002, UFB-0003, UFB-0004, UFB-0005, UFB-0006, UFB-0014, UFB-0032, UFB-0035
 - `#commands`: UFB-0001
 - `#url`: UFB-0002, UFB-0007, UFB-0008, UFB-0010
 - `#ux`: UFB-0003, UFB-0014, UFB-0032
@@ -64,12 +65,12 @@ fit together end to end:
 - `#rewrite`: UFB-0010, UFB-0011, UFB-0012, UFB-0013, UFB-0022, UFB-0023, UFB-0029
 - `#youtube`: UFB-0012
 - `#fallback`: UFB-0013
-- `#media`: UFB-0015
+- `#media`: UFB-0015, UFB-0035
 - `#cache`: UFB-0016, UFB-0026
 - `#cookies`: UFB-0017, UFB-0018
 - `#api`: UFB-0019, UFB-0034
 - `#runtime`: UFB-0020, UFB-0034
 - `#ops`: UFB-0024, UFB-0025, UFB-0026, UFB-0027, UFB-0028, UFB-0030, UFB-0031, UFB-0033, UFB-0034
-- `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033
+- `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033, UFB-0035
 - `#deploy`: UFB-0027, UFB-0030
 - `#ci`: UFB-0028

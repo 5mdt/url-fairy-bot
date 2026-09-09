@@ -9,7 +9,7 @@ import requests
 
 from app.config import settings
 
-from . import pages
+from . import pages, preview
 from .download import UnsupportedUrlError, yt_dlp_download
 
 logger = logging.getLogger(__name__)
@@ -148,12 +148,16 @@ def apply_rewrite_map(final_url: str) -> str:
     return final_url
 
 
-# #UFB-0015, #UFB-0032, #UFB-0033
+# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035
 async def attempt_download(final_url: str) -> str:
     try:
         video_os_path = await yt_dlp_download(final_url)
         if video_os_path:
             video_path = os.path.join(*video_os_path.split(os.path.sep)[-1:])
+            try:
+                preview.generate_preview(video_os_path)
+            except OSError as e:
+                logger.warning(f"Failed to generate preview for {video_path}: {e}")
             try:
                 pages.write_watch_page(video_path)
             except OSError as e:

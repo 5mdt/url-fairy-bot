@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import mimetypes
 import os
 import shutil
 from urllib.parse import quote
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
+from app import preview
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -45,15 +47,24 @@ def watch_page_url(media_filename: str) -> str:
     return f"https://{settings.BASE_URL}/watch/{quote(stem)}.html"
 
 
-# #UFB-0032, #UFB-0033
+# #UFB-0032, #UFB-0033, #UFB-0035
 def render_watch_page(media_filename: str) -> str:
     basename = os.path.basename(media_filename)
     media_url = f"https://{settings.BASE_URL}/{quote(basename)}"
+    video_type = mimetypes.guess_type(basename)[0] or "video/mp4"
+    if os.path.exists(preview.preview_path(media_filename)):
+        image_url = preview.preview_url(media_filename)
+        image_type = "image/jpeg"
+    else:
+        image_url = f"https://{settings.BASE_URL}/{PREVIEW_IMAGE_FILENAME}"
+        image_type = mimetypes.guess_type(PREVIEW_IMAGE_FILENAME)[0] or "image/png"
     template = _env.get_template("watch.html")
     return template.render(
         page_url=watch_page_url(media_filename),
         media_url=media_url,
-        image_url=f"https://{settings.BASE_URL}/{PREVIEW_IMAGE_FILENAME}",
+        image_url=image_url,
+        image_type=image_type,
+        video_type=video_type,
     )
 
 
@@ -74,7 +85,7 @@ def render_404_page() -> str:
     return _env.get_template("404.html").render()
 
 
-# #UFB-0033, #UFB-0034
+# #UFB-0033, #UFB-0034, #UFB-0035
 def seed_static_pages() -> None:
     os.makedirs(settings.CACHE_DIR, exist_ok=True)
     _write_atomic(os.path.join(settings.CACHE_DIR, "index.html"), render_landing_page())
@@ -83,10 +94,15 @@ def seed_static_pages() -> None:
         os.path.join(_ASSETS_DIR, PREVIEW_IMAGE_FILENAME),
         os.path.join(settings.CACHE_DIR, PREVIEW_IMAGE_FILENAME),
     )
+    sample_path = os.path.join(settings.CACHE_DIR, SAMPLE_MEDIA_FILENAME)
     shutil.copyfile(
         os.path.join(_ASSETS_DIR, SAMPLE_MEDIA_FILENAME),
-        os.path.join(settings.CACHE_DIR, SAMPLE_MEDIA_FILENAME),
+        sample_path,
     )
+    try:
+        preview.generate_preview(sample_path)
+    except OSError as e:
+        logger.warning(f"Failed to generate sample preview: {e}")
     write_watch_page(SAMPLE_MEDIA_FILENAME)
     global pages_seeded
     pages_seeded = True
