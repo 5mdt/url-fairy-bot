@@ -1,6 +1,7 @@
 # download_test.py
 
 import os
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -142,6 +143,30 @@ async def test_yt_dlp_download_cache_hit_skips_download(tmp_path, monkeypatch):
 
     assert result == cached_path
     mock_ydl.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_yt_dlp_download_cache_hit_refreshes_atime_not_mtime(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
+    url = "https://tiktok.com/@user/video/1"
+
+    cached_path = os.path.join(str(tmp_path), f"{sanitize_subfolder_name(url)}.mp4")
+    with open(cached_path, "w") as f:
+        f.write("fake video data")
+
+    old_stamp = time.time() - 10 * 86400
+    os.utime(cached_path, (old_stamp, old_stamp))
+
+    with patch("app.download.yt_dlp.YoutubeDL") as mock_ydl:
+        await yt_dlp_download(url)
+
+    mock_ydl.assert_not_called()
+    st = os.stat(cached_path)
+    assert st.st_atime > old_stamp
+    assert st.st_mtime == pytest.approx(old_stamp, abs=1)
 
 
 @pytest.mark.asyncio

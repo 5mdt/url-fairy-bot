@@ -5,6 +5,7 @@ import glob
 import logging
 import os
 import tempfile
+import time
 
 import yt_dlp
 
@@ -53,11 +54,21 @@ def _resolve_cookie_path(cookie_files: list[str]) -> tuple[str, bool]:
     return tmp.name, True
 
 
+def _touch_atime(path: str) -> None:
+    """UFB-0026: mark a cache hit as a touch so it isn't swept as stale."""
+    try:
+        st = os.stat(path)
+        os.utime(path, (time.time(), st.st_mtime))
+    except OSError as e:
+        logger.warning(f"Failed to refresh atime for {path}: {e}")
+
+
 async def yt_dlp_download(url: str) -> str:
     video_path = os.path.join(settings.CACHE_DIR, f"{sanitize_subfolder_name(url)}.mp4")
 
     if os.path.exists(video_path):
         logger.info(f"File already exists for URL: {url}, skipping download.")
+        _touch_atime(video_path)
         return video_path
 
     try:

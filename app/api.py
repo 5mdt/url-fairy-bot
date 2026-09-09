@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import pages
+from . import cleanup, pages
 from .bot import is_polling_alive
 from .url_processing import process_url_request
 
@@ -36,10 +36,12 @@ async def healthz():
 async def health():
     polling = is_polling_alive()
     seeded = pages.pages_seeded
-    ok = polling and seeded
-    body = {
+    cleanup_alive = cleanup.is_cleanup_alive()
+    ok = polling and seeded and cleanup_alive
+    body: dict[str, str | bool] = {
         "status": "ok" if ok else "degraded",
         "polling": polling,
         "pages_seeded": seeded,
+        "cleanup": cleanup_alive,
     }
     return JSONResponse(content=body, status_code=200 if ok else 503)

@@ -117,8 +117,8 @@ needed, just two files.
 | `PUBLIC_PORT` | `80:80` | Host:container port mapping for the `nginx` service |
 | `GLOBAL_DATA_FOLDER` | `/Data` | Host directory whose `<folder>/url-fairy-bot/config` is mounted at `/config` (cookie files) |
 | `LETSENCRYPT_RESOLVER_NAME` | `letsencrypt-cloudflare-dns-challenge` | Traefik certresolver name used for TLS |
-| `FILE_TTL` | `3` | Age (in days, or the unit `FILE_TTL_TYPE` selects) after which cached downloads are deleted |
-| `FILE_TTL_TYPE` | `mtime` | `find`-style time predicate suffix used for `FILE_TTL` (e.g. `mtime`, `ctime`) |
+| `FILE_TTL` | `3` | Days a cached download may go **untouched** (access time, not modification time) before the in-app cleanup thread deletes it. With the default `relatime` mount behavior, a read only refreshes access time once per 24h, so values below 1 day aren't meaningful |
+| `CLEANUP_INTERVAL` | `3600` | Seconds between cache-cleanup sweeps |
 | `CACHE_DIR` | `/tmp/url-fairy-bot-cache/` | Directory for cached downloads |
 | `COOKIES_DIR` | `/config/` | Directory containing cookie files for authenticated downloads |
 | `COOKIE_JAR_ENABLED` | `false` | Use a persistent `cookie_jar.txt` so yt-dlp can save updated session tokens across requests. On first use, the jar is initialized by merging all `cookies*.txt` files in `COOKIES_DIR`. |

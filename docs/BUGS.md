@@ -55,14 +55,6 @@ Automation/behavior misbehaving today.
   `og:video:type: video/mp4` unconditionally, a mislabeled file also fails to play in Telegram's
   inline preview card, not just in strict browsers. Let yt-dlp choose the real
   extension (`%(ext)s`) and install `ffmpeg` if format merging is desired [P3/D2]
-- #BUG-0030 seeded permanent pages only survive until the next TTL sweep — `seed_static_pages`
-  (`app/pages.py`) writes the landing page, 404 page, and the Instant View sample clip/page into
-  `CACHE_DIR` at startup only ([UFB-0033](features/UFB-0033-static-page-generation.md)), and the
-  cron cleanup (`docker-compose.yml`) deletes anything in `CACHE_DIR` older than `FILE_TTL` with no
-  exemption. On a long-running deployment that isn't restarted within `FILE_TTL` days, `/`,
-  the 404 page, and the registered Instant View sample URL all start 404ing until the app next
-  restarts. Exclude the seeded filenames from the cleanup `find`, or have the app re-seed on an
-  interval instead of only at startup [P2/D2]
 - #BUG-0061 large downloads don't render in Telegram's `og:video`/Instant View player —
   reported against a 34 MB cached file (confirmed via `HEAD`: `content-length: 35818823`,
   `content-type: video/mp4`, `accept-ranges: bytes`, so the file itself and its response headers
@@ -76,15 +68,6 @@ Automation/behavior misbehaving today.
 
 ### Deploy / infra
 
-- #BUG-0010 `cleanup.sh` (repo root, 207 lines) is a complete, argument-parsing, env-validating
-  cache-cleanup script — more correct than the inline `cron` service's `find` one-liner, which now
-  relies on `restart: unless-stopped` re-running it every ~60 minutes after `sleep 60m` exits the
-  container, rather than looping internally. Note the double slash in
-  `/tmp/url-fairy-bot-cache//`, and that `FILE_TTL` is commented `#days` in `docker-compose.yml`
-  but treated as **seconds** by `cleanup.sh:135` — the two cleanup mechanisms disagree on units.
-  `cleanup.sh` itself is never `COPY`'d into the Docker image and no compose service invokes it,
-  so it has no effect at runtime. Either wire it into the `cron` service (`entrypoint: ["/cleanup.sh",
-  "--serve"]`, resolving the unit mismatch in the process) or remove it if superseded [P3/D2]
 - #BUG-0012 the unauthenticated API is an SSRF-capable open proxy — `POST /process_url/`
   (`app/api.py:11-24`) takes an arbitrary string URL with no auth or rate limit, and
   `follow_redirects()` (`app/url_processing.py:47-66`) issues a server-side `HEAD` request to it.
@@ -189,12 +172,6 @@ to both gates exactly like every other platform (2026-08-22).
   lines starting with a single `#` but no space, which is how Netscape cookie files often mark the
   `HttpOnly` prefix (`#HttpOnly_domain...`). `tests/download_test.py` now covers this behavior, but
   the code itself still has no comment explaining the intent — worth adding one [P3/D1]
-
-### Cron / Cleanup
-
-- #BUG-0046 rewrite the cleanup cron task to monitor file access time (not just mtime/age since
-  creation) and delete files from the download directory once they've gone untouched longer than a
-  configurable TTL, instead of whatever criteria the current task uses [P3/D2]
 
 ## Chores
 

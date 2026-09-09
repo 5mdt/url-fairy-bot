@@ -8,7 +8,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 
-from . import bot, pages
+from . import bot, cleanup, pages
 from .api import api_router
 
 # Logging configuration
@@ -23,7 +23,9 @@ async def lifespan(app: FastAPI):
     except OSError as e:
         logger.warning(f"Failed to seed static pages: {e}")
     bot.start_polling()
+    cleanup.start_cleanup()
     yield
+    cleanup.stop_cleanup()
     await bot.stop_polling()
 
 

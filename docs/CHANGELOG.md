@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- UFB-0026: replaced both cache-cleanup mechanisms (the `cron` compose service's `find -mtime`
+  one-liner, which deleted actively-served files and the seeded static pages —
+  fixing `#BUG-0030` — and the unused, never-shipped `cleanup.sh`, whose `FILE_TTL` unit
+  disagreed with `docker-compose.yml`'s — fixing `#BUG-0010`) with a daemon thread inside the
+  app (`app/cleanup.py`), started/stopped with the app lifespan and reported in `GET /health`.
+  Cleanup now keys off access time, not modification time, so an actively-served file is never
+  deleted while still being read (fixing `#BUG-0046`); `yt_dlp_download`'s cache-hit path
+  explicitly refreshes `atime` on reuse. Deleting a cached media file also removes its
+  `/watch/<file>` page; seeded filenames (landing/404 pages, preview image, sample clip and its
+  watch page) are permanently exempt. `docker-compose.yml`'s `cron` service and `cleanup.sh` are
+  removed; `FILE_TTL` (days, now atime-based) moved onto the `app` service and a new
+  `CLEANUP_INTERVAL` (seconds between sweeps) was added; `FILE_TTL_TYPE` is gone.
 - Docs: `docs/TODO.md` and `docs/BUGS.md` had drifted from
   `docs/DOCS-DRIVEN-DEVELOPMENT.md`'s spec — `TODO.md` had become a
   tech-debt list (the doc reserves it for new, not-yet-built behavior) and

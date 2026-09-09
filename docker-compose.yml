@@ -17,6 +17,8 @@ services:
       BOT_TOKEN: ${BOT_TOKEN:-YOUR_BOT_TOKEN}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CACHE_DIR: ${CACHE_DIR:-/tmp/url-fairy-bot-cache/}
+      FILE_TTL: ${FILE_TTL:-3}
+      CLEANUP_INTERVAL: ${CLEANUP_INTERVAL:-3600}
       COOKIES_DIR: ${COOKIES_DIR:-/config/}
       COOKIE_JAR_ENABLED: ${COOKIE_JAR_ENABLED:-false}
       FOLLOW_REDIRECT_TIMEOUT: ${FOLLOW_REDIRECT_TIMEOUT:-10}
@@ -67,19 +69,6 @@ services:
       - traefik_default
     volumes:
       - cache:/usr/share/nginx/html:ro
-
-  cron:
-    image: busybox:stable
-    restart: unless-stopped
-    environment:
-      - FILE_TTL=${FILE_TTL:-3} #days
-    volumes:
-      - cache:/tmp/url-fairy-bot-cache/
-    command: sh -c "find /tmp/url-fairy-bot-cache/ -type f -${FILE_TTL_TYPE:-mtime} +${FILE_TTL:-3} -delete > /dev/null; find /tmp/url-fairy-bot-cache// -type d -empty -delete > /dev/null; sleep 60m"
-    labels:
-      com.centurylinklabs.watchtower.enable: "true"
-    logging:
-      driver: none
 
 volumes:
   cache:

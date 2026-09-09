@@ -4,31 +4,36 @@
 
 ## Behavior
 
-Cached download files older than a configured age are automatically and
-continuously removed, along with any directories left empty by that
-removal, so the cache does not grow without bound. Cleanup keeps running for
-the lifetime of the deployment, not just once at startup.
+A cached download that has gone untouched (not read) for longer than a configured age is
+automatically and continuously removed, along with its `/watch/<file>` page and any directory
+left empty by that removal, so the cache does not grow without bound. Seeded static pages
+(landing page, 404 page, preview image, sample clip and its watch page) are never removed.
+Cleanup keeps running for the lifetime of the process, not just once at startup.
 
 ## Implementation
 
-- A dedicated cleanup process runs on a repeating interval, deleting files
-  past a configured TTL and pruning empty directories.
+- A daemon thread inside the app process (`app/cleanup.py`) sweeps `CACHE_DIR` on a repeating
+  interval (`CLEANUP_INTERVAL` seconds), deleting files whose access time (`atime`) is older than
+  `FILE_TTL` days, their orphaned `/watch/` page counterpart, and any directory left empty.
+- The thread is started/stopped alongside the app lifespan (`app/main.py`) and its liveness is
+  reported by `GET /health` next to bot-polling and page-seeding status.
+- On a cache hit, `yt_dlp_download` (`app/download.py`) refreshes the file's `atime` explicitly,
+  so serving a cached file counts as a touch independent of the filesystem's `relatime` behavior.
 
 ## Testing
 
-### Integration
+### Unit / Integration
 
-- A file older than the TTL → removed on the next cleanup pass.
-- A file younger than the TTL → kept.
-- Cleanup continues to run after the first pass (not a one-shot).
+- A file untouched longer than `FILE_TTL` → removed on the next sweep.
+- A file recently read but with an old modification time → kept (access time, not mtime, is the
+  criterion).
+- A removed media file's `/watch/<stem>.html` → removed with it; an orphaned watch page with no
+  matching media file → removed too.
+- Seeded filenames → always kept, regardless of age.
+- A directory left empty by deletion → pruned; `CACHE_DIR` itself is never removed.
+- Cleanup continues to run after the first pass (not a one-shot); `start_cleanup`/`stop_cleanup`
+  toggle `is_cleanup_alive()` and the thread stops cleanly on shutdown.
 
 ## Status
 
-Implemented — with known gaps:
-
-- The shipped cleanup runs its `find` deletions once, then sleeps 60 minutes
-  and exits, with no restart policy — cleanup effectively never repeats
-  ([BUGS #9](../BUGS.md#9-cache-cleanup-cron-compose-service-runs-once-and-then-stops-forever-medium-p2d2)).
-- A more complete, looping, argument-validated cleanup script exists in the
-  repo but isn't wired into the deployment at all
-  ([BUGS #10](../BUGS.md#10-cleanupsh-is-never-shipped-or-run-low-p3d2)).
+Implemented.

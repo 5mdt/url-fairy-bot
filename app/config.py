@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     IV_RHASH: str = os.getenv("IV_RHASH", "")
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
     CACHE_DIR: str = os.getenv("CACHE_DIR", "/tmp/url-fairy-bot-cache/")
+    FILE_TTL: int = int(os.getenv("FILE_TTL", 3))  # days untouched before deletion
+    CLEANUP_INTERVAL: int = int(os.getenv("CLEANUP_INTERVAL", 3600))  # seconds
     COOKIES_DIR: str = os.getenv("COOKIES_DIR", "/config/")
     DOWNLOAD_ALLOWED_DOMAINS: str = os.getenv("DOWNLOAD_ALLOWED_DOMAINS", "")
     REWRITE_ALLOWED_DOMAINS: str = os.getenv("REWRITE_ALLOWED_DOMAINS", "")
