@@ -13,11 +13,17 @@ bot is actually working.
 - `GET /healthz` is a pure liveness probe: always `200 {"status": "ok"}` as
   long as the HTTP server is answering requests.
 - `GET /health` is a readiness probe that reflects whether the bot's
-  Telegram polling loop is alive and whether the static pages (landing,
-  404, sample watch page) have been seeded into the cache directory. It
-  returns `200 {"status": "ok", "polling": true, "pages_seeded": true}`
-  when both are true, otherwise `503 {"status": "degraded", ...}` with the
-  failing flag(s) set to `false`.
+  Telegram polling loop is alive, whether the static pages (landing, 404,
+  sample watch page) have been seeded into the cache directory, whether the
+  cleanup thread is alive, and — when
+  [UFB-0036](UFB-0036-native-video-replies.md)'s `TELEGRAM_API_URL` is
+  configured — whether that local Bot API server is reachable. It returns
+  `200 {"status": "ok", "polling": true, "pages_seeded": true, "cleanup":
+  true, "telegram_api": ...}` when nothing is broken, otherwise
+  `503 {"status": "degraded", ...}` with the failing flag(s) set to
+  `false`. `telegram_api` is `null` when `TELEGRAM_API_URL` is unset —
+  that must never read as either healthy or unhealthy, since there's
+  nothing configured to check.
 
 ## Implementation
 
@@ -31,7 +37,11 @@ bot is actually working.
 - `app/pages.py` sets a module-level `pages_seeded = True` at the end of
   `seed_static_pages()`.
 - `app/api.py` adds `GET /healthz` and `GET /health` on the existing
-  `api_router`, reading `is_polling_alive()` and `pages.pages_seeded` live.
+  `api_router`, reading `is_polling_alive()`, `pages.pages_seeded`,
+  `cleanup.is_cleanup_alive()`, and `bot.is_telegram_api_reachable()` live.
+  The latter is a blocking TCP connect, run via `asyncio.to_thread` so a
+  hung local server can't stall the event loop (and Telegram polling)
+  for up to its timeout.
 - `app/main.py`'s `lifespan()` calls `bot.start_polling()` /
   `await bot.stop_polling()` instead of managing the task inline.
 - `Dockerfile` declares a `HEALTHCHECK` that runs
@@ -54,6 +64,11 @@ bot is actually working.
 - Closes [BUGS #7](../BUGS.md) (silent polling death) and
   [TODO-0020](../TODO.md), and resolves the known gaps listed in
   [UFB-0020](UFB-0020-in-process-bot-polling.md).
+- `is_telegram_api_reachable()` (`app/bot.py`) does a bare TCP connect, not
+  an HTTP request — every real route on a local Bot API server 404s/401s
+  without a valid bot token, which would make an HTTP-status check always
+  read "down" for a server that's actually up. See
+  [UFB-0036](UFB-0036-native-video-replies.md).
 
 ## Testing
 
@@ -67,9 +82,13 @@ bot is actually working.
 
 ### Unit
 
-- `tests/health_test.py` — `/healthz` always 200; `/health` 200 when both
-  flags true; 503 when the polling task is `None`, done, or pages aren't
-  seeded yet.
+- `tests/health_test.py` — `/healthz` always 200; `/health` 200 when
+  polling/pages/cleanup are all healthy and `telegram_api` is `null` or
+  `true`; 503 when the polling task is `None`, done, pages aren't seeded,
+  cleanup isn't alive, or `telegram_api` is explicitly `false`.
+- `tests/bot_test.py` — `is_telegram_api_reachable()` returns `None` when
+  `TELEGRAM_API_URL` is unset, `True` against a real listening socket,
+  `False` against a closed one.
 
 ### Integration
 

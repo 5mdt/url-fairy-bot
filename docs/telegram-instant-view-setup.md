@@ -44,9 +44,19 @@ the template first.
    ```text
    ~version: "2.1"
    title: //meta[@property='og:title']/@content
-   cover: //video
+   cover: /html/head/meta[@property="og:image"]/@content[string()]
    body: //body
    ```
+
+   `cover` deliberately reads `og:image`, never the page's `<video>`
+   element — a file over `INLINE_VIDEO_MAX_MB` has no `<video>` element at
+   all ([UFB-0032](features/UFB-0032-telegram-instant-view-embeds.md)), and
+   even below the threshold `og:image` is the right cover: it's the
+   article's list thumbnail, not its body content. `og:image` is a per-file
+   preview frame when one exists
+   ([UFB-0035](features/UFB-0035-per-file-preview-images.md)), otherwise
+   the bundled fallback — always present regardless of size. `[string()]`
+   guards against ever treating an empty `content=""` as a match.
 
    The `~version` line matters: a template with no version pragma defaults
    to the long-deprecated `1.0` engine (the editor flags this with
@@ -69,10 +79,16 @@ the template first.
    "`/watch` + zero-or-more slashes", not "anything under `/watch/`"; you'd
    need `/watch/.*` for that.
 
-   Refine using the live preview pane until the rendered IV page shows the
-   sample video playing.
-5. Once the preview looks right, **Publish**/**Save**. Telegram assigns the
-   template a `rhash`, shown in the editor's URL bar or a "Test IV link"
+   Refine using the live preview pane until `title`/`cover`/`body` resolve
+   with no errors — but the preview pane itself never actually plays a
+   `<video>`, it only shows a static frame. That's a limitation of the
+   editor's browser preview, not a sign the template is wrong.
+5. Click **Test IV link** (next to Publish/Save) to get a
+   `t.me/iv?url=...&rhash=...` link, and open *that* in the real Telegram
+   app (mobile or desktop) — this is the only way to confirm the video
+   actually plays, since the browser preview pane can't play it. Once it
+   looks right, **Publish**/**Save**. Telegram assigns the template a
+   `rhash`, shown in the editor's URL bar or the same "Test IV link"
    button, e.g.:
 
    ```text

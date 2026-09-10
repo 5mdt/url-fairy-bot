@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     BASE_URL: str = os.getenv("BASE_URL", "")
     IV_RHASH: str = os.getenv("IV_RHASH", "")
     INLINE_VIDEO_MAX_MB: int = int(os.getenv("INLINE_VIDEO_MAX_MB", 10))
+    # #UFB-0036
+    TELEGRAM_API_URL: str = os.getenv("TELEGRAM_API_URL", "")
+    CLOUD_SEND_VIDEO_MAX_MB: int = int(os.getenv("CLOUD_SEND_VIDEO_MAX_MB", 10))
+    LOCAL_SEND_VIDEO_MAX_MB: int = int(os.getenv("LOCAL_SEND_VIDEO_MAX_MB", 500))
     BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
     CACHE_DIR: str = os.getenv("CACHE_DIR", "/tmp/url-fairy-bot-cache/")
     FILE_TTL: int = int(os.getenv("FILE_TTL", 3))  # days untouched before deletion
@@ -26,6 +30,8 @@ class Settings(BaseSettings):
         "no",
     )
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
+    # #UFB-0037
+    MESSAGE_LOCALE: str = os.getenv("MESSAGE_LOCALE", "en")
 
     # Domain-rewrite mirror destinations (source-matching regex stays in code)
     # #UFB-0022

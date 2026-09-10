@@ -265,8 +265,9 @@ async def test_attempt_download_success(monkeypatch, tmp_path):
     ):
         result = await attempt_download("https://tiktok.com/@user/video/1")
 
-    assert "https://example.test/watch/some_video.html" in result
-    assert "https://tiktok.com/@user/video/1" in result
+    assert "https://example.test/watch/some_video.html" in result.text
+    assert "https://tiktok.com/@user/video/1" in result.text
+    assert result.media_path == "/cache/some_video.mp4"
     assert (tmp_path / "watch" / "some_video.html").exists()
 
 
@@ -280,7 +281,7 @@ async def test_attempt_download_percent_encodes_watch_page_url(monkeypatch, tmp_
     ):
         result = await attempt_download("https://tiktok.com/@user/video/1")
 
-    assert "https://example.test/watch/some%20video%20%281%29.html" in result
+    assert "https://example.test/watch/some%20video%20%281%29.html" in result.text
 
 
 @pytest.mark.asyncio
@@ -297,8 +298,10 @@ async def test_attempt_download_uses_instant_view_link_when_rhash_set(
         result = await attempt_download("https://tiktok.com/@user/video/1")
 
     expected_page_url = "https%3A%2F%2Fexample.test%2Fwatch%2Fsome_video.html"
-    assert f"https://t.me/iv?url={expected_page_url}&rhash=abc123" in result
-    assert "https://tiktok.com/@user/video/1" in result
+    # `&` is HTML-escaped to `&amp;` inside the rendered <a href="..."> — the
+    # reply is now HTML (UFB-0014/UFB-0037), not Markdown.
+    assert f"https://t.me/iv?url={expected_page_url}&amp;rhash=abc123" in result.text
+    assert "https://tiktok.com/@user/video/1" in result.text
 
 
 @pytest.mark.asyncio
@@ -339,6 +342,7 @@ async def test_process_url_request_disallowed_no_rewrite_private(monkeypatch):
         result = await process_url_request("https://example.com/x", is_group_chat=False)
     assert "not allowed for downloading" in result
     assert "example.com/x" in result
+    assert '<a href="https://example.com/x">' in result
 
 
 @pytest.mark.asyncio
@@ -398,7 +402,8 @@ async def test_process_url_request_disallowed_download_allows_everything_by_defa
     ):
         result = await process_url_request("https://example.com/x", is_group_chat=False)
     mock_download.assert_called_once()
-    assert "vid.html" in result
+    assert "vid.html" in result.text
+    assert result.media_path == "/cache/vid.mp4"
 
 
 @pytest.mark.asyncio
@@ -422,7 +427,7 @@ async def test_process_url_request_youtube_downloads_by_default(monkeypatch, tmp
             "https://www.youtube.com/watch?v=abc123", is_group_chat=False
         )
     mock_download.assert_called_once()
-    assert "example.test/watch/vid.html" in result
+    assert "example.test/watch/vid.html" in result.text
 
 
 @pytest.mark.asyncio
@@ -486,7 +491,7 @@ async def test_process_url_request_youtube_falls_through_to_download_when_rewrit
             "https://www.youtube.com/watch?v=abc123", is_group_chat=False
         )
     mock_download.assert_called_once()
-    assert "example.test/watch/vid.html" in result
+    assert "example.test/watch/vid.html" in result.text
 
 
 @pytest.mark.asyncio
@@ -528,7 +533,8 @@ async def test_process_url_request_allowed_download_succeeds(monkeypatch, tmp_pa
         result = await process_url_request(
             "https://www.tiktok.com/@user/video/1", is_group_chat=False
         )
-    assert "example.test/watch/vid.html" in result
+    assert "example.test/watch/vid.html" in result.text
+    assert result.media_path == "/cache/vid.mp4"
 
 
 @pytest.mark.asyncio

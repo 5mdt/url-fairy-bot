@@ -23,6 +23,8 @@ eligible, YouTube included.
   [platform/YouTube rewrite map](UFB-0011-platform-mirror-rewrites.md)
   (gated by `REWRITE_ALLOWED_DOMAINS`) used on the download-failure
   fallback path.
+- Reply text is rendered via `app.messages.domain_not_allowed()` /
+  `domain_not_allowed_with_mirror()` ([UFB-0037](UFB-0037-message-templates.md)).
 
 ## Testing
 

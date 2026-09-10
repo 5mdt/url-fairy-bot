@@ -55,6 +55,12 @@ def generate_preview(media_os_path: str) -> str | None:
                     "scale=1200:-2",
                     "-q:v",
                     "3",
+                    # Force the muxer explicitly: the atomic write's `.tmp`
+                    # suffix (below) means ffmpeg can't infer a JPEG from the
+                    # filename extension and otherwise refuses to write
+                    # anything (#BUG-0066).
+                    "-f",
+                    "mjpeg",
                     tmp_path,
                 ],
                 capture_output=True,
@@ -71,5 +77,8 @@ def generate_preview(media_os_path: str) -> str | None:
             os.replace(tmp_path, dest)
             return dest
 
-    logger.warning(f"ffmpeg failed to generate preview for {media_os_path}")
+    logger.warning(
+        f"ffmpeg failed to generate preview for {media_os_path}: "
+        f"{result.stderr.decode(errors='replace').strip()}"
+    )
     return None

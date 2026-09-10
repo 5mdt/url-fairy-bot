@@ -11,6 +11,8 @@ user to send a valid URL.
 
 - Runs after [multi-URL scanning](UFB-0002-multi-url-scanning.md) finds zero
   matches, only when the chat is not a group/supergroup.
+- Prompt text is rendered via `app.messages.no_url_prompt()`
+  ([UFB-0037](UFB-0037-message-templates.md)).
 
 ## Testing
 

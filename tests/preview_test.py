@@ -61,6 +61,9 @@ def test_generate_preview_invokes_ffmpeg_and_writes_destination(cache_dir):
     assert argv[0] == "ffmpeg"
     assert "-i" in argv and media_path in argv
     assert kwargs.get("timeout")
+    # The atomic-write tmp path ends in `.tmp`, which ffmpeg can't infer a
+    # muxer from; the format must be forced explicitly (#BUG-0066).
+    assert argv[argv.index("-f") + 1] == "mjpeg"
 
 
 def test_generate_preview_leaves_no_tmp_file_on_success(cache_dir):

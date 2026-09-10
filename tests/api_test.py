@@ -6,6 +6,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
+from app.url_processing import DownloadResult
 
 
 @pytest.mark.asyncio
@@ -26,6 +27,24 @@ async def test_process_url_returns_processed_data():
     assert body["status"] == "success"
     assert body["data"] == "[Watch](https://example.test/video.mp4)"
     mock_process.assert_awaited_once_with("https://tiktok.com/@user/video/1")
+
+
+@pytest.mark.asyncio
+async def test_process_url_unwraps_download_result_text():
+    result = DownloadResult(
+        text="[Watch](https://example.test/video.mp4)", media_path="/cache/video.mp4"
+    )
+    with patch("app.api.process_url_request", new=AsyncMock(return_value=result)):
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as ac:
+            response = await ac.post(
+                "/process_url/", json={"url": "https://tiktok.com/@user/video/1"}
+            )
+
+    body = response.json()
+    assert body["status"] == "success"
+    assert body["data"] == "[Watch](https://example.test/video.mp4)"
 
 
 @pytest.mark.asyncio

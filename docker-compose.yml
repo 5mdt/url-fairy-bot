@@ -11,6 +11,15 @@ services:
   app:
     image: ghcr.io/5mdt/url-fairy-bot:${IMAGE_TAG:-latest}
     restart: unless-stopped
+    # #UFB-0036: `required: false` makes this a no-op when `telegram-bot-api`
+    # isn't part of this run (the `local-bot-api` profile inactive) — without
+    # it, Compose refuses to build the project at all in that case ("depends
+    # on undefined service"). When the profile *is* active, `app` still waits
+    # for `telegram-bot-api`'s own healthcheck before starting.
+    depends_on:
+      telegram-bot-api:
+        condition: service_healthy
+        required: false
     environment:
       BASE_URL: ${BASE_URL:-localhost}
       IV_RHASH: ${IV_RHASH:-}
@@ -24,6 +33,9 @@ services:
       FOLLOW_REDIRECT_TIMEOUT: ${FOLLOW_REDIRECT_TIMEOUT:-10}
       DOWNLOAD_ALLOWED_DOMAINS: ${DOWNLOAD_ALLOWED_DOMAINS:-}
       REWRITE_ALLOWED_DOMAINS: ${REWRITE_ALLOWED_DOMAINS:-}
+      TELEGRAM_API_URL: ${TELEGRAM_API_URL:-}
+      CLOUD_SEND_VIDEO_MAX_MB: ${CLOUD_SEND_VIDEO_MAX_MB:-10}
+      LOCAL_SEND_VIDEO_MAX_MB: ${LOCAL_SEND_VIDEO_MAX_MB:-500}
       SPOTIFY_MIRROR_DOMAIN: ${SPOTIFY_MIRROR_DOMAIN:-fxspotify.com}
       INSTAGRAM_MIRROR_DOMAIN: ${INSTAGRAM_MIRROR_DOMAIN:-kkinstagram.com}
       REDDIT_MIRROR_DOMAIN: ${REDDIT_MIRROR_DOMAIN:-rxddit.com}
@@ -70,5 +82,40 @@ services:
     volumes:
       - cache:/usr/share/nginx/html:ro
 
+  # Optional: a self-hosted Telegram Bot API server in local mode, raising
+  # the video-send ceiling above the cloud API's 50 MB (see
+  # docs/features/UFB-0036-native-video-replies.md). Disabled by default;
+  # enable with `docker compose --profile local-bot-api up -d` after setting
+  # TELEGRAM_API_ID/TELEGRAM_API_HASH and pointing TELEGRAM_API_URL at it.
+  telegram-bot-api:
+    image: aiogram/telegram-bot-api:latest
+    restart: unless-stopped
+    profiles:
+      - local-bot-api
+    environment:
+      TELEGRAM_API_ID: ${TELEGRAM_API_ID:-}
+      TELEGRAM_API_HASH: ${TELEGRAM_API_HASH:-}
+      TELEGRAM_LOCAL: 1
+    # Every real HTTP route on this server 404s/401s without a valid bot
+    # token, so an HTTP-status healthcheck would always read as "down"; a
+    # bare TCP connect just confirms the process is up and listening.
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "8081"]
+      interval: 5s
+      timeout: 2s
+      retries: 12
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "1m"
+    volumes:
+      - cache:/tmp/url-fairy-bot-cache/
+      - botapi:/var/lib/telegram-bot-api
+    networks:
+      - default
+
 volumes:
   cache:
+  botapi:

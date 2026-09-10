@@ -11,7 +11,8 @@ error details are never shown to the user.
 ## Implementation
 
 - Each extracted URL is validated before processing; a validation failure is
-  logged with full detail and answered with a fixed, short message.
+  logged with full detail and answered with a fixed, short message rendered
+  via `app.messages.invalid_url()` ([UFB-0037](UFB-0037-message-templates.md)).
 
 ## Testing
 

@@ -25,7 +25,7 @@ fit together end to end:
 - [x] [UFB-0011. Platform mirror-domain rewrites](features/UFB-0011-platform-mirror-rewrites.md) - `#rewrite`
 - [x] [UFB-0012. YouTube mirror rewrites](features/UFB-0012-youtube-mirror-rewrites.md) - `#rewrite` `#youtube`
 - [x] [UFB-0013. Download-failure fallback](features/UFB-0013-download-failure-fallback.md) - `#rewrite` `#download` `#fallback`
-- [x] [UFB-0014. Markdown reply formatting](features/UFB-0014-markdown-reply-formatting.md) - `#telegram` `#ux`
+- [x] [UFB-0014. HTML reply formatting](features/UFB-0014-markdown-reply-formatting.md) - `#telegram` `#ux`
 - [x] [UFB-0015. yt-dlp media download](features/UFB-0015-yt-dlp-media-download.md) - `#download` `#media`
 - [x] [UFB-0016. Download caching](features/UFB-0016-download-caching.md) - `#download` `#cache`
 - [x] [UFB-0017. Cookie file merging](features/UFB-0017-cookie-file-merging.md) - `#download` `#cookies`
@@ -47,13 +47,16 @@ fit together end to end:
 - [x] [UFB-0033. App-generated static pages](features/UFB-0033-static-page-generation.md) - `#hosting` `#ops`
 - [x] [UFB-0034. Health endpoints](features/UFB-0034-health-endpoints.md) - `#api` `#ops` `#runtime`
 - [x] [UFB-0035. Per-file preview images](features/UFB-0035-per-file-preview-images.md) - `#hosting` `#telegram` `#media`
+- [x] [UFB-0036. Native Telegram video replies via a local Bot API server](features/UFB-0036-native-video-replies.md) - `#telegram` `#ux` `#hosting` `#media`
+- [x] [UFB-0037. Jinja message templates](features/UFB-0037-message-templates.md) - `#telegram` `#ux` `#i18n`
 
 ## Tags
 
-- `#telegram`: UFB-0001, UFB-0002, UFB-0003, UFB-0004, UFB-0005, UFB-0006, UFB-0014, UFB-0032, UFB-0035
+- `#telegram`: UFB-0001, UFB-0002, UFB-0003, UFB-0004, UFB-0005, UFB-0006, UFB-0014, UFB-0032, UFB-0035, UFB-0036, UFB-0037
 - `#commands`: UFB-0001
 - `#url`: UFB-0002, UFB-0007, UFB-0008, UFB-0010
-- `#ux`: UFB-0003, UFB-0014, UFB-0032
+- `#ux`: UFB-0003, UFB-0014, UFB-0032, UFB-0036, UFB-0037
+- `#i18n`: UFB-0037
 - `#groups`: UFB-0004, UFB-0005
 - `#easter-egg`: UFB-0005
 - `#validation`: UFB-0006
@@ -65,12 +68,12 @@ fit together end to end:
 - `#rewrite`: UFB-0010, UFB-0011, UFB-0012, UFB-0013, UFB-0022, UFB-0023, UFB-0029
 - `#youtube`: UFB-0012
 - `#fallback`: UFB-0013
-- `#media`: UFB-0015, UFB-0035
+- `#media`: UFB-0015, UFB-0035, UFB-0036
 - `#cache`: UFB-0016, UFB-0026
 - `#cookies`: UFB-0017, UFB-0018
 - `#api`: UFB-0019, UFB-0034
 - `#runtime`: UFB-0020, UFB-0034
 - `#ops`: UFB-0024, UFB-0025, UFB-0026, UFB-0027, UFB-0028, UFB-0030, UFB-0031, UFB-0033, UFB-0034
-- `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033, UFB-0035
+- `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033, UFB-0035, UFB-0036
 - `#deploy`: UFB-0027, UFB-0030
 - `#ci`: UFB-0028

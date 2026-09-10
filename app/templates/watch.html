@@ -4,22 +4,24 @@
     <meta property="og:type" content="video.other">
     <meta property="og:title" content="🪄 URL Fairy">
     <meta property="og:url" content="{{ page_url }}">
-    {% if inline_video %}
+    {% if show_video_meta %}
     <meta property="og:video" content="{{ media_url }}">
     <meta property="og:video:secure_url" content="{{ media_url }}">
     <meta property="og:video:type" content="{{ video_type }}">
     {% endif %}
     <meta property="og:image" content="{{ image_url }}">
     <meta property="og:image:type" content="{{ image_type }}">
-    {% if inline_video %}
+    {% if show_video_meta %}
     <meta name="twitter:card" content="player">
     <meta name="twitter:player:stream" content="{{ media_url }}">
     {% endif %}
 {% endblock %}
 {% block content %}
     <h1>Hi, this is ✨URL Fairy✨:</h1>
-    {% if inline_video %}
-    <p><video controls preload="metadata" src="{{ media_url }}"></video></p>
+    {% if show_video_meta %}
+    <video controls preload="metadata" src="{{ media_url }}"></video>
+    {% else %}
+    <img src="{{ image_url }}" alt="">
     {% endif %}
     <p>⬇️ <a href="{{ media_url }}">Download the file</a></p>
 {% endblock %}

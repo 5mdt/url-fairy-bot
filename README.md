@@ -113,7 +113,10 @@ needed, just two files.
 | `BOT_TOKEN` | _(required)_ | Telegram bot token |
 | `BASE_URL` | _(required)_ | Public base URL for serving downloaded files |
 | `IV_RHASH` | _(empty)_ | `rhash` of a Telegram Instant View template you created for `BASE_URL` at [instantview.telegram.org](https://instantview.telegram.org) — see [docs/telegram-instant-view-setup.md](docs/telegram-instant-view-setup.md). Empty (the default): watch links use a themed `og:video` page, which Telegram already renders as an inline-playable card with no template needed. Set: watch links become `https://t.me/iv?url=...&rhash=...` and open in true Instant View |
-| `INLINE_VIDEO_MAX_MB` | `10` | A watch page for a media file larger than this omits `og:video`/`twitter:player` tags and the inline `<video>` element, since Telegram silently drops the inline player for large files anyway |
+| `INLINE_VIDEO_MAX_MB` | `10` | A watch page for a media file larger than this omits `og:video`/`twitter:player` tags and the inline `<video>` element — Telegram's Instant View fetches media server-side and fails the whole page for large files, so the tags/element are dropped instead of left broken |
+| `TELEGRAM_API_URL` | _(empty)_ | Base URL of a self-hosted [Bot API server](https://github.com/tdlib/telegram-bot-api) run in local mode — see [docs/telegram-bot-api-setup.md](docs/telegram-bot-api-setup.md). e.g. `http://telegram-bot-api:8081`. Empty (the default): use Telegram's cloud API, 50 MB upload ceiling |
+| `CLOUD_SEND_VIDEO_MAX_MB` | `10` | A file at or under this size is always sent as a native video reply (works over Telegram's cloud API or a connected local one alike) |
+| `LOCAL_SEND_VIDEO_MAX_MB` | `500` | A file between `CLOUD_SEND_VIDEO_MAX_MB` and this is sent natively only if a local Bot API server (`TELEGRAM_API_URL`) is configured and reachable; above this, the bot never tries to upload — it replies with a "cannot upload" notice and the watch/download links instead |
 | `IMAGE_TAG` | `latest` | Tag of the `url-fairy-bot` GHCR image to deploy |
 | `PUBLIC_PORT` | `80:80` | Host:container port mapping for the `nginx` service |
 | `GLOBAL_DATA_FOLDER` | `/Data` | Host directory whose `<folder>/url-fairy-bot/config` is mounted at `/config` (cookie files) |

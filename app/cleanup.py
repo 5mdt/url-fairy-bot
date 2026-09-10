@@ -8,7 +8,8 @@ import threading
 import time
 
 from app.config import settings
-from app.pages import PREVIEW_IMAGE_FILENAME, SAMPLE_MEDIA_FILENAME, watch_page_path
+from app.pages import (PREVIEW_IMAGE_FILENAME, SAMPLE_MEDIA_FILENAME,
+                       watch_page_path)
 from app.preview import preview_path
 
 logger = logging.getLogger(__name__)

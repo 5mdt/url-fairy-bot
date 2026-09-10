@@ -2,6 +2,58 @@
 
 ## Unreleased
 
+- `#UFB-0037` — every user-facing bot/API reply is now rendered from a Jinja
+  template (`app/messages.py`, `app/templates/messages/en/`) instead of an
+  inline literal or f-string.
+- `#UFB-0014`/`#BUG-0016` — replies now send as `parse_mode=HTML` instead of
+  legacy Markdown; Jinja's autoescaping escapes URLs automatically, fixing
+  Telegram rejecting/mangling replies for URLs containing `)` or `_`.
+- Fix: `#UFB-0036`/`#BUG-0076` — a local-mode video send can fail with
+  `Bad Request: invalid file HTTP URL specified: URL host is empty` for a
+  file that genuinely exists and is readable at the expected path (root
+  cause undiagnosed — see BUGS). `_reply_with_video` (`app/bot.py`) now
+  retries once as a real upload (`FSInputFile`) when the initial path-based
+  attempt fails, before falling back to the plain text reply.
+- `#UFB-0036` — `app/bot.py` deliberately does **not** auto-swap onto the
+  cloud API when a `TELEGRAM_API_URL`-configured local server goes down: an
+  earlier draft tried it, but moving the bot back to the cloud API requires
+  an explicit `logOut` against the *local* server first — exactly the call
+  a dead server can't answer, so the swap could only trade "polling dead"
+  for "polling `Unauthorized`". Removed. Polling itself needs no help here
+  regardless — aiogram's own `getUpdates` loop already retries with backoff
+  against the same endpoint and self-heals once it's reachable again;
+  `start_polling()` still checks reachability once, at startup, to pick the
+  right *starting* backend. `GET /health`'s `telegram_api` field reports
+  reachability directly.
+
+- UFB-0036/UFB-0034: `GET /health` gained a `telegram_api` field reflecting
+  whether the local Bot API server (`TELEGRAM_API_URL`) is reachable — `null`
+  when unset, `true`/`false` (the latter degrading `/health` to `503`)
+  otherwise, via `bot.is_telegram_api_reachable()`'s bare TCP connect (an
+  HTTP-status check would always read "down": every real route on that
+  server 404s/401s without a valid bot token). The check runs off the event
+  loop (`asyncio.to_thread`) so a hung server can't stall the app. The
+  `telegram-bot-api` compose service also gained its own Docker
+  `healthcheck` for the same reason, and `app` now `depends_on:
+  telegram-bot-api: condition: service_healthy, required: false` — plain
+  `condition: service_healthy` (no `required: false`) breaks
+  `docker compose config` entirely when `telegram-bot-api`'s profile is
+  inactive ("depends on undefined service"); `required: false` makes the
+  dependency a no-op in that case while still gating `app`'s first start on
+  `telegram-bot-api` reaching `healthy` when the profile is active
+  (verified live both ways).
+- Fix: `#BUG-0066` — `generate_preview` (`app/preview.py`) has never actually
+  produced a preview image in production: its atomic-write tmp path ends in
+  `.tmp`, and ffmpeg cannot infer an output format from that extension, so
+  every invocation exited non-zero and every watch page silently fell back
+  to the bundled `preview.png`. Fixed by forcing `-f mjpeg` explicitly
+  instead of relying on the (now misleading) filename extension. Also logs
+  ffmpeg's `stderr` on a final failure instead of a bare warning, so a
+  future regression like this is visible in logs immediately.
+- Fix: `app/templates/watch.html`'s `<video>` element is no longer wrapped
+  in a `<p>` — Telegram's Instant View content model rejects `<video>`
+  nested inside `<p>` ("Element `<video>` is not supported in `<p>`"),
+  which broke IV rendering for every download.
 - UFB-0033: `seed_static_pages` now re-renders the watch page of every
   pre-existing media file in `CACHE_DIR` on startup, not just the sample —
   so a template or embed-logic change (like the `INLINE_VIDEO_MAX_MB`
@@ -10,8 +62,42 @@
 - UFB-0032: fixes `#BUG-0061` — a media file over the new
   `INLINE_VIDEO_MAX_MB` setting (default `10`) now gets a plain watch page
   with no `og:video`/`twitter:player` tags or inline `<video>` element,
-  since Telegram silently drops the inline player for large files anyway;
-  `og:image` and the download link are unaffected.
+  since Telegram's Instant View fetches every body media resource
+  server-side and fails the whole article (`NO_MEDIA_FOUND`) for a file it
+  can't fetch, rather than degrading gracefully; `og:image`/the fallback
+  `<img>` and the download link are unaffected. (An earlier iteration of
+  this fix kept the `<video>` element always present on the theory that IV
+  wasn't subject to the same size limit — confirmed live to be wrong: IV's
+  own fetch fails the same way, and its one lazy-loading mechanism,
+  `<iframe>`, is rejected outright with `EMBED_NOT_SUPPORTED` for a
+  same-domain URL. See UFB-0032's "Rejected approaches".)
+- UFB-0036: the bot now replies with a native Telegram video (`sendVideo`),
+  bypassing Instant View and its size limit entirely, in three size tiers: at
+  or under `CLOUD_SEND_VIDEO_MAX_MB` (default `10`) always; up to
+  `LOCAL_SEND_VIDEO_MAX_MB` (default `500`) only when a self-hosted local
+  Bot API server (`TELEGRAM_API_URL`) is configured and currently reachable
+  (a bot token is logged into exactly one Bot API backend at a time, so this
+  never picks between two backends per message — it decides whether the one
+  active backend should be trusted with a file this size); above
+  `LOCAL_SEND_VIDEO_MAX_MB`, no send is attempted and the reply is "I cannot
+  upload this attachment, use link below to watch or download". Falls back
+  to the plain text reply on any decline or send failure. Every outcome
+  (video caption, text fallback, or the "cannot upload" notice) carries the
+  same `⏬ Download` / `📎 Source` links — previously "⏯️ Watch or ⏬
+  Download" with an unlabeled source link. Replaces the earlier single
+  `SEND_VIDEO_MAX_MB` (default `50`) threshold. When sending through a local
+  Bot API server, the video is handed to `reply_video` as a plain path
+  string instead of `FSInputFile` — aiogram then passes the path straight
+  through to the local server instead of reading and uploading the bytes
+  itself, which is the whole point of `docker-compose.yml`'s
+  `telegram-bot-api` service sharing the `cache` mount with `app`. The
+  thumbnail stays an `FSInputFile` on both backends — `SendVideo.thumbnail`
+  is typed strictly as `InputFile` in aiogram, unlike `video`
+  (`str | InputFile`), so a bare path there raises a pydantic validation
+  error regardless of backend (hit live in production: `1 validation error
+  for SendVideo / thumbnail / Input should be an instance of InputFile`).
+  Since the thumbnail is small (≤200 KB), always uploading it costs
+  nothing.
 - Fix: `Dockerfile` is now multi-stage — a `builder` stage installs `build-base`/`libffi-dev`/
   `openssl-dev`/`curl` and runs `uv sync`, then only the resulting `.venv`, `uv` binary, and app
   code are copied into a clean final stage; the compiler toolchain never reaches the runtime image
