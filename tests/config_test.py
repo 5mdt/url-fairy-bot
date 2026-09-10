@@ -80,3 +80,36 @@ def test_cookie_jar_enabled_rejects_unparseable_value(reload_settings, value):
 def test_cookie_jar_enabled_rejects_empty_string(reload_settings):
     with pytest.raises(pydantic.ValidationError):
         reload_settings(COOKIE_JAR_ENABLED="")
+
+
+# --- UFB-0036: TELEGRAM_API_URL / CLOUD_SEND_VIDEO_MAX_MB / LOCAL_SEND_VIDEO_MAX_MB ---
+
+
+def test_telegram_api_url_defaults_to_empty(reload_settings):
+    settings = reload_settings()
+    assert settings.TELEGRAM_API_URL == ""
+
+
+def test_telegram_api_url_reads_env(reload_settings):
+    settings = reload_settings(TELEGRAM_API_URL="http://telegram-bot-api:8081")
+    assert settings.TELEGRAM_API_URL == "http://telegram-bot-api:8081"
+
+
+def test_cloud_send_video_max_mb_defaults_to_10(reload_settings):
+    settings = reload_settings()
+    assert settings.CLOUD_SEND_VIDEO_MAX_MB == 10
+
+
+def test_cloud_send_video_max_mb_reads_env(reload_settings):
+    settings = reload_settings(CLOUD_SEND_VIDEO_MAX_MB="20")
+    assert settings.CLOUD_SEND_VIDEO_MAX_MB == 20
+
+
+def test_local_send_video_max_mb_defaults_to_500(reload_settings):
+    settings = reload_settings()
+    assert settings.LOCAL_SEND_VIDEO_MAX_MB == 500
+
+
+def test_local_send_video_max_mb_reads_env(reload_settings):
+    settings = reload_settings(LOCAL_SEND_VIDEO_MAX_MB="2000")
+    assert settings.LOCAL_SEND_VIDEO_MAX_MB == 2000

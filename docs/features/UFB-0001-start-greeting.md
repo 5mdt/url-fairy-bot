@@ -12,6 +12,8 @@ the user to send a URL.
 - A dedicated command handler answers `/start`, registered wherever the bot's
   message handlers are wired up (not conditionally, not only in an unused
   startup path).
+- Greeting text is rendered from `app/templates/messages/en/start.html.j2`
+  via `app.messages.start()` ([UFB-0037](UFB-0037-message-templates.md)).
 
 ## Testing
 

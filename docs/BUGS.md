@@ -3,7 +3,8 @@
 Defects, quirks, tech debt, and chores on already-shipped behavior. New, not-yet-built
 behavior goes in `docs/TODO.md` instead. Entries are deleted when fixed (the fix gets a
 `docs/CHANGELOG.md` bullet); IDs are never reused or renumbered, so deletions leave gaps.
-Next free ID: **BUG-0065**.
+Next free ID: **BUG-0077**. (BUG-0065 was allocated but never recorded here or in
+`CHANGELOG.md` — left as a gap rather than reused, per the policy above.)
 
 Each entry ends with a `[P#/D#]` marker:
 
@@ -25,14 +26,49 @@ Automation/behavior misbehaving today.
   process, since the FastAPI event loop and the Telegram polling loop share one thread — one user's
   request stalls every other in-flight request. Run both via `loop.run_in_executor(None, ...)` or
   switch to async-native clients (`httpx.AsyncClient`) [P2/D3]
-- #BUG-0016 Markdown replies can still break Telegram's parser for URLs — the reply-to-bot shrug
-  text itself is correct today (`"¯\\_(ツ)_/¯"`, `app/bot.py:37`), but every `[text](url)` link built
-  from a `final_url`/`modified_url` (`app/url_processing.py:157,184,189-190,196-198,213-215`) is
-  still an unescaped f-string, so any URL containing `)` or `_` (common in TikTok/Instagram share
-  links) breaks the surrounding Markdown link syntax. Telegram either mangles the message or rejects
-  `sendMessage` outright (`can't parse entities`), so the bot silently fails to reply for an
-  otherwise-successful request. Escape user-derived URL text, or switch to `MarkdownV2`/HTML with
-  proper escaping [P2/D2]
+- #BUG-0068 `_deliver_result`'s final fallback (`message.reply(text, ...)`, `app/bot.py`, run after
+  a declined/failed native video attempt) is unguarded, and `handle_message` only catches
+  `ValidationError`. If that `reply` itself raises for any reason (a transient network error, a
+  malformed `text`), the exception escapes `handle_message` entirely and the user gets no reply at
+  all — contradicting `_deliver_result`'s own stated goal ("never a new way to fail outright").
+  Wrap `handle_message`'s per-URL body in a broader `except Exception`, or guard the final `reply`
+  directly [P3/D1]
+- #BUG-0070 `_fits_native_send`'s docstring (`app/bot.py`) says the mid tier gates on which backend
+  is *currently active* ("whatever backend is active — cloud, or a dead local server — has no
+  business being handed a file this size"), but the code only checks
+  `is_telegram_api_reachable()`, which says nothing about which backend is active for polling right
+  now. `UFB-0036-native-video-replies.md` documents the reachability-only behavior as deliberate, so
+  the docstring is the stale one. Practical effect: after the local server recovers, there's up to a
+  `_BACKEND_CHECK_INTERVAL_SECONDS` window where the bot is still polling on the cloud API but
+  `_fits_native_send` already returns `True` for a large file — the send then fails and falls back
+  to text, so no crash, just a silent extra attempt/failure. Fix the docstring, or gate on the active
+  backend as documented [P3/D1]
+- #BUG-0075 `start_polling()` (`app/bot.py`) runs `is_telegram_api_reachable()` — a blocking
+  socket connect, up to its 1s timeout — directly on the event loop, before any coroutine has
+  started running. Startup-only and small, but every other call site (`/health`,
+  `_fits_native_send`) correctly offloads it via `asyncio.to_thread`; this one should too for
+  consistency [P4/D1]
+- #BUG-0069 `CLOUD_SEND_VIDEO_MAX_MB` defaults to `10`, silently lowering the native-video-send
+  ceiling from the earlier `SEND_VIDEO_MAX_MB`'s default of `50` for every deployment that doesn't
+  configure a local Bot API server (`docs/CHANGELOG.md`'s UFB-0036 entry documents the old default
+  but not this as a regression). Telegram's cloud API itself allows up to 50 MB; a 10–50 MB file now
+  arrives as a text link instead of a native video on a stock deployment. `docker-compose.yml`'s
+  comment on the `telegram-bot-api` service ("raising the video-send ceiling above the cloud API's
+  50 MB") still reads as though 50 is the live default. Either default `CLOUD_SEND_VIDEO_MAX_MB` to
+  `50`, or call the lower default out explicitly in `README.md`/`.env.example` as an intentional
+  behavior change [P3/D1]
+- #BUG-0076 a local-mode native video send can fail with `Bad Request: invalid file HTTP URL
+  specified: URL host is empty` (`app/bot.py`'s `_reply_with_video`) even for a file confirmed —
+  live, in the same failing container — to exist, be readable, and resolve correctly when the exact
+  same request shape is replayed by hand against the real local `telegram-bot-api` server. Root
+  cause undiagnosed: direct reproduction couldn't isolate it, because the local server validates
+  `chat_id` before it resolves the `video` field, so every safe reproduction attempt (necessarily
+  against a fake chat id) short-circuited on "chat not found" before ever reaching file resolution,
+  and re-sending to a real chat wasn't an option for debugging. Currently masked by a retry (attempt
+  the local path once, then a real upload) rather than fixed — see
+  [UFB-0036](features/UFB-0036-native-video-replies.md#local-path-send-failures). If it recurs with
+  a pattern (file size, filename shape, timing relative to download completion, server load), narrow
+  it from there [P2/D3]
 
 ### Downloads / cache
 
@@ -57,9 +93,23 @@ Automation/behavior misbehaving today.
   to the reply latency of every successful download. Move it off the request path (background
   task, or lazy generation on first `/preview/<file>` request) if this latency matters in practice
   [P3/D2]
+- #BUG-0071 `tests/preview_test.py` fully mocks `subprocess.run`, so the only guard against a
+  BUG-0066-class regression (ffmpeg silently rejecting the invocation's actual args) is an argv
+  assertion (`-f`/`mjpeg` present). A future change to the ffmpeg args that ffmpeg itself rejects
+  would pass this suite the same way BUG-0066 did. Add at least one test that runs real `ffmpeg`
+  against a tiny fixture clip, skipped when the binary isn't available [P3/D2]
 
 ### Deploy / infra
 
+- #BUG-0067 the generated 404 page (`app/pages.py:render_404_page`,
+  [UFB-0033](features/UFB-0033-static-page-generation.md)) is never actually served —
+  verified live: `GET /watch/<unknown file>.html` returns stock nginx's default 404 body, not
+  `CACHE_DIR/404.html`. Both `docker-compose.yml` and the deployed stack run
+  `nginx:stable-alpine-slim` with no custom config anywhere in the repo, so `error_page 404
+  /404.html;` is never set — contradicting [UFB-0025](features/UFB-0025-themed-download-file-server.md)/
+  [UFB-0033](features/UFB-0033-static-page-generation.md)'s documented behavior. Add an
+  `error_page` directive via a mounted `nginx.conf` (or switch to an image that supports one via
+  env/template) [P3/D2]
 - #BUG-0012 the unauthenticated API is an SSRF-capable open proxy — `POST /process_url/`
   (`app/api.py:11-24`) takes an arbitrary string URL with no auth or rate limit, and
   `follow_redirects()` (`app/url_processing.py:47-66`) issues a server-side `HEAD` request to it.
@@ -147,6 +197,13 @@ to both gates exactly like every other platform (2026-08-22).
 
 - #BUG-0043 the container runs as root (no `USER` directive in `Dockerfile`). Add a non-root user
   [P2/D2]
+- #BUG-0074 `docker-compose.yml`'s `telegram-bot-api` service carries a redundant explicit
+  `networks: [default]` — `default` is already the implicit network for every service that doesn't
+  declare one. Separately, `app`'s `CACHE_DIR` is env-overridable (`${CACHE_DIR:-...}`) while its
+  volume mount (`cache:/tmp/url-fairy-bot-cache/`) is hardcoded — an operator who overrides
+  `CACHE_DIR` silently breaks the assumption that `app` and `telegram-bot-api` share one path for
+  local-mode file sends. Drop the redundant `networks:` key; document (or derive) the mount path
+  from `CACHE_DIR` [P4/D1]
 
 ### Cookie handling (`app/download.py`)
 
@@ -217,16 +274,29 @@ Maintenance work — CI, dependencies, test/doc hygiene — with no runtime beha
 - #BUG-0056 `tests/test_messages.yml` is a stale manual fixture file: it references
   `ddinstagram.com` (current mirror default is `kkinstagram.com`, `app/config.py:42`) and reply
   text ("I failed to download the file by myself") that no longer matches any string in
-  `app/url_processing.py`. Nothing in the test suite loads this file. Either wire it into a real
-  parametrized test or delete it [P3/D1]
+  `app/messages.py`/`app/templates/messages/`, and it still shows Markdown-style `[text](url)`
+  links even though replies are now HTML (UFB-0037). Nothing in the test suite loads this file.
+  Either wire it into a real parametrized test or delete it [P3/D1]
+- #BUG-0072 `tests/bot_test.py` no longer passes `black --check` (it was clean at the prior commit;
+  the new multi-context `with (patch(...), patch(...)):` blocks in the UFB-0036 tests are
+  black-formatted for a Python target newer than this repo's, and mixed with the
+  older-style two-`with` form elsewhere in the same file). Not CI-enforced today — black/isort/
+  flake8 are all scoped to `./app` only, in both `.pre-commit-config.yaml` and the GitHub Actions
+  workflows (see BUG-0064) — but it's a regression in what was a clean file. Run `black`/`isort`
+  against `./tests` too, or expand their scope in CI [P4/D1]
+- #BUG-0073 UFB-0036 test coverage has a couple of gaps against its own documented test list
+  (`UFB-0036-native-video-replies.md`): no assertion that `_reply_with_video` actually passes a
+  `thumbnail` kwarg (`test_reply_with_video_sends_with_probe_info` checks width/height/duration/
+  caption only); and no end-to-end test through `handle_message` for a mid-tier size that
+  `_fits_native_send` *declines* (only the send-*failure* path is covered) [P4/D1]
 
 ### Docs
 
 - #BUG-0058 the README's "Example Response" for the REST API
   (`{"status": "success", "data": "https://example.com/processed-url"}`) doesn't match the actual
-  response shape produced by `process_url_request` (a Markdown string with emoji and
-  `[text](url)` links, per `tests/test_messages.yml`'s captured examples) — misleading for anyone
-  integrating against the API from the docs alone [P3/D1]
+  response shape produced by `process_url_request` (an HTML string with emoji and `<a href="...">`
+  links, rendered via `app/messages.py`, UFB-0037) — misleading for anyone integrating against the
+  API from the docs alone [P3/D1]
 - #BUG-0059 an `ADMIN_CHAT_ID` environment variable is set in the maintainer's local `.env` but is
   never read anywhere in `app/`, never mentioned in `README.md`, and never passed through
   `docker-compose.yml`. Either it's a leftover from a removed/never-finished feature (e.g. error

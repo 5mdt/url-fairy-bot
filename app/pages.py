@@ -50,9 +50,14 @@ def watch_page_url(media_filename: str) -> str:
 # #UFB-0032
 def _fits_inline_video(media_filename: str) -> bool:
     """Whether the media file is small enough for an inline og:video/
-    twitter:player embed. A file that can't be stat'd (already swept,
-    permission error) is treated as small, so a missing file never blocks
-    the page from rendering."""
+    twitter:player/<video> embed. Telegram's Instant View fetches every
+    body media resource server-side while building the article, so an
+    oversized <video> doesn't just fail to autoplay — it fails the whole
+    article with NO_MEDIA_FOUND (confirmed live; see UFB-0032). Above this
+    threshold, both the og:video*/twitter:player tags and the body <video>
+    are omitted in favor of the preview image. A file that can't be stat'd
+    (already swept, permission error) is treated as small, so a missing
+    file never blocks the page from rendering."""
     basename = os.path.basename(media_filename)
     media_path = os.path.join(settings.CACHE_DIR, basename)
     try:
@@ -80,7 +85,7 @@ def render_watch_page(media_filename: str) -> str:
         image_url=image_url,
         image_type=image_type,
         video_type=video_type,
-        inline_video=_fits_inline_video(media_filename),
+        show_video_meta=_fits_inline_video(media_filename),
     )
 
 

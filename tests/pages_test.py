@@ -81,7 +81,7 @@ def test_render_watch_page_derives_video_type_from_real_extension():
     assert 'property="og:video:type" content="video/webm"' in html
 
 
-def test_render_watch_page_keeps_inline_video_at_or_under_threshold(cache_dir):
+def test_render_watch_page_keeps_video_meta_at_or_under_threshold(cache_dir):
     with open(cache_dir / "clip.mp4", "wb") as f:
         f.write(b"0" * (settings.INLINE_VIDEO_MAX_MB * 1024 * 1024))
 
@@ -93,16 +93,21 @@ def test_render_watch_page_keeps_inline_video_at_or_under_threshold(cache_dir):
     assert "<p><video" not in html
 
 
-def test_render_watch_page_drops_inline_video_over_threshold(cache_dir):
+def test_render_watch_page_drops_video_entirely_over_threshold(cache_dir):
     with open(cache_dir / "clip.mp4", "wb") as f:
         f.write(b"0" * (settings.INLINE_VIDEO_MAX_MB * 1024 * 1024 + 1))
 
     html = pages.render_watch_page("clip.mp4")
 
+    # Telegram's Instant View fetches every body media resource
+    # server-side, so an oversized <video> fails the whole article
+    # (NO_MEDIA_FOUND) rather than just not autoplaying — drop it entirely
+    # and fall back to the preview image.
     assert 'property="og:video"' not in html
     assert 'name="twitter:card"' not in html
     assert "<video" not in html
     assert 'property="og:image"' in html
+    assert '<img src="https://example.test/preview.png"' in html
     assert 'href="https://example.test/clip.mp4"' in html
 
 
@@ -169,9 +174,7 @@ def test_seed_static_pages_generates_a_preview_for_the_sample_clip(cache_dir):
     with patch("app.pages.preview.generate_preview") as mock_generate:
         pages.seed_static_pages()
 
-    mock_generate.assert_called_once_with(
-        str(cache_dir / pages.SAMPLE_MEDIA_FILENAME)
-    )
+    mock_generate.assert_called_once_with(str(cache_dir / pages.SAMPLE_MEDIA_FILENAME))
 
 
 def test_seed_static_pages_survives_preview_generation_failure(cache_dir):

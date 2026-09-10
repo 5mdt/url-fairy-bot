@@ -3,16 +3,31 @@
 import logging
 import os
 import re
+from dataclasses import dataclass
 from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
 import requests
 
 from app.config import settings
 
-from . import pages, preview
+from . import messages, pages, preview
 from .download import UnsupportedUrlError, yt_dlp_download
 
 logger = logging.getLogger(__name__)
+
+
+# #UFB-0036
+@dataclass
+class DownloadResult:
+    """A successful download's reply text, plus the on-disk media path so
+    the bot can also try a native video reply (UFB-0036). Every other
+    process_url_request outcome (mirror-link fallback, error message,
+    silent group-chat response) stays a plain str/None — only a real
+    download carries a media_path."""
+
+    text: str
+    media_path: str
+
 
 # Query parameters that identify the actual content (e.g. a video id) rather
 # than tracking/affiliate noise. These are preserved when resolving redirects;
@@ -148,8 +163,8 @@ def apply_rewrite_map(final_url: str) -> str:
     return final_url
 
 
-# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035
-async def attempt_download(final_url: str) -> str:
+# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0036
+async def attempt_download(final_url: str) -> DownloadResult | None:
     try:
         video_os_path = await yt_dlp_download(final_url)
         if video_os_path:
@@ -168,7 +183,8 @@ async def attempt_download(final_url: str) -> str:
                 if settings.IV_RHASH
                 else page_url
             )
-            return f"[⏯️ Watch or ⏬ Download]({watch_url})\n\n[📎]({final_url})"
+            text = messages.download_result(watch_url, final_url)
+            return DownloadResult(text=text, media_path=video_os_path)
     except UnsupportedUrlError:
         raise
     except Exception as e:
@@ -178,7 +194,9 @@ async def attempt_download(final_url: str) -> str:
 
 
 # #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0013, #UFB-0014
-async def process_url_request(url: str, is_group_chat: bool = False) -> str:
+async def process_url_request(
+    url: str, is_group_chat: bool = False
+) -> str | DownloadResult | None:
     url = str(url)  # Ensure url is a string
 
     # Follow redirects first to get the final URL
@@ -194,16 +212,9 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
             # Stay silent in group chats when the URLs are identical
             if is_group_chat:
                 return None
-            return (
-                "This domain is not allowed for downloading. "
-                + f"\n\n[📎 Original]({final_url})"
-            )
+            return messages.domain_not_allowed(final_url)
 
-        return (
-            "This domain is not allowed for downloading, but here's an alternative link:"
-            + f"\n\n[📎 Modified URL]({modified_url})"
-            + f"\n\n[📎 Original]({final_url})"
-        )
+        return messages.domain_not_allowed_with_mirror(modified_url, final_url)
 
     try:
         response = await attempt_download(final_url)
@@ -216,8 +227,4 @@ async def process_url_request(url: str, is_group_chat: bool = False) -> str:
         if modified_url == final_url and is_group_chat:
             return None  # Silent response for unmodified URLs in group/supergroup
 
-        return (
-            "Here is an alternative link, which Telegram may parse better: "
-            + f"\n\n[📎 Modified URL]({modified_url})"
-            + f"\n\n[📎]({final_url})"
-        )
+        return messages.download_failed_mirror(modified_url, final_url)

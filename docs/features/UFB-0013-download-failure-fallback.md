@@ -20,6 +20,9 @@ the original.
 
 - Wraps [yt-dlp download](UFB-0015-yt-dlp-media-download.md); any failure
   (unsupported URL, network error, yt-dlp error) is treated the same way.
+- Reply text is rendered via `app.messages.download_failed_mirror()`
+  ([UFB-0037](UFB-0037-message-templates.md)) — used whether or not a real
+  mirror link was found, which is the source of the known gap below.
 
 ## Testing
 

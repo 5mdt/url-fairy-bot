@@ -24,11 +24,9 @@ reply text contains a URL.
 
 ## Status
 
-Implemented — with a known gap:
-
-- Sent with legacy Markdown parsing, which can fail to render or reject the
-  message depending on surrounding characters
-  ([BUGS #16](../BUGS.md#16-markdown-replies-can-break-telegrams-parser-low-p2d2)).
+Implemented. Rendered from a template
+([UFB-0037](UFB-0037-message-templates.md)) and sent as HTML
+([UFB-0014](UFB-0014-markdown-reply-formatting.md)).
 
 Fixed:
 

@@ -29,6 +29,7 @@ def pinned_settings(monkeypatch):
     monkeypatch.setattr(settings, "REWRITE_ALLOWED_DOMAINS", "")
     monkeypatch.setattr(settings, "BASE_URL", "example.test")
     monkeypatch.setattr(settings, "IV_RHASH", "")
+    monkeypatch.setattr(settings, "TELEGRAM_API_URL", "")
     monkeypatch.setattr(settings, "CACHE_DIR", "/tmp/url-fairy-bot-cache-test/")
     monkeypatch.setattr(settings, "COOKIES_DIR", "/tmp/url-fairy-bot-cookies-test/")
     monkeypatch.setattr(settings, "FOLLOW_REDIRECT_TIMEOUT", 10)
