@@ -22,8 +22,7 @@ sufficient to bring up `app`, `nginx`, and `cron`.
   404ing indefinitely on some filesystems, even after the app writes the
   file — observed with `overlayfs` in testing.
 - Local development keeps building the app from source via a
-  `compose.dev.yml` override (`docker compose -f docker-compose.yml -f
-  compose.dev.yml`); nginx needs no dev override since it isn't built at
+  `compose.dev.yml` override (`docker compose -f docker-compose.yml -f compose.dev.yml`); nginx needs no dev override since it isn't built at
   all.
 
 ## Testing

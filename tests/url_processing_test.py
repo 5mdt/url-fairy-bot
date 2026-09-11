@@ -365,7 +365,7 @@ async def test_process_url_request_disallowed_with_rewrite_private(monkeypatch):
         result = await process_url_request(
             "https://www.tiktok.com/@user/video/1", is_group_chat=False
         )
-    assert "alternative link" in result
+    assert "can be parsed better" in result
     assert "tfxktok.com" in result
 
 
@@ -446,7 +446,7 @@ async def test_process_url_request_youtube_mirrored_when_download_disallowed(
             "https://www.youtube.com/watch?v=abc123", is_group_chat=False
         )
     mock_download.assert_not_called()
-    assert "alternative link" in result
+    assert "can be parsed better" in result
     assert "yfxtube.com" in result
 
 

@@ -13,8 +13,6 @@ mirror link when one exists for that platform and it isn't excluded by
 mirror link is available, the reply
 explains the download failed and gives only the original link (or, in a
 group chat, nothing — see [UFB-0004](UFB-0004-group-chat-quietness.md)).
-The reply never claims to offer an "alternative" link that is identical to
-the original.
 
 ## Implementation
 
@@ -37,6 +35,6 @@ the original.
 
 Implemented — with known gaps:
 
-- The private-chat "no mirror available" reply text still says "here is an
-  alternative link" even though the link offered is identical to the
-  original (see `TODO.md`, Business logic).
+- The private-chat "no mirror available" reply text still says the link
+  offered "can be parsed better" even though it's identical to the original
+  (see `#BUG-0033`).

@@ -15,7 +15,7 @@ flowchart TD
     E -- no --> F{"Group chat?"}
     F -- yes --> G["Stay silent"]
     F -- no --> H["Reply: domain not allowed<br/>+ original link"]
-    E -- yes --> I["Reply: domain not allowed,<br/>here's an alternative<br/>+ modified link + original link"]
+    E -- yes --> I["Reply: domain not allowed,<br/>mirror link parses better<br/>+ modified link + original link"]
 
     C -- "allowed" --> L["attempt_download(final_url)<br/>→ yt_dlp_download()"]
     L --> M{"Download succeeded?"}
@@ -24,8 +24,8 @@ flowchart TD
     M -- "UnsupportedUrlError<br/>or any other failure" --> O["apply_rewrite_map(final_url)<br/>(same mirror rewrite as above)"]
     O --> P{"Rewrite changed the URL?"}
     P -- "no, and group chat" --> Q["Stay silent"]
-    P -- "no, and private chat" --> R["Reply: alternative link<br/>(same as original,<br/>Telegram may parse it better)<br/>+ original link"]
-    P -- yes --> S["Reply: alternative link<br/>+ modified link + original link"]
+    P -- "no, and private chat" --> R["Reply: link 'can be parsed better'<br/>(same as original —<br/>see BUG-0033)<br/>+ original link"]
+    P -- yes --> S["Reply: mirror link parses better<br/>+ modified link + original link"]
 ```
 
 ## Step-by-step summary

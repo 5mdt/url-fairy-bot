@@ -14,11 +14,13 @@ Every reply text the bot or the REST endpoint returns (greeting, no-URL
 prompt, invalid-URL rejection, reply-to-bot shrug, download result, too-large
 notice, domain-not-allowed variants, download-failure fallback) is rendered
 from a Jinja template rather than built as an inline literal or f-string.
-Wording is unchanged from before this feature. Replies are sent as Telegram
-HTML (`parse_mode=HTML`) instead of legacy Markdown — Jinja's autoescaping
-then escapes `& < > "` in every interpolated URL automatically, which fixes
-[BUG-0016](../BUGS.md): a URL containing `)` or `_` no longer breaks the
-reply or gets it rejected by Telegram.
+Wording was unchanged from before this feature at launch; the too-large and
+mirror-link replies were reworded afterward (2026-09-10) — the templates
+under `app/templates/messages/en/` are the source of truth for current copy.
+Replies are sent as Telegram HTML (`parse_mode=HTML`) instead of legacy
+Markdown — Jinja's autoescaping then escapes `& < > "` in every interpolated
+URL automatically, which fixes [BUG-0016](../BUGS.md): a URL containing `)`
+or `_` no longer breaks the reply or gets it rejected by Telegram.
 
 ## Implementation
 

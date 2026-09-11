@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# scripts/markdownfmt
+#
+# Wraps the markdownfmt binary with this repo's fixed formatting options, so
+# pre-commit and CI don't each hardcode the same flags (markdownfmt has no
+# config-file support of its own — see docs/BUGS.md if that changes).
+set -euo pipefail
+exec markdownfmt -soft-wraps "$@"

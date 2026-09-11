@@ -16,7 +16,7 @@ the template first.
 
 ## Steps
 
-1. Go to <https://instantview.telegram.org/my> (sign in with the Telegram
+1. Go to https://instantview.telegram.org/my (sign in with the Telegram
    account you'll manage the template with).
 2. Click **Create a new template**.
 

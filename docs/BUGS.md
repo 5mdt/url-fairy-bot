@@ -3,7 +3,7 @@
 Defects, quirks, tech debt, and chores on already-shipped behavior. New, not-yet-built
 behavior goes in `docs/TODO.md` instead. Entries are deleted when fixed (the fix gets a
 `docs/CHANGELOG.md` bullet); IDs are never reused or renumbered, so deletions leave gaps.
-Next free ID: **BUG-0077**. (BUG-0065 was allocated but never recorded here or in
+Next free ID: **BUG-0079**. (BUG-0065 was allocated but never recorded here or in
 `CHANGELOG.md` — left as a gap rather than reused, per the policy above.)
 
 Each entry ends with a `[P#/D#]` marker:
@@ -57,8 +57,7 @@ Automation/behavior misbehaving today.
   50 MB") still reads as though 50 is the live default. Either default `CLOUD_SEND_VIDEO_MAX_MB` to
   `50`, or call the lower default out explicitly in `README.md`/`.env.example` as an intentional
   behavior change [P3/D1]
-- #BUG-0076 a local-mode native video send can fail with `Bad Request: invalid file HTTP URL
-  specified: URL host is empty` (`app/bot.py`'s `_reply_with_video`) even for a file confirmed —
+- #BUG-0076 a local-mode native video send can fail with `Bad Request: invalid file HTTP URL specified: URL host is empty` (`app/bot.py`'s `_reply_with_video`) even for a file confirmed —
   live, in the same failing container — to exist, be readable, and resolve correctly when the exact
   same request shape is replayed by hand against the real local `telegram-bot-api` server. Root
   cause undiagnosed: direct reproduction couldn't isolate it, because the local server validates
@@ -82,6 +81,7 @@ Automation/behavior misbehaving today.
   [UFB-0031](features/UFB-0031-landing-page-and-cache-index.md) and
   [UFB-0033](features/UFB-0033-static-page-generation.md).) Hash the URL (e.g. truncated sha256)
   instead of transliterating it, and add an `asyncio.Lock` per in-flight URL [P2/D2]
+
 ### Previews
 
 - #BUG-0062 [UFB-0035](features/UFB-0035-per-file-preview-images.md)'s frame extraction always
@@ -105,8 +105,7 @@ Automation/behavior misbehaving today.
   [UFB-0033](features/UFB-0033-static-page-generation.md)) is never actually served —
   verified live: `GET /watch/<unknown file>.html` returns stock nginx's default 404 body, not
   `CACHE_DIR/404.html`. Both `docker-compose.yml` and the deployed stack run
-  `nginx:stable-alpine-slim` with no custom config anywhere in the repo, so `error_page 404
-  /404.html;` is never set — contradicting [UFB-0025](features/UFB-0025-themed-download-file-server.md)/
+  `nginx:stable-alpine-slim` with no custom config anywhere in the repo, so `error_page 404 /404.html;` is never set — contradicting [UFB-0025](features/UFB-0025-themed-download-file-server.md)/
   [UFB-0033](features/UFB-0033-static-page-generation.md)'s documented behavior. Add an
   `error_page` directive via a mounted `nginx.conf` (or switch to an image that supports one via
   env/template) [P3/D2]
@@ -144,11 +143,12 @@ to both gates exactly like every other platform (2026-08-22).
   to the mirror link — pure overhead with no chance of succeeding. Special-case Spotify (and any
   other known non-video platform) to skip the download attempt and go straight to the mirror
   rewrite [P3/D2]
-- #BUG-0033 the download-failure fallback overclaims an "alternative" that isn't one —
+- #BUG-0033 the download-failure fallback overclaims a link that isn't one —
   `process_url_request`'s reply when `modified_url == final_url` after a download failure
-  (`app/url_processing.py:212-216`) still says "Here is an alternative link, which Telegram may
-  parse better," even though the link offered is byte-for-byte identical to the original. Either
-  drop the "alternative" framing for this case or state plainly that the download failed [P3/D1]
+  (`app/url_processing.py:212-216`, rendered via `messages.download_failed_mirror`) still says
+  the link "can be parsed better," even though the link offered is byte-for-byte identical to the
+  original. Either drop that framing for this case or state plainly that the download failed
+  [P3/D1]
 - #BUG-0034 the platform/YouTube rewrite rules in `apply_rewrite_map` (`app/url_processing.py`)
   are a hardcoded list of `(regex, replacement)` tuples, one per platform — adding a new mirror
   site means editing code. Consider making rewrite rules dynamically configurable, e.g. an
@@ -224,14 +224,15 @@ Maintenance work — CI, dependencies, test/doc hygiene — with no runtime beha
 ### Tooling / CI
 
 - #BUG-0047 three overlapping/inconsistent linters are configured: `.flake8` (not run in CI — no
-  flake8 job exists, only referenced from `.pre-commit-config.yaml`), a black CI job
-  (`lint-python-black.yml`), a ruff CI job (`lint-python-ruff.yml`) with no `ruff` configuration
-  anywhere in `pyproject.toml`, and pre-commit running black + isort + flake8 + pytest. Consolidate
-  onto one tool (e.g. `ruff format` + `ruff check`, which subsumes flake8/isort/black) and delete
-  the rest [P2/D3]
-- #BUG-0048 no GitHub Actions workflow runs `pytest` — it only runs via the local `pre-commit`
-  hook (`.pre-commit-config.yaml`'s `run-pytest`), which is opt-in per contributor. Add a CI
-  workflow (e.g. `.github/workflows/test-python.yml`) so the suite actually gates merges [P1/D2]
+  flake8 job exists, only referenced from `.pre-commit-config.yaml`), a black job and a ruff job
+  (both in `.github/workflows/ci.yml`) with no `ruff` configuration anywhere in `pyproject.toml`,
+  and pre-commit running black + isort + flake8 + pytest. Consolidate onto one tool (e.g. `ruff format` + `ruff check`, which subsumes flake8/isort/black) and delete the rest [P2/D3]
+- #BUG-0078 the `markdownfmt` pre-commit hook (`language: golang`) fails to install with `error obtaining VCS status: exit status 128` on any machine where `$HOME` is itself a git working tree
+  (e.g. a dotfiles repo checked out at `~`) — Go's build-VCS-stamping walks up from pre-commit's
+  placeholder module directory, finds that `.git`, and errors instead of skipping it. Doesn't
+  affect CI (runner `$HOME` isn't a git repo) or a normal checkout-only machine. Workaround:
+  export `GOFLAGS=-buildvcs=false` before running `pre-commit`. Fix upstream would be pre-commit
+  passing `-buildvcs=false` itself for its own placeholder `go install ./...` call [P4/D2]
 - #BUG-0049 `.pre-commit-config.yaml`'s `name-tests-test` hook expects `test_*.py` naming, but
   every test file in the repo uses the `*_test.py` suffix (`api_test.py`, `bot_test.py`,
   `config_test.py`, `download_test.py`, `url_processing_test.py`) — this hook must be failing (or
@@ -260,6 +261,10 @@ Maintenance work — CI, dependencies, test/doc hygiene — with no runtime beha
 - #BUG-0052 no coverage measurement — no `pytest-cov` (or equivalent) in the dev dependency
   group, no coverage threshold, no report published from CI, so any remaining gaps are invisible to
   contributors until manually audited [P3/D2]
+- #BUG-0077 `Makefile`'s `.PHONY` list declares a `test-cov` target (line 2) that doesn't exist —
+  there's no `test-cov:` recipe anywhere in the file, so `make test-cov` just errors with "No rule
+  to make target". Likely a leftover from drafting `#BUG-0052`; add the target once coverage
+  tooling lands, or drop it from `.PHONY` until then [P4/D1]
 - #BUG-0053 `pytest.ini`'s `addopts = --ignore=lib/python3.11/site-packages` refers to a
   pre-`uv` venv layout (`lib/`) that no longer exists now that the project uses `.venv/` — dead
   option, safe to remove [P3/D1]

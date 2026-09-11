@@ -72,6 +72,15 @@ repos:
     rev: 7.1.1
   - repo: local
     hooks:
+      - id: markdownfmt
+        name: markdownfmt
+        entry: scripts/markdownfmt
+        args: ["-w"]
+        language: golang
+        additional_dependencies:
+          - github.com/Kunde21/markdownfmt/v3/cmd/markdownfmt@v3.1.0
+        types: [markdown]
+        always_run: true
       - id: run-pytest
         name: Run Pytest with uv
         entry: uv run pytest
