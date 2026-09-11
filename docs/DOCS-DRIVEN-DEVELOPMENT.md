@@ -1,6 +1,6 @@
 # Docs-Driven Development Approach
 
-**Version:** 1.3 · **Last updated:** 2026-09-09
+**Version:** 1.4 · **Last updated:** 2026-09-11
 
 <!-- Bump both whenever this document's rules or templates change. -->
 
@@ -67,7 +67,7 @@ see Rules above.
 
 ## Available Features
 
-- [x] [<PREFIX>-0001. <Feature Name>](features/<PREFIX>-0001-slug.md) - `#tag1` `#tag2`
+- [X] [<PREFIX>-0001. <Feature Name>](features/<PREFIX>-0001-slug.md) - `#tag1` `#tag2`
 - [ ] [<PREFIX>-0002. <Feature Name>](features/<PREFIX>-0002-slug.md) - `#tag2`
 
 ## Tags
@@ -76,8 +76,9 @@ see Rules above.
 - `#tag2`: <PREFIX>-0001
 ```
 
-`[x]` = `Implemented`, `[ ]` = `Planned` or `Deprecated` — the checkbox mirrors the
-feature doc's own `## Status`, so it stays in sync when status changes.
+`[X]` = `Implemented`, `[ ]` = `Planned` or `Deprecated` — the checkbox mirrors the
+feature doc's own `## Status`, so it stays in sync when status changes. Uppercase `X`
+is `markdownfmt`'s normalized form.
 
 Tags are for cross-feature navigation only - use them to group related features.
 

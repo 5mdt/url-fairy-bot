@@ -24,7 +24,7 @@ call, covered below.
 ## Steps
 
 1. Get **API credentials** for your own Telegram account at
-   <https://my.telegram.org> → **API development tools** → create an app.
+   https://my.telegram.org → **API development tools** → create an app.
    This gives you `api_id`/`api_hash` — these are account credentials, not a
    bot token; the local server needs them to talk to Telegram's data centers
    on your bot's behalf.

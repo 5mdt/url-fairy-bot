@@ -18,8 +18,7 @@ bot is actually working.
   cleanup thread is alive, and — when
   [UFB-0036](UFB-0036-native-video-replies.md)'s `TELEGRAM_API_URL` is
   configured — whether that local Bot API server is reachable. It returns
-  `200 {"status": "ok", "polling": true, "pages_seeded": true, "cleanup":
-  true, "telegram_api": ...}` when nothing is broken, otherwise
+  `200 {"status": "ok", "polling": true, "pages_seeded": true, "cleanup": true, "telegram_api": ...}` when nothing is broken, otherwise
   `503 {"status": "degraded", ...}` with the failing flag(s) set to
   `false`. `telegram_api` is `null` when `TELEGRAM_API_URL` is unset —
   that must never read as either healthy or unhealthy, since there's
@@ -32,8 +31,7 @@ bot is actually working.
   cancelled/awaited by `stop_polling()`. A `add_done_callback` logs an
   unexpected failure at `ERROR` (with traceback) or a clean cancellation at
   `INFO`, so a dead polling loop is no longer silent.
-  `is_polling_alive()` reports `polling_task is not None and not
-  polling_task.done()`.
+  `is_polling_alive()` reports `polling_task is not None and not polling_task.done()`.
 - `app/pages.py` sets a module-level `pages_seeded = True` at the end of
   `seed_static_pages()`.
 - `app/api.py` adds `GET /healthz` and `GET /health` on the existing

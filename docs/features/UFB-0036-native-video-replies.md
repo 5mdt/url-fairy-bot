@@ -25,11 +25,11 @@ outcome ever leaves the user without a way to get the file.
 
 Three size tiers decide whether a native send is even attempted:
 
-| File size | Behavior |
-|---|---|
-| ≤ `CLOUD_SEND_VIDEO_MAX_MB` (default 10) | Always attempted natively. |
-| `CLOUD_SEND_VIDEO_MAX_MB` – `LOCAL_SEND_VIDEO_MAX_MB` (default 10–500) | Attempted natively only if a local Bot API server (`TELEGRAM_API_URL`) is configured **and** currently reachable. |
-| > `LOCAL_SEND_VIDEO_MAX_MB` (default 500) | Never attempted — the bot replies with "I cannot upload this attachment, use link below to watch or download" plus the Download/Source links. |
+| File size                                                              | Behavior                                                                                                                                              |
+|------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ≤ `CLOUD_SEND_VIDEO_MAX_MB` (default 10)                               | Always attempted natively.                                                                                                                            |
+| `CLOUD_SEND_VIDEO_MAX_MB` – `LOCAL_SEND_VIDEO_MAX_MB` (default 10–500) | Attempted natively only if a local Bot API server (`TELEGRAM_API_URL`) is configured **and** currently reachable.                                     |
+| > `LOCAL_SEND_VIDEO_MAX_MB` (default 500)                              | Never attempted — the bot replies with "I cannot upload attachment this big now, use link below to watch or download" plus the Download/Source links. |
 
 A native send that's attempted but fails (probe error, upload error,
 anything) falls back to the plain text reply, same as a declined attempt —
@@ -84,8 +84,7 @@ operator if the outage is prolonged.
 ### Local-path send failures
 
 Observed live: a path-based send to a reachable, healthy local server can
-still fail with `Bad Request: invalid file HTTP URL specified: URL host is
-empty` for a file that is genuinely present and readable at the expected
+still fail with `Bad Request: invalid file HTTP URL specified: URL host is empty` for a file that is genuinely present and readable at the expected
 path (see [BUGS #76](../BUGS.md)). Root cause undiagnosed — direct
 reproduction against the same file with the real request shape succeeded,
 but inconclusively: the local server validates `chat_id` before it resolves
@@ -165,21 +164,18 @@ instead of leaning on the retry indefinitely.
   `_reply_with_video`'s bare-string path is only meaningful to the local
   server if it resolves to the same file there. Gated behind the
   `local-bot-api` compose profile, so a plain `docker compose up -d`
-  never starts it; enabling it is `docker compose --profile local-bot-api
-  up -d` after the migration below.
+  never starts it; enabling it is `docker compose --profile local-bot-api up -d` after the migration below.
 - Health: the `telegram-bot-api` service carries its own Docker
   `healthcheck` (`nc -z 127.0.0.1 8081` — a bare TCP connect, since every
   real HTTP route 404s/401s without a valid bot token and would make an
   HTTP-status check always read "down"). `app` depends on it at the compose
-  level too: `depends_on: telegram-bot-api: condition: service_healthy,
-  required: false`. Plain `condition: service_healthy` (no `required: false`)
+  level too: `depends_on: telegram-bot-api: condition: service_healthy, required: false`. Plain `condition: service_healthy` (no `required: false`)
   was tried first and rejected — Compose refuses to even build the project
   when a profile-less service depends on one gated behind an inactive
   profile (verified directly — `docker compose config` errors with "depends
   on undefined service"), which would break the default no-profile
   `docker compose up -d`. `required: false` fixes exactly that: verified
-  directly (`docker compose config`, both with and without `--profile
-  local-bot-api`) that it makes the dependency a no-op when
+  directly (`docker compose config`, both with and without `--profile local-bot-api`) that it makes the dependency a no-op when
   `telegram-bot-api` isn't part of the run, while still gating `app`'s
   start on `telegram-bot-api` reaching `healthy` when the profile *is*
   active (confirmed with a throwaway two-service stack: `app` didn't start
@@ -199,7 +195,7 @@ will accept it:
 curl -sS "https://api.telegram.org/bot<TOKEN>/logOut"
 ```
 
-Get `TELEGRAM_API_ID`/`TELEGRAM_API_HASH` from <https://my.telegram.org>
+Get `TELEGRAM_API_ID`/`TELEGRAM_API_HASH` from https://my.telegram.org
 (account API credentials, not the bot token), set them plus
 `TELEGRAM_API_URL=http://telegram-bot-api:8081` in `.env`, and start the
 stack. Reversible: call `logOut` against the **local** server's address to
@@ -218,8 +214,8 @@ move back to the cloud API.
   attempted (`reply_video` awaited with `supports_streaming=True` and a
   thumbnail).
 - A file over `LOCAL_SEND_VIDEO_MAX_MB` → no send attempted; the reply is
-  "I cannot upload this attachment..." followed by the same Download/Source
-  links, in one message.
+  "I cannot upload attachment this big now..." followed by the same
+  Download/Source links, in one message.
 - A file that can't be stat'd → falls back to the plain text reply, doesn't
   raise.
 - `reply_video` raising on every attempt → falls back to the text `reply`,
@@ -258,8 +254,7 @@ move back to the cloud API.
   since a file under 50 MB would send fine over the cloud API too.
 - Every reply — native video caption, text fallback, or "cannot upload"
   notice — carries the Download/Source links.
-- Verified live (2026-09-10): `sudo docker compose --profile local-bot-api
-  up -d telegram-bot-api` reaches `healthy` in `docker inspect`; against a
+- Verified live (2026-09-10): `sudo docker compose --profile local-bot-api up -d telegram-bot-api` reaches `healthy` in `docker inspect`; against a
   real closed TCP port, `GET /health` returns `503` with
   `"telegram_api": false` end-to-end through the real ASGI app (not
   mocked).

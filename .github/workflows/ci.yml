@@ -1,0 +1,66 @@
+# ci.yml
+#
+# Every formatter/linter/test check the project runs, merged into one
+# pipeline (one job per tool, running in parallel). `build-and-push.yml`
+# stays separate — it's a deploy pipeline, not a code-quality check.
+
+---
+
+name: CI
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  lint-python-black:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: psf/black@stable
+        with:
+          src: "./app"
+          options: "--check --verbose"
+
+  lint-python-ruff:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: chartboost/ruff-action@v1
+        with:
+          src: "./app"
+
+  lint-docker-hadolint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hadolint/hadolint-action@v3.5.0
+        with:
+          dockerfile: ./Dockerfile
+          ignore: DL3018
+
+  lint-markdown-fmt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - run: go install github.com/Kunde21/markdownfmt/v3/cmd/markdownfmt@v3.1.0
+      - run: scripts/markdownfmt -w $(git ls-files '*.md')
+      - run: git diff --exit-code -- '*.md'
+
+  test-python:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+      - run: uv sync --all-groups
+      - run: uv run pytest

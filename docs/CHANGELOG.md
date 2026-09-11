@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Fix: `#BUG-0048` — a CI workflow now runs `pytest` on every push/PR;
+  previously the suite ran only via the opt-in local pre-commit hook, so a
+  red suite could merge unnoticed (as it did for the `too_large`/mirror
+  reply wording below).
+- Every formatter/linter/test check (black, ruff, hadolint, markdownfmt,
+  pytest) is now one job each in a single `.github/workflows/ci.yml`,
+  replacing five separate workflow files (`build-and-push.yml` stays
+  separate — it's a deploy pipeline, not a code-quality check).
+- Replaced `markdownlint-cli2` with `markdownfmt` (a formatter, not just a
+  linter) in CI and added it to pre-commit as an autofixing hook
+  (`scripts/markdownfmt`, `language: golang`). Reformatted every tracked
+  `.md` file to match; `docs/DOCS-DRIVEN-DEVELOPMENT.md`'s FRD checkbox
+  convention is now `[X]` (uppercase), matching markdownfmt's normalized
+  form. `.markdownlint.yaml` is removed (nothing reads it anymore).
+- Fix: reply wording in `too_large`, `domain_not_allowed_with_mirror`, and
+  `download_failed_mirror` templates had drifted from the tests/docs that
+  quoted the old copy, and the two mirror templates had a stray `'` typo.
+  Tests and docs (`#UFB-0037`, `#UFB-0013`, `#UFB-0036`) now match the
+  shipped copy.
 - `#UFB-0037` — every user-facing bot/API reply is now rendered from a Jinja
   template (`app/messages.py`, `app/templates/messages/en/`) instead of an
   inline literal or f-string.
@@ -34,8 +53,7 @@
   server 404s/401s without a valid bot token). The check runs off the event
   loop (`asyncio.to_thread`) so a hung server can't stall the app. The
   `telegram-bot-api` compose service also gained its own Docker
-  `healthcheck` for the same reason, and `app` now `depends_on:
-  telegram-bot-api: condition: service_healthy, required: false` — plain
+  `healthcheck` for the same reason, and `app` now `depends_on: telegram-bot-api: condition: service_healthy, required: false` — plain
   `condition: service_healthy` (no `required: false`) breaks
   `docker compose config` entirely when `telegram-bot-api`'s profile is
   inactive ("depends on undefined service"); `required: false` makes the
@@ -94,8 +112,7 @@
   thumbnail stays an `FSInputFile` on both backends — `SendVideo.thumbnail`
   is typed strictly as `InputFile` in aiogram, unlike `video`
   (`str | InputFile`), so a bare path there raises a pydantic validation
-  error regardless of backend (hit live in production: `1 validation error
-  for SendVideo / thumbnail / Input should be an instance of InputFile`).
+  error regardless of backend (hit live in production: `1 validation error for SendVideo / thumbnail / Input should be an instance of InputFile`).
   Since the thumbnail is small (≤200 KB), always uploading it costs
   nothing.
 - Fix: `Dockerfile` is now multi-stage — a `builder` stage installs `build-base`/`libffi-dev`/
