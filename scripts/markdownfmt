@@ -5,4 +5,15 @@
 # pre-commit and CI don't each hardcode the same flags (markdownfmt has no
 # config-file support of its own — see docs/BUGS.md if that changes).
 set -euo pipefail
+
+# pre-commit runs this hook with `always_run`, so with no staged Markdown
+# files it is called with only flags. markdownfmt then formats stdin and, under
+# `-w`, writes the result to a stray file literally named "<standard input>".
+# Skip instead when there is nothing to format.
+has_file=false
+for arg in "$@"; do
+  [[ "$arg" != -* ]] && has_file=true
+done
+$has_file || exit 0
+
 exec markdownfmt -soft-wraps "$@"

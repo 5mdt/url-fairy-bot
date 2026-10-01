@@ -11,7 +11,10 @@ variables:
     image: docker.io/woodpeckerci/plugin-docker-buildx
   - &buildx_settings
     dockerfile: Dockerfile
-    platforms: linux/amd64,linux/arm,linux/arm64
+    # linux/arm (armv7) is omitted: the runner has no QEMU binfmt for it, so
+    # every RUN step dies with `exec format error`. Re-add once the runner
+    # registers it (`tonistiigi/binfmt --install arm`).
+    platforms: linux/amd64,linux/arm64
     repo: 5mdt/url-fairy-bot
     registry:
       from_secret: 5mdt_docker_io_url
