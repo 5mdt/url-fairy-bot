@@ -1,5 +1,7 @@
 # Feature Requirements Document
 
+Next free ID: **UFB-0040**.
+
 ## Behavior diagrams
 
 The two mermaid flowcharts are the source of truth for how the features below fit together end to end:
@@ -48,6 +50,8 @@ The two mermaid flowcharts are the source of truth for how the features below fi
 - [X] [UFB-0037. Jinja message templates](features/UFB-0037-message-templates.md) - `#telegram` `#ux` `#i18n`
 - [X] [UFB-0038. Cookie keepalive](features/UFB-0038-cookie-keepalive.md) - `#cookies` `#ops` `#runtime`
 - [X] [UFB-0039. TikTok photo-post galleries](features/UFB-0039-tiktok-photo-galleries.md) - `#download` `#media` `#telegram` `#ux`
+
+## Deprecated
 
 ## Tags
 

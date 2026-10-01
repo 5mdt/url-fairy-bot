@@ -2,10 +2,13 @@
 
 **Tags:** #process
 
+## User Story
+
+As an operator starting the service, I want a second launch to replace the running instance instead of failing or running alongside it, so that I never end up with two instances silently competing.
+
 ## Behavior
 
-Starting a second instance replaces the running one. The new instance always
-continues startup.
+Starting a second instance replaces the running one. The new instance always continues startup.
 
 ## Implementation
 
@@ -16,6 +19,10 @@ continues startup.
 - Continue startup regardless.
 
 The existing instance exits on `SIGTERM`.
+
+## Quirks & Decisions
+
+- Quirk: an unresponsive instance still lets the new one start after the 5-second wait, so two instances can briefly overlap. Proposed: escalate to `SIGKILL` after the timeout instead of giving up.
 
 ## Testing
 

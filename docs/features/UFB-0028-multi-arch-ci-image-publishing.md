@@ -2,6 +2,10 @@
 
 **Tags:** #ops #ci
 
+## User Story
+
+As a maintainer, I want multi-architecture container images built and published by CI, so that every push and release is deployable on any host.
+
 ## Behavior
 
 Every push to any branch, every git tag, a weekly Sunday run on main, and any manual run builds and publishes a container image for multiple CPU architectures to the project's container registry. Main is tagged `stable` and with the short commit SHA, a git tag with the tag, and any other branch with its name. Pull requests build the image without pushing it.
@@ -24,4 +28,4 @@ Every push to any branch, every git tag, a weekly Sunday run on main, and any ma
 
 ## Status
 
-Implemented.
+Implemented

@@ -2,6 +2,10 @@
 
 **Tags:** #ops #deploy
 
+## User Story
+
+As an operator, I want to deploy from published images with only a compose file and an `.env`, so that the host needs no repository checkout.
+
 ## Behavior
 
 The stack deploys from published container images with no repository checkout on the host — a `docker-compose.yml` and a filled-in `.env` are sufficient to bring up `app`, `nginx`, and `cron`.
@@ -23,4 +27,4 @@ The stack deploys from published container images with no repository checkout on
 
 ## Status
 
-Implemented.
+Implemented
