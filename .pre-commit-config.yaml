@@ -50,26 +50,25 @@ repos:
         args: ['--branch', 'main']
         always_run: true
     repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
   - hooks:
       - id: black
         args: ["./app"]
         always_run: true
     repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 26.5.1
   - hooks:
       - id: isort
         args: ["./app"]
         always_run: true
     repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
+    rev: 9.0.2
   - hooks:
       - id: flake8
         args: ["./app"]
         always_run: true
-        exclude: lib/python3.11/site-packages
     repo: https://github.com/PyCQA/flake8
-    rev: 7.1.1
+    rev: 7.4.1
   - repo: local
     hooks:
       - id: markdownfmt

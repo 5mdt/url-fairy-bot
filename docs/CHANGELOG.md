@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Upgraded Python 3.11 → 3.14 (`pyproject.toml`, `Dockerfile`, CI) and every
+  runtime/dev dependency to its latest release (lockfile refreshed;
+  `pytest` 9, `pytest-asyncio` 1.x, `httpx` 0.28, `isort` 9, `black` 26.5),
+  plus `uv`, `setup-uv` and the pre-commit hook revs. Fixes `#BUG-0053`
+  (stale `pytest.ini` `--ignore`) and `#BUG-0054` (outdated `httpx` /
+  `pytest-asyncio` pins).
 - Fix: `#BUG-0048` — a CI workflow now runs `pytest` on every push/PR;
   previously the suite ran only via the opt-in local pre-commit hook, so a
   red suite could merge unnoticed (as it did for the `too_large`/mirror

@@ -58,7 +58,7 @@ bot is actually working.
   encodes readiness.
 - `curl` is not present in the runtime image (removed with the build
   dependencies), so the `Dockerfile`'s `HEALTHCHECK` uses busybox `wget`,
-  which ships with the `python:3.11-alpine` base image.
+  which ships with the `python:3.14-alpine` base image.
 - Closes [BUGS #7](../BUGS.md) (silent polling death) and
   [TODO-0020](../TODO.md), and resolves the known gaps listed in
   [UFB-0020](UFB-0020-in-process-bot-polling.md).

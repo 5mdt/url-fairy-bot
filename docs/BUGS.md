@@ -265,14 +265,6 @@ Maintenance work — CI, dependencies, test/doc hygiene — with no runtime beha
   there's no `test-cov:` recipe anywhere in the file, so `make test-cov` just errors with "No rule
   to make target". Likely a leftover from drafting `#BUG-0052`; add the target once coverage
   tooling lands, or drop it from `.PHONY` until then [P4/D1]
-- #BUG-0053 `pytest.ini`'s `addopts = --ignore=lib/python3.11/site-packages` refers to a
-  pre-`uv` venv layout (`lib/`) that no longer exists now that the project uses `.venv/` — dead
-  option, safe to remove [P3/D1]
-- #BUG-0054 `httpx<0.28` and `pytest-asyncio<0.25` (`pyproject.toml`) are still pinned as if
-  `tests/api_test.py` used the deprecated `AsyncClient(app=app, ...)` constructor, but it already
-  uses the modern `ASGITransport` — `AsyncClient(transport=ASGITransport(app=app), ...)`. The pins
-  look like leftovers from before that migration; verify current `httpx`/`pytest-asyncio` majors
-  work and drop the upper bounds [P3/D1]
 - #BUG-0055 `pytest.ini` does not set `asyncio_mode` (relies on `pytest.mark.asyncio` per-test,
   which is fine, but worth being explicit given `pytest-asyncio`'s strict/auto mode footguns)
   [P3/D1]
