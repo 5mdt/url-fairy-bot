@@ -9,9 +9,13 @@ import yt_dlp
 import yt_dlp.utils
 
 from app.config import settings
-from app.download import (UnsupportedUrlError, _resolve_cookie_path,
-                          _write_merged_cookies, sanitize_subfolder_name,
-                          yt_dlp_download)
+from app.download import (
+    UnsupportedUrlError,
+    _resolve_cookie_path,
+    _write_merged_cookies,
+    sanitize_subfolder_name,
+    yt_dlp_download,
+)
 
 # --- sanitize_subfolder_name ---
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 2.9.0
+
+- `#UFB-0028` — main now publishes the `stable` image tag (was `latest`; `IMAGE_TAG` default follows), and the pipeline also runs on a weekly cron (Sunday, configure in Woodpecker) besides push/tag/manual.
 - `#UFB-0039` — TikTok photo posts (`/photo/` URLs) are sent as a photo album plus the post's audio instead of falling back to a mirror link.
 - Consolidated linting/formatting onto `ruff` (lint + format + import sorting), replacing black, isort and flake8 in `pyproject.toml`, `Makefile`, pre-commit and CI; scope is now `./app` and `./tests`. Fixes `#BUG-0047`, `#BUG-0064`, `#BUG-0072`.
 - `#UFB-0038` — hourly cookie keepalive: checks each known site's session with the jar's cookies, persists refreshed tokens, re-merges the jar when `cookies*.txt` change or a site is logged out, and reports `cookies` in `/health` (503 only with `COOKIE_HEALTHCHECK=true`). Fixes `#BUG-0044`.

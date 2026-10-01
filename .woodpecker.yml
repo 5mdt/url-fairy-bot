@@ -25,17 +25,20 @@ when:
       - pull_request
       - tag
       - manual
+      - cron
 steps:
   # PRs only prove the image still builds (no push).
   - name: image-check
-    <<: *buildx
+    !!merge <<: *buildx
     settings:
-      <<: *buildx_settings
+      !!merge <<: *buildx_settings
       dry_run: true
     when:
       - event: pull_request
-  # main -> `latest` + short sha; git tag -> the tag; any other branch -> its
-  # own name with '/' replaced by '-' (image tags can't contain '/').
+  # main (push, weekly cron, or manual) -> `stable` + short sha; git tag -> the
+  # tag; any other branch -> its own name with '/' replaced by '-' (image tags
+  # can't contain '/'). The Sunday run needs a cron job on branch main in the
+  # repo's Woodpecker settings (Cron tab), schedule `0 0 0 * * 0`.
   - name: image-tags
     image: docker.io/library/alpine:3
     commands:
@@ -43,7 +46,7 @@ steps:
         if [ -n "$${CI_COMMIT_TAG}" ]; then
           tags="$${CI_COMMIT_TAG}"
         elif [ "$${CI_COMMIT_BRANCH}" = main ]; then
-          tags="$(printf 'latest\n%s' "$(printf %s "$${CI_COMMIT_SHA}" | cut -c1-7)")"
+          tags="$(printf 'stable\n%s' "$(printf %s "$${CI_COMMIT_SHA}" | cut -c1-7)")"
         else
           tags="$(printf %s "$${CI_COMMIT_BRANCH}" | tr / -)"
         fi
@@ -54,13 +57,15 @@ steps:
           - push
           - manual
           - tag
+          - cron
   - name: publish
-    <<: *buildx
+    !!merge <<: *buildx
     settings:
-      <<: *buildx_settings
+      !!merge <<: *buildx_settings
       tags_file: .tags
     when:
       - event:
           - push
           - manual
           - tag
+          - cron
