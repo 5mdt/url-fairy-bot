@@ -3,7 +3,8 @@
 import logging
 import os
 import re
-from dataclasses import dataclass
+import shutil
+from dataclasses import dataclass, field
 from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
 import requests
@@ -11,12 +12,17 @@ import requests
 from app.config import settings
 
 from . import messages, pages, preview
-from .download import UnsupportedUrlError, yt_dlp_download
+from .download import (
+    UnsupportedUrlError,
+    is_tiktok_photo_url,
+    tiktok_gallery_download,
+    yt_dlp_download,
+)
 
 logger = logging.getLogger(__name__)
 
 
-# #UFB-0036
+# #UFB-0036, #UFB-0039
 @dataclass
 class DownloadResult:
     """A successful download's reply text, plus the on-disk media path so
@@ -26,7 +32,9 @@ class DownloadResult:
     download carries a media_path."""
 
     text: str
-    media_path: str
+    media_path: str | None
+    # #UFB-0039: a photo post's images; `media_path` is then its audio (or None).
+    image_paths: list[str] = field(default_factory=list)
 
 
 # Query parameters that identify the actual content (e.g. a video id) rather
@@ -163,9 +171,44 @@ def apply_rewrite_map(final_url: str) -> str:
     return final_url
 
 
-# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0036
+# #UFB-0039
+def _iv_watch_url(page_url: str) -> str:
+    return (
+        f"https://t.me/iv?url={quote(page_url, safe='')}&rhash={settings.IV_RHASH}"
+        if settings.IV_RHASH
+        else page_url
+    )
+
+
+# #UFB-0039
+async def _attempt_gallery_download(final_url: str) -> DownloadResult:
+    gallery = await tiktok_gallery_download(final_url)
+    watch_url = final_url
+    if gallery.audio_path:
+        audio_name = os.path.basename(gallery.audio_path)
+        # The first image stands in as the audio's preview image.
+        try:
+            dest = preview.preview_path(audio_name)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.copyfile(gallery.image_paths[0], dest)
+        except OSError as e:
+            logger.warning(f"Failed to write gallery preview for {audio_name}: {e}")
+        try:
+            pages.write_watch_page(audio_name)
+        except OSError as e:
+            logger.error(f"Failed to write watch page for {audio_name}: {e}")
+        watch_url = _iv_watch_url(pages.watch_page_url(audio_name))
+    text = messages.download_result(watch_url, final_url)
+    return DownloadResult(
+        text=text, media_path=gallery.audio_path, image_paths=gallery.image_paths
+    )
+
+
+# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0036, #UFB-0039
 async def attempt_download(final_url: str) -> DownloadResult | None:
     try:
+        if is_tiktok_photo_url(final_url):
+            return await _attempt_gallery_download(final_url)
         video_os_path = await yt_dlp_download(final_url)
         if video_os_path:
             video_path = os.path.join(*video_os_path.split(os.path.sep)[-1:])
@@ -178,11 +221,7 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
             except OSError as e:
                 logger.error(f"Failed to write watch page for {video_path}: {e}")
             page_url = pages.watch_page_url(video_path)
-            watch_url = (
-                f"https://t.me/iv?url={quote(page_url, safe='')}&rhash={settings.IV_RHASH}"
-                if settings.IV_RHASH
-                else page_url
-            )
+            watch_url = _iv_watch_url(page_url)
             text = messages.download_result(watch_url, final_url)
             return DownloadResult(text=text, media_path=video_os_path)
     except UnsupportedUrlError:

@@ -1,0 +1,25 @@
+# UFB-0039. TikTok photo-post galleries
+
+**Tags:** #download #media #telegram #ux
+
+## Behavior
+
+A TikTok photo post (`https://www.tiktok.com/@user/photo/<id>`) is not supported by yt-dlp, so it used to fall back to a mirror link. The bot now replies with the post's images as a Telegram photo album (chunks of 10), the first photo carrying the usual Download/Source caption, followed by the post's audio track as an audio reply. If the images cannot be sent, the reply degrades to the plain text with links. A post with no images is treated as unsupported (mirror-link fallback, see [UFB-0013](UFB-0013-download-failure-fallback.md)).
+
+## Implementation
+
+- `app.download.is_tiktok_photo_url` detects photo URLs; `tiktok_gallery_download` reads the post data through yt-dlp's TikTok extractor (the `/photo/` URL rewritten to `/video/`) and saves images to `CACHE_DIR/gallery/<stem>/NN.jpg` and the audio to `CACHE_DIR/<stem>.mp3`. Cached galleries are reused (UFB-0016) and swept by TTL (UFB-0026).
+- `attempt_download` routes photo URLs there; `DownloadResult` carries `image_paths`. The first image doubles as the audio's preview image.
+- `bot._reply_with_gallery` sends the album, then the audio.
+
+## Testing
+
+### Unit
+
+- Photo-URL detection.
+- Gallery download writes images and audio; cache hit skips the network; no images raises `UnsupportedUrlError`; missing audio yields `None`.
+- Bot sends albums (10 per group) with the caption on the first photo, then the audio; failure falls back to text.
+
+## Status
+
+Implemented

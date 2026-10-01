@@ -553,3 +553,78 @@ async def test_start_polling_falls_back_to_cloud_when_local_unreachable(monkeypa
         await bot_module.stop_polling()
 
     assert bot_module.polling_task.done()
+
+
+# --- UFB-0039: TikTok photo galleries ---
+
+
+def _gallery_result(tmp_path, count, audio=True):
+    images = []
+    for i in range(count):
+        p = tmp_path / f"{i:02d}.jpg"
+        p.write_bytes(b"jpg")
+        images.append(str(p))
+    media = None
+    if audio:
+        a = tmp_path / "a.mp3"
+        a.write_bytes(b"mp3")
+        media = str(a)
+    return DownloadResult(text="caption", media_path=media, image_paths=images)
+
+
+@pytest.mark.asyncio
+async def test_gallery_sends_album_with_caption_then_audio(tmp_path):
+    message = make_message("https://example.com/x", chat_type="private")
+    message.reply_media_group = AsyncMock()
+    message.reply_audio = AsyncMock()
+    result = _gallery_result(tmp_path, 5)
+    with patch("app.bot.process_url_request", new=AsyncMock(return_value=result)):
+        await handle_message(message)
+
+    message.reply_media_group.assert_awaited_once()
+    group = message.reply_media_group.await_args.args[0]
+    assert len(group) == 5
+    assert group[0].caption == "caption"
+    assert all(m.caption is None for m in group[1:])
+    message.reply_audio.assert_awaited_once()
+    message.reply.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_gallery_over_ten_images_is_split_into_two_groups(tmp_path):
+    message = make_message("https://example.com/x", chat_type="private")
+    message.reply_media_group = AsyncMock()
+    message.reply_photo = AsyncMock()
+    message.reply_audio = AsyncMock()
+    result = _gallery_result(tmp_path, 12)
+    with patch("app.bot.process_url_request", new=AsyncMock(return_value=result)):
+        await handle_message(message)
+
+    groups = [c.args[0] for c in message.reply_media_group.await_args_list]
+    assert [len(g) for g in groups] == [10, 2]
+    assert groups[1][0].caption is None
+
+
+@pytest.mark.asyncio
+async def test_gallery_failure_falls_back_to_text_reply(tmp_path):
+    message = make_message("https://example.com/x", chat_type="private")
+    message.reply_media_group = AsyncMock(side_effect=RuntimeError("boom"))
+    message.reply_audio = AsyncMock()
+    result = _gallery_result(tmp_path, 3)
+    with patch("app.bot.process_url_request", new=AsyncMock(return_value=result)):
+        await handle_message(message)
+
+    message.reply.assert_awaited_once_with("caption", parse_mode=ParseMode.HTML)
+    message.reply_audio.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_gallery_audio_failure_does_not_trigger_text_fallback(tmp_path):
+    message = make_message("https://example.com/x", chat_type="private")
+    message.reply_media_group = AsyncMock()
+    message.reply_audio = AsyncMock(side_effect=RuntimeError("boom"))
+    result = _gallery_result(tmp_path, 3)
+    with patch("app.bot.process_url_request", new=AsyncMock(return_value=result)):
+        await handle_message(message)
+
+    message.reply.assert_not_awaited()

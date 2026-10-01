@@ -304,3 +304,111 @@ async def test_yt_dlp_download_deletes_temp_cookie_file_on_failure(
 
     assert created_paths, "expected _resolve_cookie_path to be called"
     assert not os.path.exists(created_paths[0])
+
+
+# --- UFB-0039: TikTok photo galleries ---
+
+PHOTO_URL = "https://www.tiktok.com/@user/photo/123"
+
+
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        (PHOTO_URL, True),
+        ("https://tiktok.com/@some.user-1/photo/9", True),
+        ("https://www.tiktok.com/@user/video/123", False),
+        ("https://example.com/@user/photo/123", False),
+    ],
+)
+def test_is_tiktok_photo_url(url, expected):
+    from app.download import is_tiktok_photo_url
+
+    assert is_tiktok_photo_url(url) is expected
+
+
+def _fake_ydl(item):
+    ydl = MagicMock()
+    ydl.get_info_extractor.return_value._extract_web_data_and_status.return_value = (
+        item,
+        0,
+    )
+    ydl.urlopen.side_effect = lambda u: MagicMock(read=lambda: f"bytes:{u}".encode())
+    ydl.__enter__.return_value = ydl
+    return ydl
+
+
+def _item(images=2, music="https://cdn/a.mp3"):
+    return {
+        "imagePost": {
+            "images": [
+                {"imageURL": {"urlList": [f"https://cdn/{i}.jpg"]}}
+                for i in range(images)
+            ]
+        },
+        "music": {"playUrl": music},
+    }
+
+
+@pytest.mark.asyncio
+async def test_tiktok_gallery_download_writes_images_and_audio(tmp_path, monkeypatch):
+    from app.download import tiktok_gallery_download
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path / "nocookies"))
+    ydl = _fake_ydl(_item())
+    with patch("app.download.yt_dlp.YoutubeDL", return_value=ydl):
+        result = await tiktok_gallery_download(PHOTO_URL)
+
+    assert [os.path.basename(p) for p in result.image_paths] == ["01.jpg", "02.jpg"]
+    assert open(result.image_paths[0], "rb").read() == b"bytes:https://cdn/0.jpg"
+    assert result.audio_path.endswith(".mp3")
+    assert open(result.audio_path, "rb").read() == b"bytes:https://cdn/a.mp3"
+    called_url = (
+        ydl.get_info_extractor.return_value._extract_web_data_and_status.call_args.args[
+            0
+        ]
+    )
+    assert called_url == "https://www.tiktok.com/@user/video/123"
+
+
+@pytest.mark.asyncio
+async def test_tiktok_gallery_download_cache_hit_skips_network(tmp_path, monkeypatch):
+    from app.download import tiktok_gallery_download
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path / "nocookies"))
+    with patch("app.download.yt_dlp.YoutubeDL", return_value=_fake_ydl(_item())):
+        first = await tiktok_gallery_download(PHOTO_URL)
+    with patch("app.download.yt_dlp.YoutubeDL") as mock_cls:
+        second = await tiktok_gallery_download(PHOTO_URL)
+    mock_cls.assert_not_called()
+    assert second == first
+
+
+@pytest.mark.asyncio
+async def test_tiktok_gallery_download_without_images_is_unsupported(
+    tmp_path, monkeypatch
+):
+    from app.download import tiktok_gallery_download
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path / "nocookies"))
+    with patch("app.download.yt_dlp.YoutubeDL", return_value=_fake_ydl({})):
+        with pytest.raises(UnsupportedUrlError):
+            await tiktok_gallery_download(PHOTO_URL)
+
+
+@pytest.mark.asyncio
+async def test_tiktok_gallery_download_without_music_has_no_audio(
+    tmp_path, monkeypatch
+):
+    from app.download import tiktok_gallery_download
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path / "nocookies"))
+    with patch(
+        "app.download.yt_dlp.YoutubeDL", return_value=_fake_ydl(_item(music=""))
+    ):
+        result = await tiktok_gallery_download(PHOTO_URL)
+    assert result.audio_path is None
+    assert len(result.image_paths) == 2

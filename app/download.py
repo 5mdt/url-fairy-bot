@@ -4,10 +4,12 @@
 import glob
 import logging
 import os
+import re
 import tempfile
 import threading
 import time
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
+from dataclasses import dataclass
 
 import yt_dlp
 
@@ -105,6 +107,56 @@ def _cached_media_path(stem: str) -> str | None:
     return None
 
 
+# #UFB-0015, #UFB-0017, #UFB-0038, #UFB-0039
+@contextmanager
+def _youtube_dl(ydl_opts: dict):
+    """A YoutubeDL configured with the merged cookies, if any. With the jar
+    enabled, the jar lock is held for the whole block (#UFB-0038); a
+    temporary merged cookie file is removed afterwards."""
+    cookie_files = glob.glob(os.path.join(settings.COOKIES_DIR, "cookies*.txt"))
+    if not cookie_files:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            yield ydl
+        return
+
+    # #UFB-0038: serialize jar init + download against the keepalive.
+    guard = COOKIE_JAR_LOCK if settings.COOKIE_JAR_ENABLED else nullcontext()
+    with guard:
+        cookie_path, should_delete = _resolve_cookie_path(cookie_files)
+        ydl_opts["cookiefile"] = cookie_path
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                yield ydl
+        finally:
+            if should_delete:
+                try:
+                    os.unlink(cookie_path)
+                except Exception:
+                    pass
+
+
+# #UFB-0013, #UFB-0015, #UFB-0039
+def _map_download_errors(url: str, e: Exception) -> Exception:
+    """The exception `yt_dlp_download`-style callers raise for `e`."""
+    if isinstance(e, yt_dlp.DownloadError):
+        if "Unsupported URL" in str(e):
+            logger.error(f"Unsupported URL: {url}")
+            return UnsupportedUrlError(f"Unsupported URL: {url}")
+        logger.error(f"DownloadError for URL: {url} - {str(e)}")
+        return RuntimeError(
+            f"Failed to download video from URL: {url}. Check if the URL is correct and accessible."
+        )
+    if isinstance(e, yt_dlp.utils.PostProcessingError):
+        logger.error(f"PostProcessingError for URL: {url} - {str(e)}")
+        return RuntimeError(
+            f"An error occurred while processing the video file for URL: {url}."
+        )
+    logger.error(f"Unexpected error for URL: {url} - {str(e)}")
+    return RuntimeError(
+        f"An unexpected error occurred while processing the URL: {url}. Please try again later."
+    )
+
+
 # #UFB-0015, #UFB-0016, #UFB-0017
 async def yt_dlp_download(url: str) -> str:
     stem = sanitize_subfolder_name(url)
@@ -124,51 +176,118 @@ async def yt_dlp_download(url: str) -> str:
             "merge_output_format": "mp4",
             "postprocessors": [{"key": "FFmpegVideoRemuxer", "preferedformat": "mp4"}],
         }
-
-        cookie_files = glob.glob(os.path.join(settings.COOKIES_DIR, "cookies*.txt"))
-        if cookie_files:
-            # #UFB-0038: serialize jar init + download against the keepalive.
-            guard = COOKIE_JAR_LOCK if settings.COOKIE_JAR_ENABLED else nullcontext()
-            with guard:
-                cookie_path, should_delete = _resolve_cookie_path(cookie_files)
-                ydl_opts["cookiefile"] = cookie_path
-                try:
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        ydl.download([url])
-                finally:
-                    if should_delete:
-                        try:
-                            os.unlink(cookie_path)
-                        except Exception:
-                            pass
-        else:
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                ydl.download([url])
+        with _youtube_dl(ydl_opts) as ydl:
+            ydl.download([url])
 
         logger.info(f"Download successful for URL: {url}")
         return _cached_media_path(stem)
 
-    except yt_dlp.DownloadError as e:
-        if "Unsupported URL" in str(e):
-            logger.error(f"Unsupported URL: {url}")
-            raise UnsupportedUrlError(f"Unsupported URL: {url}")
-        else:
-            logger.error(f"DownloadError for URL: {url} - {str(e)}")
-            raise RuntimeError(
-                f"Failed to download video from URL: {url}. Check if the URL is correct and accessible."
-            ) from e
-
-    except yt_dlp.utils.PostProcessingError as e:
-        logger.error(f"PostProcessingError for URL: {url} - {str(e)}")
-        raise RuntimeError(
-            f"An error occurred while processing the video file for URL: {url}."
-        ) from e
-
     except Exception as e:
-        logger.error(f"Unexpected error for URL: {url} - {str(e)}")
-        raise RuntimeError(
-            f"An unexpected error occurred while processing the URL: {url}. Please try again later."
-        ) from e
+        mapped = _map_download_errors(url, e)
+        raise mapped from e
+
+
+_TIKTOK_PHOTO_RE = re.compile(r"^https://(?:www\.)?tiktok\.com/@([\w.-]+)/photo/(\d+)")
+
+
+# #UFB-0039
+def is_tiktok_photo_url(url: str) -> bool:
+    return bool(_TIKTOK_PHOTO_RE.match(url))
+
+
+# #UFB-0039
+@dataclass
+class GalleryDownload:
+    """A downloaded photo post: `image_paths` in display order, and the
+    post's `audio_path` (None when the post has no audio track)."""
+
+    audio_path: str | None
+    image_paths: list[str]
+
+
+# #UFB-0039
+def _tiktok_item(ydl: yt_dlp.YoutubeDL, url: str) -> dict:
+    """The TikTok post's raw item data, via yt-dlp's TikTok extractor.
+    yt-dlp rejects `/photo/` URLs but parses `/video/` pages of the same
+    post id, including `imagePost`. Relies on a private yt-dlp method,
+    so this is the one place to fix if a yt-dlp upgrade breaks it."""
+    match = _TIKTOK_PHOTO_RE.match(url)
+    user, post_id = match.group(1), match.group(2)
+    extractor = ydl.get_info_extractor("TikTok")
+    data, _status = extractor._extract_web_data_and_status(
+        f"https://www.tiktok.com/@{user}/video/{post_id}", post_id
+    )
+    return data or {}
+
+
+# #UFB-0039
+def _write_atomic_bytes(path: str, content: bytes) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp_path = f"{path}.part"
+    with open(tmp_path, "wb") as f:
+        f.write(content)
+    os.replace(tmp_path, path)
+
+
+# #UFB-0016, #UFB-0039
+def _cached_gallery(gallery_dir: str, audio_path: str) -> GalleryDownload | None:
+    images = sorted(
+        p
+        for p in glob.glob(os.path.join(gallery_dir, "*.jpg"))
+        if not p.endswith(_INCOMPLETE_SUFFIXES)
+    )
+    if not images:
+        return None
+    audio = audio_path if os.path.exists(audio_path) else None
+    for path in images + ([audio] if audio else []):
+        _touch_atime(path)
+    return GalleryDownload(audio_path=audio, image_paths=images)
+
+
+# #UFB-0039
+async def tiktok_gallery_download(url: str) -> GalleryDownload:
+    """Download a TikTok photo post's images and audio into the cache.
+    Raises UnsupportedUrlError when the post has no images."""
+    stem = sanitize_subfolder_name(url)
+    gallery_dir = os.path.join(settings.CACHE_DIR, "gallery", stem)
+    audio_path = os.path.join(settings.CACHE_DIR, f"{stem}.mp3")
+
+    cached = _cached_gallery(gallery_dir, audio_path)
+    if cached:
+        logger.info(f"Gallery already exists for URL: {url}, skipping download.")
+        return cached
+
+    try:
+        with _youtube_dl({"quiet": True}) as ydl:
+            item = _tiktok_item(ydl, url)
+            images = (item.get("imagePost") or {}).get("images") or []
+            if not images:
+                raise UnsupportedUrlError(f"No images found for URL: {url}")
+
+            image_paths = []
+            for index, image in enumerate(images, start=1):
+                image_url = image["imageURL"]["urlList"][0]
+                path = os.path.join(gallery_dir, f"{index:02d}.jpg")
+                _write_atomic_bytes(path, ydl.urlopen(image_url).read())
+                image_paths.append(path)
+
+            audio = None
+            music_url = (item.get("music") or {}).get("playUrl")
+            if music_url:
+                try:
+                    _write_atomic_bytes(audio_path, ydl.urlopen(music_url).read())
+                    audio = audio_path
+                except Exception as e:
+                    logger.warning(f"Failed to download audio for {url}: {e}")
+
+        logger.info(f"Gallery download successful for URL: {url}")
+        return GalleryDownload(audio_path=audio, image_paths=image_paths)
+
+    except UnsupportedUrlError:
+        raise
+    except Exception as e:
+        mapped = _map_download_errors(url, e)
+        raise mapped from e
 
 
 # #UFB-0016

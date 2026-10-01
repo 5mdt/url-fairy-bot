@@ -11,7 +11,7 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.enums import ChatType, ParseMode
 from aiogram.filters import CommandStart
-from aiogram.types import FSInputFile, Message
+from aiogram.types import FSInputFile, InputMediaPhoto, Message
 from pydantic import ValidationError
 
 from app import media, messages, preview
@@ -206,7 +206,49 @@ async def _reply_with_video(message: Message, media_path: str, caption: str) -> 
     return False
 
 
-# #UFB-0014, #UFB-0036
+# Telegram's sendMediaGroup limit.
+_MEDIA_GROUP_MAX = 10
+
+
+# #UFB-0039
+async def _reply_with_gallery(message: Message, result: DownloadResult) -> bool:
+    """Best-effort photo-album reply (10 photos per group, caption on the
+    first photo) followed by the post's audio, if any. Returns False only
+    when the album itself could not be sent, so the caller falls back to
+    plain text; a failed audio send is logged and the gallery still counts
+    as delivered."""
+    paths = result.image_paths
+    try:
+        for start in range(0, len(paths), _MEDIA_GROUP_MAX):
+            group = [
+                InputMediaPhoto(
+                    media=FSInputFile(path),
+                    caption=result.text if start == 0 and i == 0 else None,
+                    parse_mode=ParseMode.HTML,
+                )
+                for i, path in enumerate(paths[start : start + _MEDIA_GROUP_MAX])
+            ]
+            if len(group) == 1:
+                await message.reply_photo(
+                    group[0].media, caption=group[0].caption, parse_mode=ParseMode.HTML
+                )
+            else:
+                await message.reply_media_group(group)
+    except Exception as e:
+        logger.warning(f"Failed to send gallery for {paths[0]}: {e}")
+        return False
+
+    if result.media_path:
+        try:
+            size_mb = os.path.getsize(result.media_path) / (1024 * 1024)
+            if await _fits_native_send(size_mb):
+                await message.reply_audio(FSInputFile(result.media_path))
+        except Exception as e:
+            logger.warning(f"Failed to send gallery audio {result.media_path}: {e}")
+    return True
+
+
+# #UFB-0014, #UFB-0036, #UFB-0039
 async def _deliver_result(message: Message, result: str | DownloadResult) -> None:
     """Reply with `result`: a native video when its media_path is small
     enough to attempt and the send succeeds; otherwise plain text — a
@@ -216,6 +258,12 @@ async def _deliver_result(message: Message, result: str | DownloadResult) -> Non
     every outcome leaves the user with a way to get the file."""
     text = result.text if isinstance(result, DownloadResult) else result
     media_path = result.media_path if isinstance(result, DownloadResult) else None
+
+    if isinstance(result, DownloadResult) and result.image_paths:
+        if await _reply_with_gallery(message, result):
+            return
+        await message.reply(text, parse_mode=ParseMode.HTML)
+        return
 
     if media_path:
         try:

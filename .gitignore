@@ -8,6 +8,7 @@ __pycache__
 !.github
 !.gitignore
 !.pre-commit-config.yaml
+!.woodpecker.yml
 bin
 dist
 docker-compose.*.yml

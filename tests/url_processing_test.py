@@ -574,3 +574,50 @@ async def test_process_url_request_allowed_download_unsupported_no_rewrite_group
     ):
         result = await process_url_request("https://example.com/x", is_group_chat=True)
     assert result is None
+
+
+# --- UFB-0039: TikTok photo galleries ---
+
+
+@pytest.mark.asyncio
+async def test_attempt_download_routes_photo_url_to_gallery(tmp_path, monkeypatch):
+    from app.download import GalleryDownload
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "BASE_URL", "example.test")
+    image = tmp_path / "01.jpg"
+    image.write_bytes(b"jpg")
+    audio = tmp_path / "post.mp3"
+    audio.write_bytes(b"mp3")
+    gallery = GalleryDownload(audio_path=str(audio), image_paths=[str(image)])
+    with (
+        patch(
+            "app.url_processing.tiktok_gallery_download",
+            new=AsyncMock(return_value=gallery),
+        ),
+        patch("app.url_processing.yt_dlp_download", new=AsyncMock()) as mock_video,
+    ):
+        result = await attempt_download("https://www.tiktok.com/@u/photo/1")
+
+    mock_video.assert_not_awaited()
+    assert result.image_paths == [str(image)]
+    assert result.media_path == str(audio)
+    assert "example.test/watch/post.html" in result.text
+    assert (tmp_path / "preview" / "post.jpg").read_bytes() == b"jpg"
+
+
+@pytest.mark.asyncio
+async def test_attempt_download_gallery_without_audio_links_source_only(
+    tmp_path, monkeypatch
+):
+    from app.download import GalleryDownload
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    gallery = GalleryDownload(audio_path=None, image_paths=["/x/01.jpg"])
+    with patch(
+        "app.url_processing.tiktok_gallery_download",
+        new=AsyncMock(return_value=gallery),
+    ):
+        result = await attempt_download("https://www.tiktok.com/@u/photo/1")
+    assert result.media_path is None
+    assert result.text.count("https://www.tiktok.com/@u/photo/1") == 2

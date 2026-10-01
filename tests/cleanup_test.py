@@ -190,3 +190,19 @@ def test_start_and_stop_cleanup_toggles_liveness(monkeypatch):
         cleanup.stop_cleanup()
 
     assert cleanup.is_cleanup_alive() is False
+
+
+# --- UFB-0039: gallery images ---
+
+
+def test_stale_gallery_images_are_swept_and_directory_pruned(cache_dir):
+    gallery = cache_dir / "gallery" / "post"
+    gallery.mkdir(parents=True)
+    image = gallery / "01.jpg"
+    image.write_text("jpg")
+    _age(str(image), days=10)
+
+    cleanup.sweep_once()
+
+    assert not image.exists()
+    assert not gallery.exists()
