@@ -34,6 +34,8 @@ def pinned_settings(monkeypatch):
     monkeypatch.setattr(settings, "COOKIES_DIR", "/tmp/url-fairy-bot-cookies-test/")
     monkeypatch.setattr(settings, "FOLLOW_REDIRECT_TIMEOUT", 10)
     monkeypatch.setattr(settings, "COOKIE_JAR_ENABLED", False)
+    monkeypatch.setattr(settings, "COOKIE_KEEPALIVE_INTERVAL", 3600)
+    monkeypatch.setattr(settings, "COOKIE_HEALTHCHECK", False)
     monkeypatch.setattr(settings, "SPOTIFY_MIRROR_DOMAIN", "fxspotify.com")
     monkeypatch.setattr(settings, "INSTAGRAM_MIRROR_DOMAIN", "kkinstagram.com")
     monkeypatch.setattr(settings, "REDDIT_MIRROR_DOMAIN", "rxddit.com")

@@ -16,14 +16,15 @@ install:
 ## sync: Alias for install
 sync: install
 
-## fmt: Format code with black and isort
+## fmt: Format code and fix auto-fixable lint (import order etc.) with ruff
 fmt:
-	$(UV) run black ./app
-	$(UV) run isort ./app
+	$(UV) run ruff check --fix ./app ./tests
+	$(UV) run ruff format ./app ./tests
 
-## lint: Run flake8
+## lint: Lint and check formatting with ruff
 lint:
-	$(UV) run flake8 ./app
+	$(UV) run ruff check ./app ./tests
+	$(UV) run ruff format --check ./app ./tests
 
 ## yamllint: Lint YAML files (project files only, .venv excluded)
 yamllint:

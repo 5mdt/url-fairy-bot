@@ -1,8 +1,7 @@
 # messages.py
 # -*- coding: utf-8 -*-
 
-from jinja2 import (Environment, PackageLoader, StrictUndefined,
-                    TemplateNotFound)
+from jinja2 import Environment, PackageLoader, StrictUndefined, TemplateNotFound
 
 from app.config import settings
 

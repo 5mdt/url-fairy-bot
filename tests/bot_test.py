@@ -37,18 +37,14 @@ def make_message(text, chat_type="private", reply_to_message=None):
 async def test_start_in_private_chat_gets_greeting():
     message = make_message("/start", chat_type="private")
     await start(message)
-    message.reply.assert_awaited_once_with(
-        messages.start(), parse_mode=ParseMode.HTML
-    )
+    message.reply.assert_awaited_once_with(messages.start(), parse_mode=ParseMode.HTML)
 
 
 @pytest.mark.asyncio
 async def test_start_in_group_chat_gets_greeting():
     message = make_message("/start", chat_type="group")
     await start(message)
-    message.reply.assert_awaited_once_with(
-        messages.start(), parse_mode=ParseMode.HTML
-    )
+    message.reply.assert_awaited_once_with(messages.start(), parse_mode=ParseMode.HTML)
 
 
 def test_start_is_registered_before_the_catch_all_text_handler():
@@ -104,9 +100,7 @@ async def test_private_chat_result_is_replied_with_html():
         "app.bot.process_url_request", new=AsyncMock(return_value="the reply text")
     ):
         await handle_message(message)
-    message.reply.assert_awaited_once_with(
-        "the reply text", parse_mode=ParseMode.HTML
-    )
+    message.reply.assert_awaited_once_with("the reply text", parse_mode=ParseMode.HTML)
 
 
 # --- multiple URLs in one message ---

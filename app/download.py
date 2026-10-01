@@ -5,7 +5,9 @@ import glob
 import logging
 import os
 import tempfile
+import threading
 import time
+from contextlib import nullcontext
 
 import yt_dlp
 
@@ -14,6 +16,9 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 COOKIE_JAR_PATH = os.path.join(settings.COOKIES_DIR, "cookie_jar.txt")
+
+# #UFB-0038: yt-dlp (jar mode) and the cookie keepalive both write the jar.
+COOKIE_JAR_LOCK = threading.Lock()
 
 
 # #UFB-0013
@@ -37,13 +42,31 @@ def _write_merged_cookies(dest: str, cookie_files: list[str]) -> None:
                 logger.warning(f"Failed to read cookies file {path}: {e}")
 
 
+# #UFB-0018, #UFB-0038
+def cookie_sources_sidecar_path() -> str:
+    """Records the newest source-file mtime the jar was last merged from."""
+    return os.path.splitext(COOKIE_JAR_PATH)[0] + ".sources"
+
+
+# #UFB-0018, #UFB-0038
+def write_cookie_jar(cookie_files: list[str]) -> None:
+    """(Re)build the jar from the source files and remember how fresh they were."""
+    _write_merged_cookies(COOKIE_JAR_PATH, cookie_files)
+    try:
+        newest = max(os.path.getmtime(p) for p in cookie_files)
+        with open(cookie_sources_sidecar_path(), "w", encoding="utf-8") as f:
+            f.write(repr(newest))
+    except (OSError, ValueError) as e:
+        logger.warning(f"Failed to record cookie source mtime: {e}")
+
+
 # #UFB-0017, #UFB-0018
 def _resolve_cookie_path(cookie_files: list[str]) -> tuple[str, bool]:
     """Returns (cookie_file_path, should_delete_after)."""
     if settings.COOKIE_JAR_ENABLED:
         if not os.path.exists(COOKIE_JAR_PATH):
             logger.info(f"Initializing cookie jar from: {cookie_files}")
-            _write_merged_cookies(COOKIE_JAR_PATH, cookie_files)
+            write_cookie_jar(cookie_files)
         else:
             logger.info(f"Using existing cookie jar: {COOKIE_JAR_PATH}")
         return COOKIE_JAR_PATH, False
@@ -104,17 +127,20 @@ async def yt_dlp_download(url: str) -> str:
 
         cookie_files = glob.glob(os.path.join(settings.COOKIES_DIR, "cookies*.txt"))
         if cookie_files:
-            cookie_path, should_delete = _resolve_cookie_path(cookie_files)
-            ydl_opts["cookiefile"] = cookie_path
-            try:
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([url])
-            finally:
-                if should_delete:
-                    try:
-                        os.unlink(cookie_path)
-                    except Exception:
-                        pass
+            # #UFB-0038: serialize jar init + download against the keepalive.
+            guard = COOKIE_JAR_LOCK if settings.COOKIE_JAR_ENABLED else nullcontext()
+            with guard:
+                cookie_path, should_delete = _resolve_cookie_path(cookie_files)
+                ydl_opts["cookiefile"] = cookie_path
+                try:
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([url])
+                finally:
+                    if should_delete:
+                        try:
+                            os.unlink(cookie_path)
+                        except Exception:
+                            pass
         else:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 ydl.download([url])

@@ -8,7 +8,9 @@ from httpx import ASGITransport, AsyncClient
 from app import api as api_module
 from app import bot as bot_module
 from app import cleanup as cleanup_module
+from app import cookie_keepalive as cookie_keepalive_module
 from app import pages as pages_module
+from app.config import settings
 from app.main import app
 
 
@@ -50,6 +52,7 @@ async def test_health_ok_when_polling_seeded_and_cleanup_alive(monkeypatch):
         "pages_seeded": True,
         "cleanup": True,
         "telegram_api": None,
+        "cookies": None,
     }
 
 
@@ -218,3 +221,58 @@ async def test_health_degraded_when_telegram_api_configured_but_unreachable(
     body = response.json()
     assert body["status"] == "degraded"
     assert body["telegram_api"] is False
+
+
+# #UFB-0038
+@pytest.mark.asyncio
+@pytest.mark.parametrize("healthcheck, expected_status", [(False, 200), (True, 503)])
+async def test_health_cookies_false_degrades_only_when_opted_in(
+    monkeypatch, healthcheck, expected_status
+):
+    async def never_ends():
+        await asyncio.Event().wait()
+
+    task = asyncio.create_task(never_ends())
+    monkeypatch.setattr(bot_module, "polling_task", task)
+    monkeypatch.setattr(pages_module, "pages_seeded", True)
+    monkeypatch.setattr(cleanup_module, "is_cleanup_alive", lambda: True)
+    monkeypatch.setattr(cookie_keepalive_module, "cookies_alive", lambda: False)
+    monkeypatch.setattr(settings, "COOKIE_HEALTHCHECK", healthcheck)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        response = await ac.get("/health")
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert response.status_code == expected_status
+    assert response.json()["cookies"] is False
+
+
+# #UFB-0038
+@pytest.mark.asyncio
+async def test_health_cookies_unknown_never_degrades(monkeypatch):
+    async def never_ends():
+        await asyncio.Event().wait()
+
+    task = asyncio.create_task(never_ends())
+    monkeypatch.setattr(bot_module, "polling_task", task)
+    monkeypatch.setattr(pages_module, "pages_seeded", True)
+    monkeypatch.setattr(cleanup_module, "is_cleanup_alive", lambda: True)
+    monkeypatch.setattr(cookie_keepalive_module, "cookies_alive", lambda: None)
+    monkeypatch.setattr(settings, "COOKIE_HEALTHCHECK", True)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
+        response = await ac.get("/health")
+
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert response.status_code == 200
+    assert response.json()["cookies"] is None

@@ -1,13 +1,16 @@
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.14
+ARG UV_VERSION=0.12.21
 
 FROM python:${PYTHON_VERSION}-alpine AS builder
+
+ARG UV_VERSION
 
 RUN apk add --no-cache --virtual .build-deps \
         build-base  \
         libffi-dev \
         openssl-dev \
         curl \
-    && pip install --no-cache-dir uv==0.12.11 \
+    && pip install --no-cache-dir uv==${UV_VERSION} \
     && rm -rf /root/.cache/pip
 
 WORKDIR /app
