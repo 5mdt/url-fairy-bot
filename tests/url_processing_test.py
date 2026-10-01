@@ -7,14 +7,9 @@ import requests
 
 from app.config import settings
 from app.download import UnsupportedUrlError
-from app.url_processing import (
-    apply_rewrite_map,
-    attempt_download,
-    follow_redirects,
-    is_domain_allowed,
-    is_rewrite_allowed,
-    process_url_request,
-)
+from app.url_processing import (apply_rewrite_map, attempt_download,
+                                follow_redirects, is_domain_allowed,
+                                is_rewrite_allowed, process_url_request)
 
 # --- apply_rewrite_map: defaults ---
 
