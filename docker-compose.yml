@@ -7,7 +7,7 @@ networks:
   default:
 services:
   app:
-    image: docker.io/5mdt/url-fairy-bot:${IMAGE_TAG:-latest}
+    image: docker.io/5mdt/url-fairy-bot:${IMAGE_TAG:-stable}
     restart: unless-stopped
     # #UFB-0036: `required: false` makes this a no-op when `telegram-bot-api`
     # isn't part of this run (the `local-bot-api` profile inactive) — without

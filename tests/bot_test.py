@@ -8,8 +8,15 @@ from aiogram.enums import ParseMode
 
 from app import bot as bot_module
 from app import messages, preview
-from app.bot import (_build_session, _fits_native_send, _reply_with_video, dp,
-                     handle_message, is_telegram_api_reachable, start)
+from app.bot import (
+    _build_session,
+    _fits_native_send,
+    _reply_with_video,
+    dp,
+    handle_message,
+    is_telegram_api_reachable,
+    start,
+)
 from app.config import settings
 from app.url_processing import DownloadResult
 
