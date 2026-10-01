@@ -1,6 +1,5 @@
-# .pre-commit-config.yaml
-
 ---
+# .pre-commit-config.yaml
 repos:
   - hooks:
       - id: trailing-whitespace
@@ -47,38 +46,38 @@ repos:
         id: sort-simple-yaml
         always_run: true
       - id: no-commit-to-branch
-        args: ['--branch', 'main']
+        args:
+          - '--branch'
+          - 'main'
         always_run: true
     repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
   - hooks:
-      - id: black
-        args: ["./app"]
+      - id: ruff-check
+        args:
+          - "--fix"
         always_run: true
-    repo: https://github.com/psf/black
-    rev: 26.5.1
+      - id: ruff-format
+        always_run: true
+    repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.9
   - hooks:
-      - id: isort
-        args: ["./app"]
+      - id: yamlfmt
         always_run: true
-    repo: https://github.com/PyCQA/isort
-    rev: 9.0.2
-  - hooks:
-      - id: flake8
-        args: ["./app"]
-        always_run: true
-    repo: https://github.com/PyCQA/flake8
-    rev: 7.4.1
+    repo: https://github.com/google/yamlfmt
+    rev: v0.21.0
   - repo: local
     hooks:
       - id: markdownfmt
         name: markdownfmt
         entry: scripts/markdownfmt
-        args: ["-w"]
+        args:
+          - "-w"
         language: golang
         additional_dependencies:
           - github.com/Kunde21/markdownfmt/v3/cmd/markdownfmt@v3.1.0
-        types: [markdown]
+        types:
+          - markdown
         always_run: true
       - id: run-pytest
         name: Run Pytest with uv

@@ -1,13 +1,11 @@
+---
 # docker-compose.yml
 
----
 networks:
   traefik_default:
     external: true
   default:
-
 services:
-
   app:
     image: ghcr.io/5mdt/url-fairy-bot:${IMAGE_TAG:-latest}
     restart: unless-stopped
@@ -30,6 +28,8 @@ services:
       CLEANUP_INTERVAL: ${CLEANUP_INTERVAL:-3600}
       COOKIES_DIR: ${COOKIES_DIR:-/config/}
       COOKIE_JAR_ENABLED: ${COOKIE_JAR_ENABLED:-false}
+      COOKIE_KEEPALIVE_INTERVAL: ${COOKIE_KEEPALIVE_INTERVAL:-3600}
+      COOKIE_HEALTHCHECK: ${COOKIE_HEALTHCHECK:-false}
       FOLLOW_REDIRECT_TIMEOUT: ${FOLLOW_REDIRECT_TIMEOUT:-10}
       DOWNLOAD_ALLOWED_DOMAINS: ${DOWNLOAD_ALLOWED_DOMAINS:-}
       REWRITE_ALLOWED_DOMAINS: ${REWRITE_ALLOWED_DOMAINS:-}
@@ -56,7 +56,6 @@ services:
       - 8000:8000
     networks:
       - default
-
   nginx:
     image: nginx:stable-alpine-slim
     restart: unless-stopped
@@ -81,7 +80,6 @@ services:
       - traefik_default
     volumes:
       - cache:/usr/share/nginx/html:ro
-
   # Optional: a self-hosted Telegram Bot API server in local mode, raising
   # the video-send ceiling above the cloud API's 50 MB (see
   # docs/features/UFB-0036-native-video-replies.md). Disabled by default;
@@ -100,7 +98,12 @@ services:
     # token, so an HTTP-status healthcheck would always read as "down"; a
     # bare TCP connect just confirms the process is up and listening.
     healthcheck:
-      test: ["CMD", "nc", "-z", "127.0.0.1", "8081"]
+      test:
+        - "CMD"
+        - "nc"
+        - "-z"
+        - "127.0.0.1"
+        - "8081"
       interval: 5s
       timeout: 2s
       retries: 12
@@ -115,7 +118,6 @@ services:
       - botapi:/var/lib/telegram-bot-api
     networks:
       - default
-
 volumes:
   cache:
   botapi:

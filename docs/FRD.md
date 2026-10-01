@@ -2,13 +2,10 @@
 
 ## Behavior diagrams
 
-The two mermaid flowcharts are the source of truth for how the features below
-fit together end to end:
+The two mermaid flowcharts are the source of truth for how the features below fit together end to end:
 
-- [Message handling flow](flows/message-handling-flow.md) - Telegram and REST
-  entry points: UFB-0001 - UFB-0006, UFB-0019, UFB-0020
-- [URL processing flow](flows/url-processing-flow.md) - the shared
-  `process_url_request()` decision tree: UFB-0007 - UFB-0018
+- [Message handling flow](flows/message-handling-flow.md) - Telegram and REST entry points: UFB-0001 - UFB-0006, UFB-0019, UFB-0020
+- [URL processing flow](flows/url-processing-flow.md) - the shared `process_url_request()` decision tree: UFB-0007 - UFB-0018
 
 ## Available Features
 
@@ -49,6 +46,7 @@ fit together end to end:
 - [X] [UFB-0035. Per-file preview images](features/UFB-0035-per-file-preview-images.md) - `#hosting` `#telegram` `#media`
 - [X] [UFB-0036. Native Telegram video replies via a local Bot API server](features/UFB-0036-native-video-replies.md) - `#telegram` `#ux` `#hosting` `#media`
 - [X] [UFB-0037. Jinja message templates](features/UFB-0037-message-templates.md) - `#telegram` `#ux` `#i18n`
+- [X] [UFB-0038. Cookie keepalive](features/UFB-0038-cookie-keepalive.md) - `#cookies` `#ops` `#runtime`
 
 ## Tags
 
@@ -70,10 +68,10 @@ fit together end to end:
 - `#fallback`: UFB-0013
 - `#media`: UFB-0015, UFB-0035, UFB-0036
 - `#cache`: UFB-0016, UFB-0026
-- `#cookies`: UFB-0017, UFB-0018
+- `#cookies`: UFB-0017, UFB-0018, UFB-0038
 - `#api`: UFB-0019, UFB-0034
-- `#runtime`: UFB-0020, UFB-0034
-- `#ops`: UFB-0024, UFB-0025, UFB-0026, UFB-0027, UFB-0028, UFB-0030, UFB-0031, UFB-0033, UFB-0034
+- `#runtime`: UFB-0020, UFB-0034, UFB-0038
+- `#ops`: UFB-0024, UFB-0025, UFB-0026, UFB-0027, UFB-0028, UFB-0030, UFB-0031, UFB-0033, UFB-0034, UFB-0038
 - `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033, UFB-0035, UFB-0036
 - `#deploy`: UFB-0027, UFB-0030
 - `#ci`: UFB-0028

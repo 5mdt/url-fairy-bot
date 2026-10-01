@@ -113,3 +113,17 @@ def test_local_send_video_max_mb_defaults_to_500(reload_settings):
 def test_local_send_video_max_mb_reads_env(reload_settings):
     settings = reload_settings(LOCAL_SEND_VIDEO_MAX_MB="2000")
     assert settings.LOCAL_SEND_VIDEO_MAX_MB == 2000
+
+
+# #UFB-0038
+def test_cookie_keepalive_defaults(reload_settings):
+    settings = reload_settings()
+    assert settings.COOKIE_KEEPALIVE_INTERVAL == 3600
+    assert settings.COOKIE_HEALTHCHECK is False
+
+
+# #UFB-0038
+def test_cookie_keepalive_values_parse(reload_settings):
+    settings = reload_settings(COOKIE_KEEPALIVE_INTERVAL="0", COOKIE_HEALTHCHECK="true")
+    assert settings.COOKIE_KEEPALIVE_INTERVAL == 0
+    assert settings.COOKIE_HEALTHCHECK is True

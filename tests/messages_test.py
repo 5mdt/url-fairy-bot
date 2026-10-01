@@ -32,13 +32,17 @@ def test_shrug_renders_the_easter_egg():
 
 
 def test_download_result_renders_both_links():
-    html = messages.download_result("https://example.test/watch/x.html", "https://x.com/a")
+    html = messages.download_result(
+        "https://example.test/watch/x.html", "https://x.com/a"
+    )
     assert '<a href="https://example.test/watch/x.html">⏬ Download</a>' in html
     assert '<a href="https://x.com/a">📎 Source</a>' in html
 
 
 def test_too_large_prefixes_the_body():
-    body = messages.download_result("https://example.test/watch/x.html", "https://x.com/a")
+    body = messages.download_result(
+        "https://example.test/watch/x.html", "https://x.com/a"
+    )
     text = messages.too_large(body)
     assert text.startswith("I cannot upload attachment this big")
     assert body in text

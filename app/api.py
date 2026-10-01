@@ -7,8 +7,9 @@ from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from . import cleanup, pages
+from . import cleanup, cookie_keepalive, pages
 from .bot import is_polling_alive, is_telegram_api_reachable
+from .config import settings
 from .url_processing import DownloadResult, process_url_request
 
 
@@ -38,7 +39,7 @@ async def healthz():
     return {"status": "ok"}
 
 
-# #UFB-0034, #UFB-0036
+# #UFB-0034, #UFB-0036, #UFB-0038
 @api_router.get("/health")
 async def health():
     polling = is_polling_alive()
@@ -50,12 +51,22 @@ async def health():
     # not degrade health — only an explicit False (configured but
     # unreachable) does.
     telegram_api = await asyncio.to_thread(is_telegram_api_reachable)
-    ok = bool(polling and seeded and cleanup_alive and telegram_api is not False)
+    cookies = cookie_keepalive.cookies_alive()
+    # Dead cookies only degrade health when the operator opted in.
+    cookies_ok = not (settings.COOKIE_HEALTHCHECK and cookies is False)
+    ok = bool(
+        polling
+        and seeded
+        and cleanup_alive
+        and telegram_api is not False
+        and cookies_ok
+    )
     body: dict[str, str | bool | None] = {
         "status": "ok" if ok else "degraded",
         "polling": polling,
         "pages_seeded": seeded,
         "cleanup": cleanup_alive,
         "telegram_api": telegram_api,
+        "cookies": cookies,
     }
     return JSONResponse(content=body, status_code=200 if ok else 503)

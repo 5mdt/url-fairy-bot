@@ -21,8 +21,7 @@ Prepare for a magical journey as you set up and deploy the URLFairyBot.
 
 ### Installation
 
-The bot deploys straight from published images — no repository checkout
-needed, just two files.
+The bot deploys straight from published images — no repository checkout needed, just two files.
 
 1. Fetch the compose file and an example `.env`:
 
@@ -38,14 +37,9 @@ needed, just two files.
    BASE_URL=your_base_url
    ```
 
-   The full list of variables `.env.example` ships with — all optional
-   beyond `BOT_TOKEN`/`BASE_URL` — is documented in
-   [Environment variables](#environment-variables) below.
+   The full list of variables `.env.example` ships with — all optional beyond `BOT_TOKEN`/`BASE_URL` — is documented in [Environment variables](#environment-variables) below.
 
-   The bot also lets you override the "mirror" domains it rewrites URLs to
-   (e.g. when a platform's domain isn't downloadable). All are optional;
-   defaults shown below — values should be bare domains without `www.`/`music.`
-   prefixes, since those are added automatically where needed:
+   The bot also lets you override the "mirror" domains it rewrites URLs to (e.g. when a platform's domain isn't downloadable). All are optional; defaults shown below — values should be bare domains without `www.`/`music.` prefixes, since those are added automatically where needed:
 
    | Variable                      | Default           | Applies to                              |
    |-------------------------------|-------------------|-----------------------------------------|
@@ -58,8 +52,7 @@ needed, just two files.
    | `YOUTUBE_MIRROR_DOMAIN`       | `yfxtube.com`     | `music.youtube.com` / `www.youtube.com` |
    | `YOUTUBE_SHORT_MIRROR_DOMAIN` | `fxyoutu.be`      | `youtu.be`                              |
 
-3. If you don't already run one, create a Traefik reverse proxy stack in a
-   separate `docker-compose.yml` (own directory, own project):
+3. If you don't already run one, create a Traefik reverse proxy stack in a separate `docker-compose.yml` (own directory, own project):
 
    ```yaml
    ---
@@ -125,13 +118,14 @@ needed, just two files.
 | `CACHE_DIR`                 | `/tmp/url-fairy-bot-cache/`            | Directory for cached downloads                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `COOKIES_DIR`               | `/config/`                             | Directory containing cookie files for authenticated downloads                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `COOKIE_JAR_ENABLED`        | `false`                                | Use a persistent `cookie_jar.txt` so yt-dlp can save updated session tokens across requests. On first use, the jar is initialized by merging all `cookies*.txt` files in `COOKIES_DIR`.                                                                                                                                                                                                                                                                              |
+| `COOKIE_KEEPALIVE_INTERVAL` | `3600`                                 | Seconds between cookie aliveness checks. Requires `COOKIE_JAR_ENABLED`; `0` disables.                                                                                                                                                                                                                                                                                                                                                                                |
+| `COOKIE_HEALTHCHECK`        | `false`                                | When `true`, `/health` returns 503 if the cookie keepalive finds a site logged out. The `cookies` field is always reported.                                                                                                                                                                                                                                                                                                                                          |
 | `DOWNLOAD_ALLOWED_DOMAINS`  | *(empty)*                              | Comma-separated list of domains real video downloads are restricted to. Empty means every domain is allowed (the default) — this setting only ever *restricts* downloads, it never affects whether a mirror link is offered (e.g. `instagram.com,twitter.com`)                                                                                                                                                                                                       |
 | `REWRITE_ALLOWED_DOMAINS`   | *(empty)*                              | Comma-separated list of domains eligible for mirror-link rewriting (Spotify/Instagram/Reddit/TikTok/Twitter/X/YouTube). Empty means every platform is rewritten (the default). Independent of `DOWNLOAD_ALLOWED_DOMAINS`                                                                                                                                                                                                                                             |
 | `FOLLOW_REDIRECT_TIMEOUT`   | `10`                                   | Timeout in seconds when following URL redirects                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `LOG_LEVEL`                 | `INFO`                                 | Logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`)                                                                                                                                                                                                                                                                                                                                                                                                                  |
 
-See [`.env.example`](.env.example) for a ready-to-copy file with every
-variable, including the mirror-domain overrides above.
+See [`.env.example`](.env.example) for a ready-to-copy file with every variable, including the mirror-domain overrides above.
 
 ### Cookie Support
 
@@ -142,6 +136,8 @@ The bot supports authenticated downloads through cookies. To enable access to In
 2. Browser extensions like [Get cookies.txt LOCALLY](https://chrome.google.com/webstore/detail/get-cookies-txt-locally/cjpalhdlnbpafiagobnlogmdbifnnodlj) can extract cookies from your browser
 
 3. The bot will automatically merge all cookie files matching the pattern and use them for authenticated downloads
+
+**Keepalive:** with `COOKIE_JAR_ENABLED=true`, the bot checks Instagram/YouTube/TikTok sessions every `COOKIE_KEEPALIVE_INTERVAL` seconds (default hourly), saves refreshed cookies, and re-merges `cookies*.txt` into the jar when those files change or a session is logged out. See `docs/features/UFB-0038-cookie-keepalive.md`.
 
 ## Usage
 
@@ -181,9 +177,7 @@ This flexibility allows you to use URLFairyBot in various applications outside o
 #### Health Endpoints
 
 - **`GET /healthz`**: liveness probe, always returns `200 {"status": "ok"}` while the process is up.
-- **`GET /health`**: readiness probe. Returns `200 {"status": "ok", "polling": true, "pages_seeded": true}`
-  when the Telegram bot's polling loop is alive and the static pages have been seeded, or
-  `503 {"status": "degraded", ...}` with the failing flag(s) set to `false` otherwise.
+- **`GET /health`**: readiness probe. Returns `200 {"status": "ok", "polling": true, "pages_seeded": true}` when the Telegram bot's polling loop is alive and the static pages have been seeded, or `503 {"status": "degraded", ...}` with the failing flag(s) set to `false` otherwise.
 
 ```bash
 curl -i "http://localhost:8000/health"

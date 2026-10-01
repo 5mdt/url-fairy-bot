@@ -29,6 +29,13 @@ class Settings(BaseSettings):
         "0",
         "no",
     )
+    # #UFB-0038
+    COOKIE_KEEPALIVE_INTERVAL: int = int(os.getenv("COOKIE_KEEPALIVE_INTERVAL", 3600))
+    COOKIE_HEALTHCHECK: bool = os.getenv("COOKIE_HEALTHCHECK", "false").lower() not in (
+        "false",
+        "0",
+        "no",
+    )
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     # #UFB-0037
     MESSAGE_LOCALE: str = os.getenv("MESSAGE_LOCALE", "en")
