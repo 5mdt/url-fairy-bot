@@ -1,0 +1,66 @@
+---
+# Docker image build pipeline (migrated from .github/workflows/build-and-push.yml).
+# #UFB-0028
+# Privileged mode for the buildx plugin comes from the server: it must list the
+# image in WOODPECKER_PLUGINS_PRIVILEGED (a step-level `privileged: true` would
+# instead need the repo's trusted.security flag).
+# Credentials are global Woodpecker secrets 5mdt_docker_io_{url,user,pat}; the
+# global `docker.io` registry entry is only used to pull step images.
+variables:
+  - &buildx
+    image: docker.io/woodpeckerci/plugin-docker-buildx
+  - &buildx_settings
+    dockerfile: Dockerfile
+    platforms: linux/amd64,linux/arm,linux/arm64
+    repo: 5mdt/url-fairy-bot
+    registry:
+      from_secret: 5mdt_docker_io_url
+    username:
+      from_secret: 5mdt_docker_io_user
+    password:
+      from_secret: 5mdt_docker_io_pat
+when:
+  - event:
+      - push
+      - pull_request
+      - tag
+      - manual
+steps:
+  # PRs only prove the image still builds (no push).
+  - name: image-check
+    <<: *buildx
+    settings:
+      <<: *buildx_settings
+      dry_run: true
+    when:
+      - event: pull_request
+  # main -> `latest` + short sha; git tag -> the tag; any other branch -> its
+  # own name with '/' replaced by '-' (image tags can't contain '/').
+  - name: image-tags
+    image: docker.io/library/alpine:3
+    commands:
+      - |
+        if [ -n "$${CI_COMMIT_TAG}" ]; then
+          tags="$${CI_COMMIT_TAG}"
+        elif [ "$${CI_COMMIT_BRANCH}" = main ]; then
+          tags="$(printf 'latest\n%s' "$(printf %s "$${CI_COMMIT_SHA}" | cut -c1-7)")"
+        else
+          tags="$(printf %s "$${CI_COMMIT_BRANCH}" | tr / -)"
+        fi
+        printf '%s\n' "$tags" > .tags
+        echo "image tags: $(tr '\n' ' ' < .tags)"
+    when:
+      - event:
+          - push
+          - manual
+          - tag
+  - name: publish
+    <<: *buildx
+    settings:
+      <<: *buildx_settings
+      tags_file: .tags
+    when:
+      - event:
+          - push
+          - manual
+          - tag

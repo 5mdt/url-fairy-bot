@@ -2,10 +2,8 @@
 
 ## Unreleased
 
-- Consolidated linting/formatting onto `ruff` (lint + format + import sorting),
-  replacing black, isort and flake8 in `pyproject.toml`, `Makefile`,
-  pre-commit and CI; scope is now `./app` and `./tests`. Fixes `#BUG-0047`,
-  `#BUG-0064`, `#BUG-0072`.
+- `#UFB-0039` — TikTok photo posts (`/photo/` URLs) are sent as a photo album plus the post's audio instead of falling back to a mirror link.
+- Consolidated linting/formatting onto `ruff` (lint + format + import sorting), replacing black, isort and flake8 in `pyproject.toml`, `Makefile`, pre-commit and CI; scope is now `./app` and `./tests`. Fixes `#BUG-0047`, `#BUG-0064`, `#BUG-0072`.
 - `#UFB-0038` — hourly cookie keepalive: checks each known site's session with the jar's cookies, persists refreshed tokens, re-merges the jar when `cookies*.txt` change or a site is logged out, and reports `cookies` in `/health` (503 only with `COOKIE_HEALTHCHECK=true`). Fixes `#BUG-0044`.
 - Upgraded Python 3.11 → 3.14 (`pyproject.toml`, `Dockerfile`, CI) and every runtime/dev dependency to its latest release (lockfile refreshed; `pytest` 9, `pytest-asyncio` 1.x, `httpx` 0.28, `isort` 9, `black` 26.5), plus `uv`, `setup-uv` and the pre-commit hook revs. Fixes `#BUG-0053` (stale `pytest.ini` `--ignore`) and `#BUG-0054` (outdated `httpx` / `pytest-asyncio` pins).
 - Change: `#UFB-0028` — the Docker image build/publish pipeline moved from GitHub Actions (`.github/workflows/build-and-push.yml`, removed) to Woodpecker (`.woodpecker.yml`, modelled on `calsync`'s). Images are now published to Docker Hub as `5mdt/url-fairy-bot` instead of GHCR; main → `latest` + short SHA, git tag → the tag, other branches → their name; PRs do a dry-run build. `docker-compose.yml`'s `app` image reference points at Docker Hub accordingly. `ci.yml` (formatters/linters/tests) stays on GitHub Actions.
