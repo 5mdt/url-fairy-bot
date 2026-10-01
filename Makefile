@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install sync fmt lint yamllint check test test-cov run pre-commit \
+.PHONY: help install sync fmt lint yamllint check test test-cov run pre-commit ddd \
 	docker-build docker-up docker-down docker-logs docker-restart deploy-check clean
 
 UV := uv
@@ -32,6 +32,10 @@ yamllint:
 
 ## check: Run fmt, lint, yamllint and tests (use before/after any change)
 check: fmt lint yamllint test
+
+## ddd: Verify docs bookkeeping (IDs, FRD, trackers) with scripts/ddd
+ddd:
+	./scripts/ddd/ddd check
 
 ## test: Run the test suite
 test:

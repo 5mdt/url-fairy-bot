@@ -1,0 +1,3 @@
+#!/bin/sh
+# Thin shim so the tool can be run as `scripts/ddd/ddd` from anywhere in the repo.
+exec python3 "$(dirname "$0")/ddd.py" "$@"

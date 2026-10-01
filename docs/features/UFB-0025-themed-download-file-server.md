@@ -2,17 +2,17 @@
 
 **Tags:** #ops #hosting
 
+## User Story
+
+As a Telegram user, I want downloaded files served over plain HTTP with a themed 404, so that I can open or save them from a link.
+
 ## Behavior
 
-Cached downloaded files are served over plain HTTP at `BASE_URL`. Each file
-is retrievable at its exact path, with a themed 404 page for missing files.
+Cached downloaded files are served over plain HTTP at `BASE_URL`. Each file is retrievable at its exact path, with a themed 404 page for missing files.
 
 ## Implementation
 
-- nginx serves the cache directory read-only as plain static files — no
-  server-side templating. The landing page, 404 page, and per-file watch
-  pages are pre-rendered by the app; see
-  [UFB-0033](UFB-0033-static-page-generation.md).
+- nginx serves the cache directory read-only as plain static files — no server-side templating. The landing page, 404 page, and per-file watch pages are pre-rendered by the app; see [UFB-0033](UFB-0033-static-page-generation.md).
 
 ## Testing
 
@@ -23,4 +23,4 @@ is retrievable at its exact path, with a themed 404 page for missing files.
 
 ## Status
 
-Implemented.
+Implemented

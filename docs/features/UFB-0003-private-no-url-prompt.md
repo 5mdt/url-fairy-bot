@@ -2,17 +2,18 @@
 
 **Tags:** #telegram #ux
 
+## User Story
+
+As a Telegram user in a private chat, I want a prompt when I send text without a URL, so that I know what the bot expects.
+
 ## Behavior
 
-In a private chat, a text message containing no URL gets a reply asking the
-user to send a valid URL.
+In a private chat, a text message containing no URL gets a reply asking the user to send a valid URL.
 
 ## Implementation
 
-- Runs after [multi-URL scanning](UFB-0002-multi-url-scanning.md) finds zero
-  matches, only when the chat is not a group/supergroup.
-- Prompt text is rendered via `app.messages.no_url_prompt()`
-  ([UFB-0037](UFB-0037-message-templates.md)).
+- Runs after [multi-URL scanning](UFB-0002-multi-url-scanning.md) finds zero matches, only when the chat is not a group/supergroup.
+- Prompt text is rendered via `app.messages.no_url_prompt()` ([UFB-0037](UFB-0037-message-templates.md)).
 
 ## Testing
 

@@ -2,6 +2,10 @@
 
 **Tags:** #download #cookies #config
 
+## User Story
+
+As an operator, I want session cookies updated during downloads to be kept, so that refreshed tokens aren't lost between requests.
+
 ## Behavior
 
 An operator can opt into a persistent cookie jar so that session cookies yt-dlp updates during a download (e.g. refreshed tokens) are kept across requests, instead of re-merging the source cookie files from scratch every time. When disabled (the default), a freshly merged temporary cookie file is used per download and discarded afterward.
@@ -9,6 +13,10 @@ An operator can opt into a persistent cookie jar so that session cookies yt-dlp 
 ## Implementation
 
 - `COOKIE_JAR_ENABLED` (default `false`): when enabled, initializes `cookie_jar.txt` once by merging all `cookies*.txt` files, then reuses and lets yt-dlp update that same file on every subsequent download.
+
+## Quirks & Decisions
+
+History: The jar is kept fresh by [UFB-0038](UFB-0038-cookie-keepalive.md), which periodically checks the sessions and re-merges the jar when `cookies*.txt` files change.
 
 ## Testing
 
@@ -20,4 +28,4 @@ An operator can opt into a persistent cookie jar so that session cookies yt-dlp 
 
 ## Status
 
-Implemented. The jar is kept fresh by [UFB-0038](UFB-0038-cookie-keepalive.md), which periodically checks the sessions and re-merges the jar when `cookies*.txt` files change.
+Implemented
