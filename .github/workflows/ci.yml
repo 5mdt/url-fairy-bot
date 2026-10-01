@@ -2,8 +2,8 @@
 # ci.yml
 #
 # Every formatter/linter/test check the project runs, merged into one
-# pipeline (one job per tool, running in parallel). `build-and-push.yml`
-# stays separate — it's a deploy pipeline, not a code-quality check.
+# pipeline (one job per tool, running in parallel). The image build/publish
+# pipeline lives in `.woodpecker.yml`, not here.
 name: CI
 on:
   - push
