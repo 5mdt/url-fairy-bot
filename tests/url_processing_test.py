@@ -8,6 +8,7 @@ import requests
 from app.config import settings
 from app.download import UnsupportedUrlError
 from app.url_processing import (
+    BlockedUrlError,
     apply_rewrite_map,
     attempt_download,
     follow_redirects,
@@ -199,14 +200,33 @@ def test_is_rewrite_allowed_rejects_lookalike_domain(monkeypatch):
 # --- follow_redirects ---
 
 
+def _resp(status=200, location=None):
+    headers = {"Location": location} if location else {}
+    return type("R", (), {"status_code": status, "headers": headers})()
+
+
+def _resolver(mapping):
+    """getaddrinfo stand-in: host -> list of IP strings."""
+
+    def fake(host, port, *args, **kwargs):
+        return [(2, 1, 6, "", (ip, 0)) for ip in mapping[host]]
+
+    return fake
+
+
+# #UFB-0007, #UFB-0008
 def test_follow_redirects_resolves_and_strips_query():
-    mock_response = type("R", (), {"url": "https://final.example.com/path?foo=bar"})()
-    with patch("requests.head", return_value=mock_response):
+    responses = [
+        _resp(301, "https://final.example.com/path?foo=bar"),
+        _resp(200),
+    ]
+    with patch("requests.head", side_effect=responses):
         assert follow_redirects("https://short.example.com/x") == (
             "https://final.example.com/path"
         )
 
 
+# #UFB-0007
 def test_follow_redirects_returns_original_on_timeout():
     with patch("requests.head", side_effect=requests.Timeout):
         assert (
@@ -215,27 +235,142 @@ def test_follow_redirects_returns_original_on_timeout():
         )
 
 
+# #UFB-0007
 def test_follow_redirects_returns_original_on_invalid_redirect_target():
-    mock_response = type("R", (), {"url": "not-a-valid-url"})()
-    with patch("requests.head", return_value=mock_response):
+    responses = [_resp(302, "http://")]
+    with patch("requests.head", side_effect=responses):
         assert (
             follow_redirects("https://short.example.com/x")
             == "https://short.example.com/x"
         )
 
 
+# #UFB-0008
 def test_follow_redirects_preserves_query_string():
-    mock_response = type("R", (), {"url": "https://www.youtube.com/watch?v=abc123"})()
-    with patch("requests.head", return_value=mock_response):
+    responses = [_resp(302, "https://www.youtube.com/watch?v=abc123"), _resp(200)]
+    with patch("requests.head", side_effect=responses):
         assert follow_redirects("https://short.example.com/x") == (
             "https://www.youtube.com/watch?v=abc123"
         )
 
 
+# #UFB-0007
 def test_follow_redirects_handles_connection_error():
     with patch("requests.head", side_effect=requests.ConnectionError):
         assert follow_redirects("https://unreachable.example.com/x") == (
             "https://unreachable.example.com/x"
+        )
+
+
+# #UFB-0007
+def test_follow_redirects_disables_automatic_redirects():
+    with patch("requests.head", return_value=_resp(200)) as head:
+        follow_redirects("https://a.example.com/x")
+    assert head.call_args.kwargs["allow_redirects"] is False
+
+
+# #UFB-0007
+def test_follow_redirects_resolves_relative_location():
+    responses = [_resp(301, "/final?v=1&utm=2"), _resp(200)]
+    with patch("requests.head", side_effect=responses):
+        assert follow_redirects("https://a.example.com/x") == (
+            "https://a.example.com/final?v=1"
+        )
+
+
+# #UFB-0007
+def test_follow_redirects_hop_limit_falls_back_to_original():
+    with patch("requests.head", return_value=_resp(302, "/loop")):
+        assert follow_redirects("https://a.example.com/x") == (
+            "https://a.example.com/x"
+        )
+
+
+# #BUG-0012
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://127.0.0.1/x",
+        "http://localhost/x",
+        "http://10.0.0.5/x",
+        "http://192.168.1.1/x",
+        "http://172.16.0.1/x",
+        "http://169.254.169.254/latest/meta-data/",
+        "http://0.0.0.0/x",
+        "http://[::1]/x",
+        "http://[::ffff:127.0.0.1]/x",
+        "http://[fe80::1]/x",
+        "http://224.0.0.1/x",
+        "http://240.0.0.1/x",
+    ],
+)
+def test_follow_redirects_blocks_non_public_targets(url):
+    with patch("app.url_processing.socket.getaddrinfo", side_effect=_real_literal):
+        with patch("requests.head") as head:
+            with pytest.raises(BlockedUrlError):
+                follow_redirects(url)
+    head.assert_not_called()
+
+
+def _real_literal(host, port, *args, **kwargs):
+    import ipaddress
+
+    host = "127.0.0.1" if host == "localhost" else host
+    ip = ipaddress.ip_address(host)
+    return [(2, 1, 6, "", (str(ip), 0))]
+
+
+# #BUG-0012
+def test_follow_redirects_blocks_hostname_resolving_to_private():
+    resolver = _resolver({"internal.example.com": ["10.1.2.3"]})
+    with patch("app.url_processing.socket.getaddrinfo", side_effect=resolver):
+        with patch("requests.head") as head:
+            with pytest.raises(BlockedUrlError):
+                follow_redirects("https://internal.example.com/x")
+    head.assert_not_called()
+
+
+# #BUG-0012
+def test_follow_redirects_blocks_mixed_public_and_private_answers():
+    resolver = _resolver({"mixed.example.com": ["93.184.216.34", "127.0.0.1"]})
+    with patch("app.url_processing.socket.getaddrinfo", side_effect=resolver):
+        with pytest.raises(BlockedUrlError):
+            follow_redirects("https://mixed.example.com/x")
+
+
+# #BUG-0012
+def test_follow_redirects_blocks_redirect_hop_to_private_host():
+    resolver = _resolver(
+        {
+            "public.example.com": ["93.184.216.34"],
+            "evil.example.com": ["169.254.169.254"],
+        }
+    )
+    responses = [_resp(302, "http://evil.example.com/meta"), _resp(200)]
+    with patch("app.url_processing.socket.getaddrinfo", side_effect=resolver):
+        with patch("requests.head", side_effect=responses) as head:
+            with pytest.raises(BlockedUrlError):
+                follow_redirects("https://public.example.com/x")
+    assert head.call_count == 1
+
+
+# #BUG-0012
+def test_follow_redirects_blocks_non_http_hop():
+    with patch("requests.head", return_value=_resp(302, "file:///etc/passwd")):
+        with pytest.raises(BlockedUrlError):
+            follow_redirects("https://public.example.com/x")
+
+
+# #BUG-0012
+def test_follow_redirects_unresolvable_host_falls_back_to_original():
+    import socket
+
+    with (
+        patch("app.url_processing.socket.getaddrinfo", side_effect=socket.gaierror),
+        patch("requests.head", side_effect=requests.ConnectionError),
+    ):
+        assert follow_redirects("https://nx.example.com/x") == (
+            "https://nx.example.com/x"
         )
 
 

@@ -19,7 +19,7 @@ from app.bot import (
     start,
 )
 from app.config import settings
-from app.url_processing import DownloadResult
+from app.url_processing import BlockedUrlError, DownloadResult
 
 
 def make_message(text, chat_type="private", reply_to_message=None):
@@ -185,6 +185,29 @@ async def test_invalid_url_reply_is_user_friendly():
     args, _ = message.reply.await_args
     assert "pydantic.dev" not in args[0]
     assert "\n" not in args[0]
+
+
+# #BUG-0012, #UFB-0006
+@pytest.mark.asyncio
+async def test_blocked_url_in_private_chat_gets_invalid_url_reply():
+    message = make_message("http://169.254.169.254/x", chat_type="private")
+    with patch("requests.head") as head:
+        await handle_message(message)
+    head.assert_not_called()
+    message.reply.assert_awaited_once()
+    assert message.reply.await_args.args[0] == messages.invalid_url()
+
+
+# #BUG-0012, #UFB-0004
+@pytest.mark.asyncio
+async def test_blocked_url_in_group_chat_is_silent():
+    message = make_message("http://10.0.0.1/x", chat_type="group")
+    with patch(
+        "app.bot.process_url_request",
+        new=AsyncMock(side_effect=BlockedUrlError("blocked")),
+    ):
+        await handle_message(message)
+    message.reply.assert_not_awaited()
 
 
 # --- URL extraction edge cases ---

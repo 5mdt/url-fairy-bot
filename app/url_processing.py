@@ -1,11 +1,20 @@
 # url_processing.py
 
+import ipaddress
 import logging
 import os
 import re
 import shutil
+import socket
 from dataclasses import dataclass, field
-from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
+from urllib.parse import (
+    parse_qsl,
+    quote,
+    urlencode,
+    urljoin,
+    urlparse,
+    urlunparse,
+)
 
 import requests
 
@@ -81,11 +90,72 @@ def is_rewrite_allowed(url: str) -> bool:
     return _domain_in_allowlist(url, settings.REWRITE_ALLOWED_DOMAINS)
 
 
-# #UFB-0007, #UFB-0008
+# #UFB-0007, #BUG-0012
+class BlockedUrlError(ValueError):
+    """A URL (or a redirect hop) points at a non-public address or scheme."""
+
+
+# #UFB-0007, #BUG-0012
+MAX_REDIRECT_HOPS = 10
+_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+
+
+# #UFB-0007, #BUG-0012
+def _is_public_ip(raw: str) -> bool:
+    ip = ipaddress.ip_address(raw.split("%", 1)[0])
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+        ip = ip.ipv4_mapped
+    return not (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_multicast
+        or ip.is_unspecified
+        or not ip.is_global
+    )
+
+
+# #UFB-0007, #BUG-0012
+def _assert_public_url(url: str) -> None:
+    """Raise BlockedUrlError unless `url` is http(s) and every address its
+    host resolves to is public. An unresolvable host passes: the request
+    that follows fails and callers fall back as before (#UFB-0007)."""
+    parsed = urlparse(url)
+    host = parsed.hostname
+    if parsed.scheme not in ("http", "https") or not host:
+        raise BlockedUrlError("URL scheme or host not allowed")
+    try:
+        infos = socket.getaddrinfo(host, parsed.port or None, proto=socket.IPPROTO_TCP)
+    except socket.gaierror, UnicodeError:
+        return
+    for info in infos:
+        if not _is_public_ip(info[4][0]):
+            logger.warning(f"Blocked non-public target: {url}")
+            raise BlockedUrlError("URL target not allowed")
+
+
+# #UFB-0007, #UFB-0008, #BUG-0012
 def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
     try:
-        response = requests.head(url, allow_redirects=True, timeout=timeout)
-        parsed = urlparse(response.url)
+        current = url
+        for _ in range(MAX_REDIRECT_HOPS + 1):
+            _assert_public_url(current)
+            response = requests.head(current, allow_redirects=False, timeout=timeout)
+            location = response.headers.get("Location")
+            if response.status_code not in _REDIRECT_STATUSES or not location:
+                break
+            current = urljoin(current, location)
+            if (
+                urlparse(current).scheme in ("http", "https")
+                and not urlparse(current).netloc
+            ):
+                logger.warning(f"Invalid redirect URL: {current}")
+                return url
+        else:
+            logger.warning(f"Too many redirects for URL: {url}")
+            return url
+        parsed = urlparse(current)
         kept_params = [
             (k, v)
             for k, v in parse_qsl(parsed.query, keep_blank_values=True)

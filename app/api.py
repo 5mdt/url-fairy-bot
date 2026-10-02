@@ -5,18 +5,18 @@ import asyncio
 
 from fastapi import APIRouter, Body, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 
 from . import cleanup, cookie_keepalive, pages
 from .bot import is_polling_alive, is_telegram_api_reachable
 from .config import settings
-from .url_processing import DownloadResult, process_url_request
+from .url_processing import BlockedUrlError, DownloadResult, process_url_request
 
 
 # Define a request model to parse JSON body
-# #UFB-0019
+# #UFB-0019, #BUG-0012
 class URLRequest(BaseModel):
-    url: str
+    url: HttpUrl
 
 
 api_router = APIRouter()
@@ -26,9 +26,12 @@ api_router = APIRouter()
 @api_router.post("/process_url/")
 async def process_url(request: URLRequest = Body(...)):
     try:
-        result = await process_url_request(request.url)
+        result = await process_url_request(str(request.url))
         data = result.text if isinstance(result, DownloadResult) else result
         return {"status": "success", "data": data}
+    except BlockedUrlError:
+        # #BUG-0012: generic message, no resolved-address detail.
+        raise HTTPException(status_code=400, detail="URL target not allowed")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

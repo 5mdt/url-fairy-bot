@@ -13,10 +13,9 @@ Order, not scope. An item's contract stays in its feature doc or tracker entry.
 
 ## 1. Hardening
 
-1. #BUG-0012 - SSRF on `/process_url/` (URL validation and private-range blocking); a security hole on a public endpoint.
-2. #BUG-0006 - blocking calls on the event loop, now including the preview and `ffmpeg` calls; one slow download stalls every user.
-3. #UFB-0055 - progress chat action ("typing…" / "sending a video…") [P1/D2, target 2.10.0]; needs #BUG-0006 first, since a blocked loop can't refresh the indicator.
-4. #UFB-0056 - API authentication and rate limiting [P2/D3]; the second half of the open-endpoint problem after #BUG-0012.
+1. #BUG-0006 - blocking calls on the event loop, now including the preview and `ffmpeg` calls; one slow download stalls every user.
+2. #UFB-0055 - progress chat action ("typing…" / "sending a video…") [P1/D2, target 2.10.0]; needs #BUG-0006 first, since a blocked loop can't refresh the indicator.
+3. #UFB-0056 - API authentication and rate limiting [P2/D3]; the open-endpoint problem (the SSRF half is fixed).
 
 **Done when:** one slow download doesn't stall other requests, `/process_url/` rejects private and loopback targets, and a user sees a chat action within a second of posting a link.
 

@@ -18,7 +18,7 @@ from app import media, messages, preview
 from app.config import settings
 
 from .models import URLMessage
-from .url_processing import DownloadResult, process_url_request
+from .url_processing import BlockedUrlError, DownloadResult, process_url_request
 
 logger = logging.getLogger(__name__)
 
@@ -331,6 +331,11 @@ async def handle_message(message: Message):
         except ValidationError as e:
             logger.warning(f"Validation error for URL: {url} - {e}")
             await message.reply(messages.invalid_url(), parse_mode=ParseMode.HTML)
+        except BlockedUrlError as e:
+            # #BUG-0012: private/loopback target; invalid in DMs, quiet in groups.
+            logger.warning(f"Blocked URL: {url} - {e}")
+            if message.chat.type not in GROUP_CHAT_TYPES:
+                await message.reply(messages.invalid_url(), parse_mode=ParseMode.HTML)
         except Exception:
             # A failing reply (or delivery) for one URL must never escape
             # the handler (#BUG-0068); log it and move on to the next URL.

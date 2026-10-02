@@ -60,3 +60,23 @@ def no_network(monkeypatch):
         )
 
     monkeypatch.setattr("requests.head", _blocked)
+
+
+@pytest.fixture(autouse=True)
+def no_dns(monkeypatch):
+    """
+    #BUG-0012: follow_redirects resolves hosts before requesting them. Keep
+    tests off the real resolver: IP literals resolve to themselves, every
+    other name to a fixed public address. Tests needing other answers patch
+    `app.url_processing.socket.getaddrinfo` themselves.
+    """
+    import ipaddress
+
+    def _fake(host, port, *args, **kwargs):
+        try:
+            ip = str(ipaddress.ip_address(host))
+        except ValueError:
+            ip = "93.184.216.34"
+        return [(2, 1, 6, "", (ip, port or 0))]
+
+    monkeypatch.setattr("socket.getaddrinfo", _fake)

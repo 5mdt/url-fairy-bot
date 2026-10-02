@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix: `#BUG-0012` — `POST /process_url/` now validates `url` as an HTTP(S) URL, and redirect resolution refuses any target (first URL or any redirect hop) that resolves to a private, loopback, link-local, reserved, multicast or unspecified address. The API answers `400`; the bot replies with the invalid-URL message in private chats and stays silent in groups.
+
 ## 2.10.0 (2026-10-02)
 
 - Fix: `#BUG-0014` — cache filename stems over 200 bytes are truncated and end in a sha256 suffix of the URL (short URLs are unchanged, so existing caches stay valid), and concurrent requests for the same uncached URL now share one download through a per-URL lock.

@@ -28,7 +28,6 @@ Automation/behavior misbehaving today.
 
 ### Deploy / infra
 
-- #BUG-0012 the unauthenticated API is an SSRF-capable open proxy — `POST /process_url/` (`app/api.py`) takes an arbitrary string URL, and `follow_redirects()` (`app/url_processing.py:85`) issues a server-side `HEAD` request to it with `allow_redirects=True`. It can be used to probe internal or link-local addresses (e.g. cloud metadata endpoints) and enumerate reachability of internal hosts. The bot path is safer since `URLMessage.url: HttpUrl` (`app/models.py:7`) validates the URL, but the API's `URLRequest.url: str` (`app/api.py:19`) does not. Fix: validate `URLRequest.url` as `HttpUrl`, and reject private, loopback and link-local targets by resolving the host and checking the address before the request and again for every redirect hop (`requests` follows redirects internally, so a check on the first URL alone is bypassed by a redirect to an internal host). API auth and rate limiting are split out to [UFB-0056](features/UFB-0056-api-auth-rate-limiting.md) [P1/D3]
 
 ## Tech debt
 
