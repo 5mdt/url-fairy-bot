@@ -195,6 +195,40 @@ async def test_yt_dlp_download_outtmpl_and_remuxer_configured(tmp_path, monkeypa
 
 
 @pytest.mark.asyncio
+async def test_yt_dlp_download_normalizes_fresh_download_only(tmp_path, monkeypatch):
+    """#UFB-0040: a fresh download is passed to normalize_if_quiet; a cache
+    hit is not re-measured."""
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
+    url = "https://tiktok.com/@user/video/1"
+    from app.download import sanitize_subfolder_name
+
+    expected = os.path.join(str(tmp_path), f"{sanitize_subfolder_name(url)}.mp4")
+    mock_instance = MagicMock()
+
+    def _fake_download(urls):
+        with open(expected, "w") as f:
+            f.write("fake video data")
+
+    mock_instance.download.side_effect = _fake_download
+    mock_ydl = MagicMock()
+    mock_ydl.__enter__.return_value = mock_instance
+
+    with (
+        patch("app.download.yt_dlp.YoutubeDL", return_value=mock_ydl),
+        patch("app.download.media.normalize_if_quiet") as mock_normalize,
+    ):
+        fresh = await yt_dlp_download(url)
+        mock_normalize.assert_called_once_with(expected)
+
+        mock_normalize.reset_mock()
+        cached = await yt_dlp_download(url)
+        mock_normalize.assert_not_called()
+
+    assert fresh == cached == expected
+
+
+@pytest.mark.asyncio
 async def test_yt_dlp_download_cache_hit_refreshes_atime_not_mtime(
     tmp_path, monkeypatch
 ):

@@ -127,3 +127,20 @@ def test_cookie_keepalive_values_parse(reload_settings):
     settings = reload_settings(COOKIE_KEEPALIVE_INTERVAL="0", COOKIE_HEALTHCHECK="true")
     assert settings.COOKIE_KEEPALIVE_INTERVAL == 0
     assert settings.COOKIE_HEALTHCHECK is True
+
+
+# --- #UFB-0040 ---
+
+
+def test_audio_normalize_defaults(reload_settings):
+    settings = reload_settings()
+    assert settings.AUDIO_NORMALIZE_ENABLED is False
+    assert settings.AUDIO_NORMALIZE_BELOW_LUFS == -40.0
+
+
+def test_audio_normalize_parses_env(reload_settings):
+    settings = reload_settings(
+        AUDIO_NORMALIZE_ENABLED="true", AUDIO_NORMALIZE_BELOW_LUFS="-35.5"
+    )
+    assert settings.AUDIO_NORMALIZE_ENABLED is True
+    assert settings.AUDIO_NORMALIZE_BELOW_LUFS == -35.5
