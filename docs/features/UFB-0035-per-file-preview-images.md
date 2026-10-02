@@ -23,7 +23,7 @@ A `/watch/<file>` page's `og:image` is a JPEG frame extracted from that file's o
 ## Quirks & Decisions
 
 - Quirk: extracting at a fixed timestamp can land on a black frame or a fade-in for some clips. Open: is a smarter frame-picking heuristic worth the complexity, or is "good enough most of the time" acceptable? Logged as [BUG-0062](../BUGS.md).
-- Quirk: `generate_preview` runs synchronously inside `attempt_download`, adding to the reply latency of every successful download. Open: move it off the request path (background task, lazy-on-first-view) if the added latency turns out to matter in practice. Logged as [BUG-0063](../BUGS.md).
+- Quirk: `generate_preview` runs synchronously inside `attempt_download`, adding to the reply latency of every successful download. Open: move it off the request path (background task, lazy-on-first-view) if the added latency turns out to matter in practice. Folded into [BUG-0006](../BUGS.md), which now covers every blocking `ffmpeg` call.
 
 ## Testing
 
