@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `#UFB-0040` — opt-in loudness normalization of near-silent downloads (`AUDIO_NORMALIZE_ENABLED`, `AUDIO_NORMALIZE_BELOW_LUFS`): audio quieter than the threshold is normalized to −16 LUFS with the video stream copied untouched. Promotes `#TODO-0001`.
+
 ## 2.9.0
 
 - `#UFB-0028` — main now publishes the `stable` image tag (was `latest`; `IMAGE_TAG` default follows), and the pipeline also runs on a weekly cron (Sunday, configure in Woodpecker) besides push/tag/manual.

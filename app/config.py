@@ -36,6 +36,13 @@ class Settings(BaseSettings):
         "0",
         "no",
     )
+    # #UFB-0040
+    AUDIO_NORMALIZE_ENABLED: bool = os.getenv(
+        "AUDIO_NORMALIZE_ENABLED", "false"
+    ).lower() not in ("false", "0", "no")
+    AUDIO_NORMALIZE_BELOW_LUFS: float = float(
+        os.getenv("AUDIO_NORMALIZE_BELOW_LUFS", -40)
+    )
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
     # #UFB-0037
     MESSAGE_LOCALE: str = os.getenv("MESSAGE_LOCALE", "en")

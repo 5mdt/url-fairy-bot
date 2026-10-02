@@ -1,6 +1,6 @@
 # Feature Requirements Document
 
-Next free ID: **UFB-0040**.
+Next free ID: **UFB-0041**.
 
 ## Behavior diagrams
 
@@ -50,6 +50,7 @@ The two mermaid flowcharts are the source of truth for how the features below fi
 - [X] [UFB-0037. Jinja message templates](features/UFB-0037-message-templates.md) - `#telegram` `#ux` `#i18n`
 - [X] [UFB-0038. Cookie keepalive](features/UFB-0038-cookie-keepalive.md) - `#cookies` `#ops` `#runtime`
 - [X] [UFB-0039. TikTok photo-post galleries](features/UFB-0039-tiktok-photo-galleries.md) - `#download` `#media` `#telegram` `#ux`
+- [X] [UFB-0040. Near-silent audio normalization](features/UFB-0040-near-silent-audio-normalization.md) - `#download` `#media`
 
 ## Deprecated
 
@@ -66,12 +67,12 @@ The two mermaid flowcharts are the source of truth for how the features below fi
 - `#redirects`: UFB-0007
 - `#privacy`: UFB-0008
 - `#config`: UFB-0009, UFB-0018, UFB-0021, UFB-0022, UFB-0023, UFB-0024
-- `#download`: UFB-0009, UFB-0013, UFB-0015, UFB-0016, UFB-0017, UFB-0018, UFB-0039
+- `#download`: UFB-0009, UFB-0013, UFB-0015, UFB-0016, UFB-0017, UFB-0018, UFB-0039, UFB-0040
 - `#allowlist`: UFB-0009, UFB-0023
 - `#rewrite`: UFB-0010, UFB-0011, UFB-0012, UFB-0013, UFB-0022, UFB-0023, UFB-0029
 - `#youtube`: UFB-0012
 - `#fallback`: UFB-0013
-- `#media`: UFB-0015, UFB-0035, UFB-0036, UFB-0039
+- `#media`: UFB-0015, UFB-0035, UFB-0036, UFB-0039, UFB-0040
 - `#cache`: UFB-0016, UFB-0026
 - `#cookies`: UFB-0017, UFB-0018, UFB-0038
 - `#api`: UFB-0019, UFB-0034

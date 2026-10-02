@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 import yt_dlp
 
+from app import media
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -157,7 +158,7 @@ def _map_download_errors(url: str, e: Exception) -> Exception:
     )
 
 
-# #UFB-0015, #UFB-0016, #UFB-0017
+# #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040
 async def yt_dlp_download(url: str) -> str:
     stem = sanitize_subfolder_name(url)
     cached_path = _cached_media_path(stem)
@@ -180,7 +181,10 @@ async def yt_dlp_download(url: str) -> str:
             ydl.download([url])
 
         logger.info(f"Download successful for URL: {url}")
-        return _cached_media_path(stem)
+        path = _cached_media_path(stem)
+        if path:
+            media.normalize_if_quiet(path)
+        return path
 
     except Exception as e:
         mapped = _map_download_errors(url, e)
