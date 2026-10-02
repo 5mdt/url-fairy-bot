@@ -1,5 +1,6 @@
 # bot_test.py
 
+import asyncio
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -265,6 +266,43 @@ async def test_oversized_file_gets_too_large_notice_with_links(monkeypatch):
     )
 
 
+# #UFB-0036, #BUG-0073
+@pytest.mark.asyncio
+async def test_mid_tier_file_declined_falls_back_to_text(monkeypatch):
+    """A size between the cloud and local ceilings with the local server
+    unreachable is declined by `_fits_native_send`: no native attempt, plain
+    text reply."""
+    monkeypatch.setattr(settings, "CLOUD_SEND_VIDEO_MAX_MB", 10)
+    monkeypatch.setattr(settings, "LOCAL_SEND_VIDEO_MAX_MB", 500)
+    message = make_message("https://example.com/x", chat_type="private")
+    result = DownloadResult(text="caption", media_path="/tmp/clip.mp4")
+    with (
+        patch("app.bot.process_url_request", new=AsyncMock(return_value=result)),
+        patch("app.bot.os.path.getsize", return_value=100 * 1024 * 1024),
+        patch("app.bot.is_telegram_api_reachable", return_value=False),
+        patch("app.bot._reply_with_video", new=AsyncMock()) as mock_video,
+    ):
+        await handle_message(message)
+    mock_video.assert_not_awaited()
+    message.reply.assert_awaited_once_with("caption", parse_mode=ParseMode.HTML)
+
+
+# #UFB-0036, #BUG-0068
+@pytest.mark.asyncio
+async def test_failing_fallback_reply_does_not_escape_handler(caplog):
+    message = make_message("https://example.com/x", chat_type="private")
+    message.reply = AsyncMock(side_effect=RuntimeError("network down"))
+    result = DownloadResult(text="caption", media_path="/tmp/clip.mp4")
+    with (
+        patch("app.bot.process_url_request", new=AsyncMock(return_value=result)),
+        patch("app.bot.os.path.getsize", return_value=1024),
+        patch("app.bot._reply_with_video", new=AsyncMock(return_value=False)),
+    ):
+        await handle_message(message)  # must not raise
+    message.reply.assert_awaited_once()
+    assert "Failed to deliver result" in caplog.text
+
+
 # --- UFB-0036: _fits_native_send tiering ---
 
 
@@ -320,6 +358,29 @@ async def test_reply_with_video_sends_with_probe_info(tmp_path):
     assert kwargs["height"] == 200
     assert kwargs["duration"] == 5
     assert kwargs["caption"] == "caption"
+
+
+# #UFB-0036, #BUG-0073
+@pytest.mark.asyncio
+async def test_reply_with_video_passes_thumbnail_kwarg(tmp_path):
+    from aiogram.types import FSInputFile
+
+    clip = tmp_path / "clip.mp4"
+    clip.write_bytes(b"0" * 1024)
+    thumb = tmp_path / "clip.jpg"
+    thumb.write_bytes(b"jpg")
+    message = MagicMock()
+    message.reply_video = AsyncMock()
+
+    with (
+        patch("app.bot.media.probe", return_value=None),
+        patch("app.bot.preview.preview_path", return_value=str(thumb)),
+    ):
+        assert await _reply_with_video(message, str(clip), "caption") is True
+
+    _, kwargs = message.reply_video.await_args
+    assert isinstance(kwargs["thumbnail"], FSInputFile)
+    assert kwargs["thumbnail"].path == str(thumb)
 
 
 @pytest.mark.asyncio
@@ -532,6 +593,7 @@ async def test_start_polling_picks_local_backend_when_reachable(monkeypatch):
         patch("app.bot.dp.start_polling", new=AsyncMock()),
     ):
         bot_module.start_polling()
+        await asyncio.wait_for(bot_module.polling_task, 5)
         assert bot_module._using_local_api is True
         await bot_module.stop_polling()
 
@@ -549,6 +611,7 @@ async def test_start_polling_falls_back_to_cloud_when_local_unreachable(monkeypa
         patch("app.bot.dp.start_polling", new=AsyncMock()),
     ):
         bot_module.start_polling()
+        await asyncio.wait_for(bot_module.polling_task, 5)
         assert bot_module._using_local_api is False
         await bot_module.stop_polling()
 

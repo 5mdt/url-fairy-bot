@@ -2,9 +2,15 @@
 
 ## Unreleased
 
+## 2.10.0 (2026-10-02)
+
+- Fix: `#BUG-0068` — a failing reply for one URL no longer escapes `handle_message`; it is logged and the next URL is processed. `#BUG-0070` — `_fits_native_send`'s docstring now matches its reachability-only gating. `#BUG-0075` — `start_polling` probes the local Bot API server off the event loop. `#BUG-0073` — added the missing UFB-0036 thumbnail and declined-send tests.
+- Fix: `#BUG-0033` — a failed download with no mirror alternative now says "I cannot download this." and links only the original, instead of claiming the link "can be parsed better". `#BUG-0031` — Instagram's `/p/` and `/reel/` scope is now documented as deliberate. `#BUG-0039` — `sanitize_subfolder_name` renamed `url_to_filename_stem`. `#BUG-0040`, `#BUG-0041`, `#BUG-0045` — small cleanups in `app/url_processing.py` and `app/download.py`.
+- Fix: `#BUG-0038` — `LOG_LEVEL` is validated against `DEBUG`/`INFO`/`WARNING`/`ERROR` (case-insensitive) at settings load. `#BUG-0069` — the 10 MB `CLOUD_SEND_VIDEO_MAX_MB` default is documented as intentional. `#BUG-0074` — removed the redundant `networks: [default]` and documented the `CACHE_DIR`/mount coupling. `#BUG-0058` — README API example matches the real HTML reply.
+- Chore: `#BUG-0050` dropped unused `pyyaml`; `#BUG-0077` removed the nonexistent `test-cov` from `.PHONY`; `#BUG-0055` set `asyncio_mode = strict`; `#BUG-0056` deleted stale `tests/test_messages.yml`; `#BUG-0049` closed as not a bug (the `name-tests-test` hook already accepts `*_test.py`).
 - `#UFB-0040` — opt-in loudness normalization of near-silent downloads (`AUDIO_NORMALIZE_ENABLED`, `AUDIO_NORMALIZE_BELOW_LUFS`): audio quieter than the threshold is normalized to −16 LUFS with the video stream copied untouched. Promotes `#TODO-0001`.
 
-## 2.9.0
+## 2.9.0 (2026-10-01)
 
 - `#UFB-0028` — main now publishes the `stable` image tag (was `latest`; `IMAGE_TAG` default follows), and the pipeline also runs on a weekly cron (Sunday, configure in Woodpecker) besides push/tag/manual.
 - `#UFB-0039` — TikTok photo posts (`/photo/` URLs) are sent as a photo album plus the post's audio instead of falling back to a mirror link.

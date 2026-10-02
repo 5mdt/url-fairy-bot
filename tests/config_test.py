@@ -144,3 +144,17 @@ def test_audio_normalize_parses_env(reload_settings):
     )
     assert settings.AUDIO_NORMALIZE_ENABLED is True
     assert settings.AUDIO_NORMALIZE_BELOW_LUFS == -35.5
+
+
+# --- BUG-0038: LOG_LEVEL validation ---
+
+
+# #UFB-0024, #BUG-0038
+def test_log_level_rejects_invalid_value(reload_settings):
+    with pytest.raises(pydantic.ValidationError):
+        reload_settings(LOG_LEVEL="VERBOSE")
+
+
+# #UFB-0024, #BUG-0038
+def test_log_level_accepts_lowercase(reload_settings):
+    assert reload_settings(LOG_LEVEL="debug").LOG_LEVEL == "DEBUG"

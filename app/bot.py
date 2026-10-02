@@ -85,7 +85,7 @@ def _on_polling_done(task: asyncio.Task) -> None:
         logger.error("Bot polling stopped unexpectedly", exc_info=exc)
 
 
-# #UFB-0020, #UFB-0036
+# #UFB-0020, #UFB-0036, #BUG-0075
 def start_polling() -> None:
     """Start the bot's polling loop as an observable background task, on
     the local Bot API server if TELEGRAM_API_URL is configured and
@@ -98,13 +98,23 @@ def start_polling() -> None:
     an explicit `logOut` call against the local server first (see
     docs/telegram-bot-api-setup.md) — a dead local server can't answer
     that, so an earlier attempt at an automatic swap was removed."""
-    global bot, polling_task, _using_local_api
+    global polling_task
+    polling_task = asyncio.create_task(_pick_backend_and_poll())
+    polling_task.add_done_callback(_on_polling_done)
+
+
+# #UFB-0020, #UFB-0036, #BUG-0075
+async def _pick_backend_and_poll() -> None:
+    """Pick the backend (the blocking reachability probe runs off the
+    event loop via asyncio.to_thread, like every other call site), then
+    poll on it."""
+    global bot, _using_local_api
     _using_local_api = (
-        bool(settings.TELEGRAM_API_URL) and is_telegram_api_reachable() is True
+        bool(settings.TELEGRAM_API_URL)
+        and await asyncio.to_thread(is_telegram_api_reachable) is True
     )
     bot = _make_bot(_using_local_api)
-    polling_task = asyncio.create_task(dp.start_polling(bot))
-    polling_task.add_done_callback(_on_polling_done)
+    await dp.start_polling(bot)
 
 
 # #UFB-0020
@@ -131,21 +141,17 @@ async def start(message: Message):
     await message.reply(messages.start(), parse_mode=ParseMode.HTML)
 
 
-# #UFB-0036
+# #UFB-0036, #BUG-0070
 async def _fits_native_send(size_mb: float) -> bool:
     """Whether a file this size should be attempted as a native video
-    reply. A Telegram bot token is logged into exactly one Bot API backend
-    at a time (cloud xor a self-hosted local one — the local server
-    rejects requests with "Unauthorized" until the bot logs out of the
-    cloud API, and vice versa), so this never picks between two backends
-    per message; it only decides whether the one backend currently active
-    should be trusted with a file this size:
-    - at or under CLOUD_SEND_VIDEO_MAX_MB: always — small enough that
-      either backend handles it.
+    reply. Gating is by size tier and reachability only; it does not look
+    at which backend is currently polling (deliberate, see UFB-0036):
+    - at or under CLOUD_SEND_VIDEO_MAX_MB: always.
     - up to LOCAL_SEND_VIDEO_MAX_MB: only when a local server is
-      configured (TELEGRAM_API_URL) AND currently reachable — otherwise
-      whatever backend is active (cloud, or a dead local server) has no
-      business being handed a file this size.
+      configured (TELEGRAM_API_URL) AND currently reachable
+      (`is_telegram_api_reachable`). The bot may still be polling on the
+      cloud API after the local server recovers (no in-process backend
+      swap); the send then fails and falls back to the text reply.
     - above LOCAL_SEND_VIDEO_MAX_MB: never."""
     if size_mb <= settings.CLOUD_SEND_VIDEO_MAX_MB:
         return True
@@ -282,7 +288,7 @@ async def _deliver_result(message: Message, result: str | DownloadResult) -> Non
     await message.reply(text, parse_mode=ParseMode.HTML)
 
 
-# #UFB-0002, #UFB-0003, #UFB-0004, #UFB-0005, #UFB-0006, #UFB-0014
+# #UFB-0002, #UFB-0003, #UFB-0004, #UFB-0005, #UFB-0006, #UFB-0014, #BUG-0068
 @dp.message(F.text)
 async def handle_message(message: Message):
     """
@@ -325,3 +331,7 @@ async def handle_message(message: Message):
         except ValidationError as e:
             logger.warning(f"Validation error for URL: {url} - {e}")
             await message.reply(messages.invalid_url(), parse_mode=ParseMode.HTML)
+        except Exception:
+            # A failing reply (or delivery) for one URL must never escape
+            # the handler (#BUG-0068); log it and move on to the next URL.
+            logger.exception(f"Failed to deliver result for URL: {url}")

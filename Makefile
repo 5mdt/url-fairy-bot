@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install sync fmt lint yamllint check test test-cov run pre-commit ddd \
+.PHONY: help install sync fmt lint yamllint check test run pre-commit ddd \
 	docker-build docker-up docker-down docker-logs docker-restart deploy-check clean
 
 UV := uv

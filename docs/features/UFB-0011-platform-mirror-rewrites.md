@@ -20,7 +20,7 @@ Links to Spotify, Instagram, Reddit, Threads, TikTok, Twitter/X, and YouTube are
 
 Known gap:
 
-- Instagram is matched only under `/p/` and `/reel/`, unlike every other platform's whole-domain match — a profile or story link gets no rewrite (see `TODO.md`, Business logic).
+- Instagram is matched only under `/p/` and `/reel/`, unlike every other platform's whole-domain match — a profile or story link gets no rewrite. This is deliberate (`#BUG-0031`): the Instagram mirror only serves posts and reels, so rewriting other paths would produce broken links.
 
 Fixed:
 

@@ -86,8 +86,9 @@ def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
             for k, v in parse_qsl(parsed.query, keep_blank_values=True)
             if k in CONTENT_QUERY_PARAMS
         ]
-        redirected_url = urlunparse(parsed._replace(query=urlencode(kept_params)))
-        if not urlparse(redirected_url).scheme or not urlparse(redirected_url).netloc:
+        redirected = parsed._replace(query=urlencode(kept_params))
+        redirected_url = urlunparse(redirected)
+        if not redirected.scheme or not redirected.netloc:
             logger.warning(f"Invalid redirect URL: {redirected_url}")
             return url
         return redirected_url
@@ -165,6 +166,9 @@ def apply_rewrite_map(final_url: str) -> str:
             rf"https://{settings.YOUTUBE_SHORT_MIRROR_DOMAIN}/\1",
         ),
     ]
+    # Instagram is deliberately scoped to /p/ and /reel/ (unlike the
+    # domain-wide entries): the mirror only serves posts and reels, so
+    # profile/story links would break if rewritten (#BUG-0031).
     for pattern, replacement in rewrite_map:
         if re.match(pattern, final_url):
             return re.sub(pattern, replacement, final_url, count=1)
@@ -211,7 +215,7 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
             return await _attempt_gallery_download(final_url)
         video_os_path = await yt_dlp_download(final_url)
         if video_os_path:
-            video_path = os.path.join(*video_os_path.split(os.path.sep)[-1:])
+            video_path = os.path.basename(video_os_path)
             try:
                 preview.generate_preview(video_os_path)
             except OSError as e:
@@ -265,5 +269,8 @@ async def process_url_request(
         # Check if modified URL is the same as the original
         if modified_url == final_url and is_group_chat:
             return None  # Silent response for unmodified URLs in group/supergroup
+
+        if modified_url == final_url:
+            return messages.download_failed(final_url)
 
         return messages.download_failed_mirror(modified_url, final_url)

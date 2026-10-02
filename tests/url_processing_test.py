@@ -576,6 +576,27 @@ async def test_process_url_request_allowed_download_unsupported_no_rewrite_group
     assert result is None
 
 
+# #UFB-0013, #BUG-0033
+@pytest.mark.asyncio
+async def test_process_url_request_download_failed_no_rewrite_private_states_failure(
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "DOWNLOAD_ALLOWED_DOMAINS", "example.com")
+    with (
+        patch(
+            "app.url_processing.follow_redirects", return_value="https://example.com/x"
+        ),
+        patch(
+            "app.url_processing.yt_dlp_download",
+            new=AsyncMock(side_effect=UnsupportedUrlError("nope")),
+        ),
+    ):
+        result = await process_url_request("https://example.com/x", is_group_chat=False)
+    assert "parsed better" not in result
+    assert "cannot download" in result
+    assert 'href="https://example.com/x"' in result
+
+
 # --- UFB-0039: TikTok photo galleries ---
 
 

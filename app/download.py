@@ -39,6 +39,10 @@ def _write_merged_cookies(dest: str, cookie_files: list[str]) -> None:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     for line in f:
+                        # Drop real comments ("# ..." or a bare "#") but keep
+                        # a single "#" with no space: Netscape jars mark
+                        # HttpOnly cookies as "#HttpOnly_<domain>\t...", and
+                        # those are data lines yt-dlp must still read.
                         if not line.startswith("# ") and line.strip() != "#":
                             out.write(line)
             except Exception as e:
@@ -160,7 +164,7 @@ def _map_download_errors(url: str, e: Exception) -> Exception:
 
 # #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040
 async def yt_dlp_download(url: str) -> str:
-    stem = sanitize_subfolder_name(url)
+    stem = url_to_filename_stem(url)
     cached_path = _cached_media_path(stem)
 
     if cached_path:
@@ -252,7 +256,7 @@ def _cached_gallery(gallery_dir: str, audio_path: str) -> GalleryDownload | None
 async def tiktok_gallery_download(url: str) -> GalleryDownload:
     """Download a TikTok photo post's images and audio into the cache.
     Raises UnsupportedUrlError when the post has no images."""
-    stem = sanitize_subfolder_name(url)
+    stem = url_to_filename_stem(url)
     gallery_dir = os.path.join(settings.CACHE_DIR, "gallery", stem)
     audio_path = os.path.join(settings.CACHE_DIR, f"{stem}.mp3")
 
@@ -295,5 +299,6 @@ async def tiktok_gallery_download(url: str) -> GalleryDownload:
 
 
 # #UFB-0016
-def sanitize_subfolder_name(url: str) -> str:
+def url_to_filename_stem(url: str) -> str:
+    """Cache filename stem (no extension) derived from the whole URL."""
     return "".join(c if c.isalnum() else "_" for c in url)

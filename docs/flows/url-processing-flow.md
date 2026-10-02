@@ -22,7 +22,7 @@ flowchart TD
     M -- "UnsupportedUrlError<br/>or any other failure" --> O["apply_rewrite_map(final_url)<br/>(same mirror rewrite as above)"]
     O --> P{"Rewrite changed the URL?"}
     P -- "no, and group chat" --> Q["Stay silent"]
-    P -- "no, and private chat" --> R["Reply: link 'can be parsed better'<br/>(same as original —<br/>see BUG-0033)<br/>+ original link"]
+    P -- "no, and private chat" --> R["Reply: download failed<br/>(no mirror claim)<br/>+ original link"]
     P -- yes --> S["Reply: mirror link parses better<br/>+ modified link + original link"]
 ```
 

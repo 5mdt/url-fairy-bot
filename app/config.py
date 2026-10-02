@@ -1,7 +1,9 @@
 # config.py
 import os
+from typing import Literal
 
 from dotenv import load_dotenv
+from pydantic import field_validator
 from pydantic_settings import BaseSettings  # Updated import
 
 load_dotenv()
@@ -43,7 +45,14 @@ class Settings(BaseSettings):
     AUDIO_NORMALIZE_BELOW_LUFS: float = float(
         os.getenv("AUDIO_NORMALIZE_BELOW_LUFS", -40)
     )
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
+    # #BUG-0038: restricted so a typo fails at settings load, not in basicConfig
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    @field_validator("LOG_LEVEL", mode="before")
+    @classmethod
+    def _upper_log_level(cls, v):
+        return v.upper() if isinstance(v, str) else v
+
     # #UFB-0037
     MESSAGE_LOCALE: str = os.getenv("MESSAGE_LOCALE", "en")
 
