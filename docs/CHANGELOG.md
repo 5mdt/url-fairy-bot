@@ -4,6 +4,7 @@
 
 ## 2.10.0 (2026-10-02)
 
+- Fix: `#BUG-0006` — redirect resolution, the yt-dlp download, preview generation and the `ffmpeg`/`ffprobe` calls now run in worker threads, so one slow request no longer stalls every other chat.
 - Fix: `#BUG-0014` — cache filename stems over 200 bytes are truncated and end in a sha256 suffix of the URL (short URLs are unchanged, so existing caches stay valid), and concurrent requests for the same uncached URL now share one download through a per-URL lock.
 - Fix: `#BUG-0079` — the watch page for a TikTok photo post now shows an `<audio>` player and the post's images (`og:image` is the first one) instead of treating the mp3 as a video. `#BUG-0032` — Spotify links skip the pointless yt-dlp attempt and go straight to the mirror link.
 - Fix: `#BUG-0043` — the container no longer runs as root. `entrypoint.sh` starts as root only to `chown` `CACHE_DIR` and `COOKIES_DIR` to the new `app` user (uid 1000), so volumes from earlier root-running versions need no manual fix, then drops to `app` with `su-exec`. `#BUG-0067` — nginx now serves the generated `404.html`, through an inline `configs:` entry in `docker-compose.yml` (needs a Compose version with `configs.content`).

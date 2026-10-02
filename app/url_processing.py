@@ -1,5 +1,6 @@
 # url_processing.py
 
+import asyncio
 import logging
 import os
 import re
@@ -225,7 +226,8 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
         if video_os_path:
             video_path = os.path.basename(video_os_path)
             try:
-                preview.generate_preview(video_os_path)
+                # #BUG-0006: ffmpeg runs off the event loop
+                await asyncio.to_thread(preview.generate_preview, video_os_path)
             except OSError as e:
                 logger.warning(f"Failed to generate preview for {video_path}: {e}")
             try:
@@ -251,7 +253,8 @@ async def process_url_request(
     url = str(url)  # Ensure url is a string
 
     # Follow redirects first to get the final URL
-    final_url = follow_redirects(url)
+    # #BUG-0006: blocking requests.head, kept off the event loop
+    final_url = await asyncio.to_thread(follow_redirects, url)
 
     # Check if the domain is allowed
     if not is_domain_allowed(final_url):

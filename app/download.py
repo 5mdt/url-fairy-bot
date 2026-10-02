@@ -186,6 +186,14 @@ async def _url_lock(stem: str):
             _URL_LOCKS[stem] = (lock, users - 1)
 
 
+# #BUG-0006, #UFB-0015
+def _run_ydl_download(ydl_opts: dict, url: str) -> None:
+    """The blocking yt-dlp download, including the cookie setup and the jar
+    lock acquisition (#UFB-0038); always called via asyncio.to_thread."""
+    with _youtube_dl(ydl_opts) as ydl:
+        ydl.download([url])
+
+
 # #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040, #BUG-0014
 async def yt_dlp_download(url: str) -> str:
     stem = url_to_filename_stem(url)
@@ -211,13 +219,12 @@ async def _yt_dlp_download_locked(url: str, stem: str) -> str:
             "merge_output_format": "mp4",
             "postprocessors": [{"key": "FFmpegVideoRemuxer", "preferedformat": "mp4"}],
         }
-        with _youtube_dl(ydl_opts) as ydl:
-            ydl.download([url])
+        await asyncio.to_thread(_run_ydl_download, ydl_opts, url)
 
         logger.info(f"Download successful for URL: {url}")
         path = _cached_media_path(stem)
         if path:
-            media.normalize_if_quiet(path)
+            await asyncio.to_thread(media.normalize_if_quiet, path)
         return path
 
     except Exception as e:

@@ -184,7 +184,8 @@ async def _reply_with_video(message: Message, media_path: str, caption: str) -> 
     (`str | InputFile`), so a bare path there fails pydantic validation
     regardless of backend; the thumbnail is small (≤200 KB) anyway, so
     always uploading it costs nothing."""
-    info = media.probe(media_path) or {}
+    # #BUG-0006: ffprobe runs off the event loop
+    info = await asyncio.to_thread(media.probe, media_path) or {}
     thumb_path = preview.preview_path(os.path.basename(media_path))
     thumbnail = FSInputFile(thumb_path) if os.path.exists(thumb_path) else None
 
