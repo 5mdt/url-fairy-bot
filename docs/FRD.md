@@ -65,7 +65,7 @@ The two mermaid flowcharts are the source of truth for how the features below fi
 - [ ] [UFB-0052. Cobalt fallback downloader](features/UFB-0052-cobalt-fallback-downloader.md) - `#download` `#fallback`
 - [ ] [UFB-0053. Multiple cookie jars](features/UFB-0053-multiple-cookie-jars.md) - `#cookies` `#download`
 - [ ] [UFB-0054. Maintainer alerts](features/UFB-0054-maintainer-alerts.md) - `#ops` `#telegram` `#config`
-- [ ] [UFB-0055. Progress chat action](features/UFB-0055-progress-chat-action.md) - `#telegram` `#ux`
+- [X] [UFB-0055. Progress chat action](features/UFB-0055-progress-chat-action.md) - `#telegram` `#ux`
 - [ ] [UFB-0056. API authentication and rate limiting](features/UFB-0056-api-auth-rate-limiting.md) - `#api` `#ops` `#config`
 
 ## Deprecated

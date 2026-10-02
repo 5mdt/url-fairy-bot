@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import shutil
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
@@ -246,9 +247,11 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
     return None
 
 
-# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014
+# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014, #UFB-0055
 async def process_url_request(
-    url: str, is_group_chat: bool = False
+    url: str,
+    is_group_chat: bool = False,
+    on_download: Callable[[], None] | None = None,
 ) -> str | DownloadResult | None:
     url = str(url)  # Ensure url is a string
 
@@ -273,6 +276,8 @@ async def process_url_request(
     try:
         if _domain_in_allowlist(final_url, ",".join(NO_DOWNLOAD_DOMAINS)):
             raise UnsupportedUrlError("Known non-video platform.")
+        if on_download:
+            on_download()  # #UFB-0055: a reply is coming; show progress
         response = await attempt_download(final_url)
         if response:
             return response

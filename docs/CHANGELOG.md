@@ -4,6 +4,7 @@
 
 ## 2.10.0 (2026-10-02)
 
+- UFB-0055: the chat shows "typing…" while the bot resolves and downloads a link, and "sending a video…" during a native video upload (refreshed every 4 s, cancelled on success or failure; quiet group links and instant cache hits show nothing).
 - Fix: `#BUG-0006` — redirect resolution, the yt-dlp download, preview generation and the `ffmpeg`/`ffprobe` calls now run in worker threads, so one slow request no longer stalls every other chat.
 - Fix: `#BUG-0014` — cache filename stems over 200 bytes are truncated and end in a sha256 suffix of the URL (short URLs are unchanged, so existing caches stay valid), and concurrent requests for the same uncached URL now share one download through a per-URL lock.
 - Fix: `#BUG-0079` — the watch page for a TikTok photo post now shows an `<audio>` player and the post's images (`og:image` is the first one) instead of treating the mp3 as a video. `#BUG-0032` — Spotify links skip the pointless yt-dlp attempt and go straight to the mirror link.
