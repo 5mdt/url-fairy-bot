@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `#UFB-0056` — `POST /process_url/` takes an `X-API-Key` header checked against `API_KEY` (comma-separated, unset keeps it open with a startup warning) and is rate limited per client (`API_RATE_LIMIT` / `API_RATE_WINDOW`, `429` + `Retry-After`); `X-Forwarded-For` is trusted only from `TRUSTED_PROXIES`. `/health` stays open.
+
 - Fix: `#BUG-0012` — `POST /process_url/` now validates `url` as an HTTP(S) URL, and redirect resolution refuses any target (first URL or any redirect hop) that resolves to a private, loopback, link-local, reserved, multicast or unspecified address. The API answers `400`; the bot replies with the invalid-URL message in private chats and stays silent in groups.
 
 ## 2.10.0 (2026-10-02)

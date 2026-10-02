@@ -25,6 +25,11 @@ class Settings(BaseSettings):
     DOWNLOAD_ALLOWED_DOMAINS: str = ""
     REWRITE_ALLOWED_DOMAINS: str = ""
     FOLLOW_REDIRECT_TIMEOUT: int = 10
+    # #UFB-0056
+    API_KEY: str = ""  # comma-separated; empty = endpoint open
+    API_RATE_LIMIT: int = 30  # requests per window per client; 0 disables
+    API_RATE_WINDOW: int = 60  # seconds
+    TRUSTED_PROXIES: str = ""  # comma-separated IPs/CIDRs
     COOKIE_JAR_ENABLED: bool = False
     # #UFB-0038
     COOKIE_KEEPALIVE_INTERVAL: int = 3600

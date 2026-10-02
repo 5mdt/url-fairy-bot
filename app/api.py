@@ -3,11 +3,11 @@
 
 import asyncio
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, HttpUrl
 
-from . import cleanup, cookie_keepalive, pages
+from . import api_security, cleanup, cookie_keepalive, pages
 from .bot import is_polling_alive, is_telegram_api_reachable
 from .config import settings
 from .url_processing import BlockedUrlError, DownloadResult, process_url_request
@@ -22,9 +22,12 @@ class URLRequest(BaseModel):
 api_router = APIRouter()
 
 
-# #UFB-0019
-@api_router.post("/process_url/")
+# #UFB-0019, #UFB-0056
+@api_router.post(
+    "/process_url/", dependencies=[Depends(api_security.require_api_access)]
+)
 async def process_url(request: URLRequest = Body(...)):
+    """#UFB-0019, #UFB-0056, #BUG-0012"""
     try:
         result = await process_url_request(str(request.url))
         data = result.text if isinstance(result, DownloadResult) else result

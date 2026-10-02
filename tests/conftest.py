@@ -33,6 +33,10 @@ def pinned_settings(monkeypatch):
     monkeypatch.setattr(settings, "CACHE_DIR", "/tmp/url-fairy-bot-cache-test/")
     monkeypatch.setattr(settings, "COOKIES_DIR", "/tmp/url-fairy-bot-cookies-test/")
     monkeypatch.setattr(settings, "FOLLOW_REDIRECT_TIMEOUT", 10)
+    monkeypatch.setattr(settings, "API_KEY", "")
+    monkeypatch.setattr(settings, "API_RATE_LIMIT", 30)
+    monkeypatch.setattr(settings, "API_RATE_WINDOW", 60)
+    monkeypatch.setattr(settings, "TRUSTED_PROXIES", "")
     monkeypatch.setattr(settings, "COOKIE_JAR_ENABLED", False)
     monkeypatch.setattr(settings, "COOKIE_KEEPALIVE_INTERVAL", 3600)
     monkeypatch.setattr(settings, "COOKIE_HEALTHCHECK", False)
@@ -80,3 +84,11 @@ def no_dns(monkeypatch):
         return [(2, 1, 6, "", (ip, port or 0))]
 
     monkeypatch.setattr("socket.getaddrinfo", _fake)
+
+
+@pytest.fixture(autouse=True)
+def fresh_rate_limiter():
+    """#UFB-0056: the limiter is process-global; start every test empty."""
+    from app import api_security
+
+    api_security.reset_rate_limiter()
