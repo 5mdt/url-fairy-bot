@@ -18,7 +18,7 @@ from app import media, messages, preview
 from app.config import settings
 
 from .models import URLMessage
-from .url_processing import DownloadResult, process_url_request
+from .url_processing import BlockedUrlError, DownloadResult, process_url_request
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ def _on_polling_done(task: asyncio.Task) -> None:
         logger.error("Bot polling stopped unexpectedly", exc_info=exc)
 
 
-# #UFB-0020, #UFB-0036
+# #UFB-0020, #UFB-0036, #BUG-0075
 def start_polling() -> None:
     """Start the bot's polling loop as an observable background task, on
     the local Bot API server if TELEGRAM_API_URL is configured and
@@ -98,13 +98,23 @@ def start_polling() -> None:
     an explicit `logOut` call against the local server first (see
     docs/telegram-bot-api-setup.md) — a dead local server can't answer
     that, so an earlier attempt at an automatic swap was removed."""
-    global bot, polling_task, _using_local_api
+    global polling_task
+    polling_task = asyncio.create_task(_pick_backend_and_poll())
+    polling_task.add_done_callback(_on_polling_done)
+
+
+# #UFB-0020, #UFB-0036, #BUG-0075
+async def _pick_backend_and_poll() -> None:
+    """Pick the backend (the blocking reachability probe runs off the
+    event loop via asyncio.to_thread, like every other call site), then
+    poll on it."""
+    global bot, _using_local_api
     _using_local_api = (
-        bool(settings.TELEGRAM_API_URL) and is_telegram_api_reachable() is True
+        bool(settings.TELEGRAM_API_URL)
+        and await asyncio.to_thread(is_telegram_api_reachable) is True
     )
     bot = _make_bot(_using_local_api)
-    polling_task = asyncio.create_task(dp.start_polling(bot))
-    polling_task.add_done_callback(_on_polling_done)
+    await dp.start_polling(bot)
 
 
 # #UFB-0020
@@ -131,21 +141,67 @@ async def start(message: Message):
     await message.reply(messages.start(), parse_mode=ParseMode.HTML)
 
 
-# #UFB-0036
+# #UFB-0055: Telegram clears a chat action after ~5 s, so refresh sooner.
+CHAT_ACTION_INTERVAL_SECONDS = 4.0
+# The first send waits this long, so an instant (cache-hit) reply shows nothing.
+CHAT_ACTION_START_DELAY_SECONDS = 0.5
+
+
+# #UFB-0055
+class ChatActionIndicator:
+    """Keeps a Telegram chat action ("typing", "upload_video") alive in a
+    background task until `stop()`. `send(action)` is an async callable;
+    a failing send is logged and never propagates. Change `action` while
+    running to switch what is shown."""
+
+    def __init__(self, send, interval: float | None = None, delay: float | None = None):
+        self._send = send
+        self._interval = interval
+        self._delay = delay
+        self._task: asyncio.Task | None = None
+        self.action = "typing"
+
+    async def _run(self) -> None:
+        interval = self._interval
+        if interval is None:
+            interval = CHAT_ACTION_INTERVAL_SECONDS
+        delay = self._delay
+        if delay is None:
+            delay = CHAT_ACTION_START_DELAY_SECONDS
+        await asyncio.sleep(delay)
+        while True:
+            try:
+                await self._send(self.action)
+            except Exception as e:
+                logger.debug(f"Failed to send chat action {self.action}: {e}")
+            await asyncio.sleep(interval)
+
+    def start(self) -> None:
+        if self._task is None:
+            self._task = asyncio.create_task(self._run())
+
+    async def stop(self) -> None:
+        task, self._task = self._task, None
+        if task is None:
+            return
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+
+# #UFB-0036, #BUG-0070
 async def _fits_native_send(size_mb: float) -> bool:
     """Whether a file this size should be attempted as a native video
-    reply. A Telegram bot token is logged into exactly one Bot API backend
-    at a time (cloud xor a self-hosted local one — the local server
-    rejects requests with "Unauthorized" until the bot logs out of the
-    cloud API, and vice versa), so this never picks between two backends
-    per message; it only decides whether the one backend currently active
-    should be trusted with a file this size:
-    - at or under CLOUD_SEND_VIDEO_MAX_MB: always — small enough that
-      either backend handles it.
+    reply. Gating is by size tier and reachability only; it does not look
+    at which backend is currently polling (deliberate, see UFB-0036):
+    - at or under CLOUD_SEND_VIDEO_MAX_MB: always.
     - up to LOCAL_SEND_VIDEO_MAX_MB: only when a local server is
-      configured (TELEGRAM_API_URL) AND currently reachable — otherwise
-      whatever backend is active (cloud, or a dead local server) has no
-      business being handed a file this size.
+      configured (TELEGRAM_API_URL) AND currently reachable
+      (`is_telegram_api_reachable`). The bot may still be polling on the
+      cloud API after the local server recovers (no in-process backend
+      swap); the send then fails and falls back to the text reply.
     - above LOCAL_SEND_VIDEO_MAX_MB: never."""
     if size_mb <= settings.CLOUD_SEND_VIDEO_MAX_MB:
         return True
@@ -154,8 +210,13 @@ async def _fits_native_send(size_mb: float) -> bool:
     return bool(await asyncio.to_thread(is_telegram_api_reachable))
 
 
-# #UFB-0036
-async def _reply_with_video(message: Message, media_path: str, caption: str) -> bool:
+# #UFB-0036, #UFB-0055
+async def _reply_with_video(
+    message: Message,
+    media_path: str,
+    caption: str,
+    indicator: ChatActionIndicator | None = None,
+) -> bool:
     """Best-effort native video reply for `media_path`. Returns True once
     sent; any failure (probe error, send error) returns False so the
     caller falls back to a plain text reply — this must never be a new
@@ -178,12 +239,16 @@ async def _reply_with_video(message: Message, media_path: str, caption: str) -> 
     (`str | InputFile`), so a bare path there fails pydantic validation
     regardless of backend; the thumbnail is small (≤200 KB) anyway, so
     always uploading it costs nothing."""
-    info = media.probe(media_path) or {}
+    # #BUG-0006: ffprobe runs off the event loop
+    info = await asyncio.to_thread(media.probe, media_path) or {}
     thumb_path = preview.preview_path(os.path.basename(media_path))
     thumbnail = FSInputFile(thumb_path) if os.path.exists(thumb_path) else None
 
     videos = [media_path] if _using_local_api else []
     videos.append(FSInputFile(media_path))
+
+    if indicator:
+        indicator.action = "upload_video"  # #UFB-0055
 
     last_error: Exception | None = None
     for video in videos:
@@ -248,8 +313,12 @@ async def _reply_with_gallery(message: Message, result: DownloadResult) -> bool:
     return True
 
 
-# #UFB-0014, #UFB-0036, #UFB-0039
-async def _deliver_result(message: Message, result: str | DownloadResult) -> None:
+# #UFB-0014, #UFB-0036, #UFB-0039, #UFB-0055
+async def _deliver_result(
+    message: Message,
+    result: str | DownloadResult,
+    indicator: ChatActionIndicator | None = None,
+) -> None:
     """Reply with `result`: a native video when its media_path is small
     enough to attempt and the send succeeds; otherwise plain text — a
     "too large to upload" notice above LOCAL_SEND_VIDEO_MAX_MB, or the
@@ -276,13 +345,13 @@ async def _deliver_result(message: Message, result: str | DownloadResult) -> Non
             return
 
         if size_mb is not None and await _fits_native_send(size_mb):
-            if await _reply_with_video(message, media_path, text):
+            if await _reply_with_video(message, media_path, text, indicator):
                 return
 
     await message.reply(text, parse_mode=ParseMode.HTML)
 
 
-# #UFB-0002, #UFB-0003, #UFB-0004, #UFB-0005, #UFB-0006, #UFB-0014
+# #UFB-0002, #UFB-0003, #UFB-0004, #UFB-0005, #UFB-0006, #UFB-0014, #UFB-0055, #BUG-0068
 @dp.message(F.text)
 async def handle_message(message: Message):
     """
@@ -312,16 +381,37 @@ async def handle_message(message: Message):
             return
 
     for url in urls:
+        indicator = ChatActionIndicator(
+            lambda action: message.bot.send_chat_action(message.chat.id, action)
+        )
         try:
             url_message = URLMessage(
                 url=url, is_group_chat=message.chat.type in GROUP_CHAT_TYPES
             )
+            # #UFB-0055: a group link starts it only once a download is
+            # attempted (process_url_request's on_download), so quiet links
+            # show nothing; a private link shows it from validation on.
+            if not url_message.is_group_chat:
+                indicator.start()
             result = await process_url_request(
-                url_message.url, url_message.is_group_chat
+                url_message.url,
+                url_message.is_group_chat,
+                on_download=indicator.start,
             )
             if result is not None:
-                await _deliver_result(message, result)
+                await _deliver_result(message, result, indicator)
 
         except ValidationError as e:
             logger.warning(f"Validation error for URL: {url} - {e}")
             await message.reply(messages.invalid_url(), parse_mode=ParseMode.HTML)
+        except BlockedUrlError as e:
+            # #BUG-0012: private/loopback target; invalid in DMs, quiet in groups.
+            logger.warning(f"Blocked URL: {url} - {e}")
+            if message.chat.type not in GROUP_CHAT_TYPES:
+                await message.reply(messages.invalid_url(), parse_mode=ParseMode.HTML)
+        except Exception:
+            # A failing reply (or delivery) for one URL must never escape
+            # the handler (#BUG-0068); log it and move on to the next URL.
+            logger.exception(f"Failed to deliver result for URL: {url}")
+        finally:
+            await indicator.stop()

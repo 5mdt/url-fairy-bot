@@ -23,7 +23,7 @@ A `/watch/<file>` page's `og:image` is a JPEG frame extracted from that file's o
 ## Quirks & Decisions
 
 - Quirk: extracting at a fixed timestamp can land on a black frame or a fade-in for some clips. Open: is a smarter frame-picking heuristic worth the complexity, or is "good enough most of the time" acceptable? Logged as [BUG-0062](../BUGS.md).
-- Quirk: `generate_preview` runs synchronously inside `attempt_download`, adding to the reply latency of every successful download. Open: move it off the request path (background task, lazy-on-first-view) if the added latency turns out to matter in practice. Logged as [BUG-0063](../BUGS.md).
+- Quirk: `generate_preview` runs synchronously inside `attempt_download`, adding to the reply latency of every successful download. Open: move it off the request path (background task, lazy-on-first-view) if the added latency turns out to matter in practice. Folded into [BUG-0006](../BUGS.md), which now covers every blocking `ffmpeg` call.
 
 ## Testing
 
@@ -31,6 +31,7 @@ A `/watch/<file>` page's `og:image` is a JPEG frame extracted from that file's o
 
 - `preview_path`/`preview_url` map a media filename to the right path/URL, including percent-encoding.
 - `generate_preview` invokes `ffmpeg` with the expected arguments and destination; a non-zero exit, a missing binary, and a timeout all return `None` without raising.
+- A real `ffmpeg` run through `generate_preview` against the bundled `sample.mp4` writes a JPEG (starts with `FF D8`); skipped when `ffmpeg` is not installed (#BUG-0071).
 - `render_watch_page`: preview file present → `og:image` is the per-file URL; absent → falls back to `/preview.png`; `og:video:type` matches the media's real extension.
 - A preview whose media goes stale is swept with it; an orphaned preview with no media is swept; the sample's preview is protected.
 

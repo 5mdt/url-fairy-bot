@@ -32,6 +32,10 @@ services:
       COOKIE_HEALTHCHECK: ${COOKIE_HEALTHCHECK:-false}
       AUDIO_NORMALIZE_ENABLED: ${AUDIO_NORMALIZE_ENABLED:-false}
       AUDIO_NORMALIZE_BELOW_LUFS: ${AUDIO_NORMALIZE_BELOW_LUFS:--40}
+      API_KEY: ${API_KEY:-}
+      API_RATE_LIMIT: ${API_RATE_LIMIT:-30}
+      API_RATE_WINDOW: ${API_RATE_WINDOW:-60}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
       FOLLOW_REDIRECT_TIMEOUT: ${FOLLOW_REDIRECT_TIMEOUT:-10}
       DOWNLOAD_ALLOWED_DOMAINS: ${DOWNLOAD_ALLOWED_DOMAINS:-}
       REWRITE_ALLOWED_DOMAINS: ${REWRITE_ALLOWED_DOMAINS:-}
@@ -52,6 +56,7 @@ services:
         max-file: "3"
         max-size: "1m"
     volumes:
+      # The mount path must match CACHE_DIR above (#BUG-0074).
       - cache:/tmp/url-fairy-bot-cache/
       - ${GLOBAL_DATA_FOLDER:-/Data}/url-fairy-bot/config:/config
     ports:
@@ -72,7 +77,8 @@ services:
       traefik.http.routers.url-fairy-bot.rule: Host(`${BASE_URL:-localhost}`)
       traefik.http.routers.url-fairy-bot.service: url-fairy-bot
       traefik.http.routers.url-fairy-bot.tls: true
-      traefik.http.routers.url-fairy-bot.tls.certresolver: ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
+      traefik.http.routers.url-fairy-bot.tls.certresolver: >-
+        ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
       traefik.http.services.url-fairy-bot.loadbalancer.server.port: 80
     ports:
       - ${PUBLIC_PORT:-80:80}
@@ -82,8 +88,13 @@ services:
       - traefik_default
     volumes:
       - cache:/usr/share/nginx/html:ro
+    # #BUG-0067: serve the app-generated 404 page (UFB-0025/UFB-0033)
+    configs:
+      - source: nginx_default_conf
+        target: /etc/nginx/conf.d/default.conf
   # Optional: a self-hosted Telegram Bot API server in local mode, raising
-  # the video-send ceiling above the cloud API's 50 MB (see
+  # the video-send ceiling above the cloud API's 50 MB (the default
+  # CLOUD_SEND_VIDEO_MAX_MB is a deliberately lower 10 MB; see
   # docs/features/UFB-0036-native-video-replies.md). Disabled by default;
   # enable with `docker compose --profile local-bot-api up -d` after setting
   # TELEGRAM_API_ID/TELEGRAM_API_HASH and pointing TELEGRAM_API_URL at it.
@@ -116,10 +127,27 @@ services:
         max-file: "3"
         max-size: "1m"
     volumes:
+      # Must match `app`'s CACHE_DIR: both containers need the cache at the
+      # same path for local-mode file sends (#BUG-0074).
       - cache:/tmp/url-fairy-bot-cache/
       - botapi:/var/lib/telegram-bot-api
-    networks:
-      - default
 volumes:
   cache:
   botapi:
+# Inline content keeps the deployment checkout-free (UFB-0030).
+configs:
+  nginx_default_conf:
+    content: |
+      # no blank lines in here: pre-commit's sort-simple-yaml splits on them
+      server {
+          listen 80;
+          server_name localhost;
+          root /usr/share/nginx/html;
+          location / {
+              index index.html;
+          }
+          error_page 404 /404.html;
+          location = /404.html {
+              internal;
+          }
+      }

@@ -53,6 +53,42 @@ def test_render_watch_page_contains_required_meta_tags():
     assert 'src="https://example.test/clip.mp4"' in html
 
 
+# #UFB-0032, #UFB-0039, #BUG-0079
+def test_render_watch_page_audio_gallery_mode(cache_dir):
+    urls = [
+        "https://example.test/gallery/post/01.jpg",
+        "https://example.test/gallery/post/02.jpg",
+    ]
+    html = pages.render_watch_page("post.mp3", gallery_image_urls=urls)
+
+    assert "og:video" not in html
+    assert "twitter:player" not in html
+    assert "<video" not in html
+    assert "<audio controls" in html
+    assert 'src="https://example.test/post.mp3"' in html
+    assert html.count("<img ") == 2
+    for url in urls:
+        assert f'<img src="{url}"' in html
+    assert f'property="og:image" content="{urls[0]}"' in html
+
+
+# #UFB-0033, #UFB-0039, #BUG-0079
+def test_write_watch_page_derives_gallery_images_from_gallery_dir(cache_dir):
+    gallery = cache_dir / "gallery" / "post"
+    gallery.mkdir(parents=True)
+    (gallery / "01.jpg").write_bytes(b"a")
+    (gallery / "02.jpg").write_bytes(b"b")
+
+    path = pages.write_watch_page("post.mp3")
+
+    html = open(path, encoding="utf-8").read()
+    assert (
+        'property="og:image" content="https://example.test/gallery/post/01.jpg"' in html
+    )
+    assert 'src="https://example.test/gallery/post/02.jpg"' in html
+    assert "og:video" not in html
+
+
 def test_render_watch_page_escapes_filename_metacharacters():
     html = pages.render_watch_page('a"b&c.mp4')
     assert "a%22b%26c.mp4" in html

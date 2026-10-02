@@ -144,3 +144,33 @@ def test_audio_normalize_parses_env(reload_settings):
     )
     assert settings.AUDIO_NORMALIZE_ENABLED is True
     assert settings.AUDIO_NORMALIZE_BELOW_LUFS == -35.5
+
+
+# --- BUG-0038: LOG_LEVEL validation ---
+
+
+# #UFB-0024, #BUG-0038
+def test_log_level_rejects_invalid_value(reload_settings):
+    with pytest.raises(pydantic.ValidationError):
+        reload_settings(LOG_LEVEL="VERBOSE")
+
+
+# #UFB-0024, #BUG-0038
+def test_log_level_accepts_lowercase(reload_settings):
+    assert reload_settings(LOG_LEVEL="debug").LOG_LEVEL == "DEBUG"
+
+
+# --- BUG-0037: BaseSettings reads the env itself (no import-time os.getenv) ---
+
+
+# #UFB-0021, #BUG-0037
+def test_settings_read_env_at_construction_not_import(monkeypatch):
+    import app.config as config_module
+
+    monkeypatch.setenv("COOKIE_JAR_ENABLED", "true")
+    monkeypatch.setenv("AUDIO_NORMALIZE_BELOW_LUFS", "-12.5")
+    monkeypatch.setenv("BOT_TOKEN", "tok")
+    fresh = config_module.Settings()
+    assert fresh.COOKIE_JAR_ENABLED is True
+    assert fresh.AUDIO_NORMALIZE_BELOW_LUFS == -12.5
+    assert fresh.BOT_TOKEN == "tok"

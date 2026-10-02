@@ -1,11 +1,22 @@
 # url_processing.py
 
+import asyncio
+import ipaddress
 import logging
 import os
 import re
 import shutil
+import socket
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
+from urllib.parse import (
+    parse_qsl,
+    quote,
+    urlencode,
+    urljoin,
+    urlparse,
+    urlunparse,
+)
 
 import requests
 
@@ -44,6 +55,11 @@ class DownloadResult:
 CONTENT_QUERY_PARAMS = frozenset({"v", "list", "t", "index", "id"})
 
 
+# Platforms yt-dlp has no extractor for; downloading is pointless (#BUG-0032).
+# #UFB-0011
+NO_DOWNLOAD_DOMAINS = ("spotify.com",)
+
+
 # #UFB-0009, #UFB-0023
 def _domain_in_allowlist(url: str, allowlist_csv: str) -> bool:
     """
@@ -76,18 +92,80 @@ def is_rewrite_allowed(url: str) -> bool:
     return _domain_in_allowlist(url, settings.REWRITE_ALLOWED_DOMAINS)
 
 
-# #UFB-0007, #UFB-0008
+# #UFB-0007, #BUG-0012
+class BlockedUrlError(ValueError):
+    """A URL (or a redirect hop) points at a non-public address or scheme."""
+
+
+# #UFB-0007, #BUG-0012
+MAX_REDIRECT_HOPS = 10
+_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+
+
+# #UFB-0007, #BUG-0012
+def _is_public_ip(raw: str) -> bool:
+    ip = ipaddress.ip_address(raw.split("%", 1)[0])
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+        ip = ip.ipv4_mapped
+    return not (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_multicast
+        or ip.is_unspecified
+        or not ip.is_global
+    )
+
+
+# #UFB-0007, #BUG-0012
+def _assert_public_url(url: str) -> None:
+    """Raise BlockedUrlError unless `url` is http(s) and every address its
+    host resolves to is public. An unresolvable host passes: the request
+    that follows fails and callers fall back as before (#UFB-0007)."""
+    parsed = urlparse(url)
+    host = parsed.hostname
+    if parsed.scheme not in ("http", "https") or not host:
+        raise BlockedUrlError("URL scheme or host not allowed")
+    try:
+        infos = socket.getaddrinfo(host, parsed.port or None, proto=socket.IPPROTO_TCP)
+    except socket.gaierror, UnicodeError:
+        return
+    for info in infos:
+        if not _is_public_ip(info[4][0]):
+            logger.warning(f"Blocked non-public target: {url}")
+            raise BlockedUrlError("URL target not allowed")
+
+
+# #UFB-0007, #UFB-0008, #BUG-0012
 def follow_redirects(url: str, timeout=settings.FOLLOW_REDIRECT_TIMEOUT) -> str:
     try:
-        response = requests.head(url, allow_redirects=True, timeout=timeout)
-        parsed = urlparse(response.url)
+        current = url
+        for _ in range(MAX_REDIRECT_HOPS + 1):
+            _assert_public_url(current)
+            response = requests.head(current, allow_redirects=False, timeout=timeout)
+            location = response.headers.get("Location")
+            if response.status_code not in _REDIRECT_STATUSES or not location:
+                break
+            current = urljoin(current, location)
+            if (
+                urlparse(current).scheme in ("http", "https")
+                and not urlparse(current).netloc
+            ):
+                logger.warning(f"Invalid redirect URL: {current}")
+                return url
+        else:
+            logger.warning(f"Too many redirects for URL: {url}")
+            return url
+        parsed = urlparse(current)
         kept_params = [
             (k, v)
             for k, v in parse_qsl(parsed.query, keep_blank_values=True)
             if k in CONTENT_QUERY_PARAMS
         ]
-        redirected_url = urlunparse(parsed._replace(query=urlencode(kept_params)))
-        if not urlparse(redirected_url).scheme or not urlparse(redirected_url).netloc:
+        redirected = parsed._replace(query=urlencode(kept_params))
+        redirected_url = urlunparse(redirected)
+        if not redirected.scheme or not redirected.netloc:
             logger.warning(f"Invalid redirect URL: {redirected_url}")
             return url
         return redirected_url
@@ -165,6 +243,9 @@ def apply_rewrite_map(final_url: str) -> str:
             rf"https://{settings.YOUTUBE_SHORT_MIRROR_DOMAIN}/\1",
         ),
     ]
+    # Instagram is deliberately scoped to /p/ and /reel/ (unlike the
+    # domain-wide entries): the mirror only serves posts and reels, so
+    # profile/story links would break if rewritten (#BUG-0031).
     for pattern, replacement in rewrite_map:
         if re.match(pattern, final_url):
             return re.sub(pattern, replacement, final_url, count=1)
@@ -194,7 +275,10 @@ async def _attempt_gallery_download(final_url: str) -> DownloadResult:
         except OSError as e:
             logger.warning(f"Failed to write gallery preview for {audio_name}: {e}")
         try:
-            pages.write_watch_page(audio_name)
+            pages.write_watch_page(
+                audio_name,
+                [pages.gallery_image_url(audio_name, p) for p in gallery.image_paths],
+            )
         except OSError as e:
             logger.error(f"Failed to write watch page for {audio_name}: {e}")
         watch_url = _iv_watch_url(pages.watch_page_url(audio_name))
@@ -211,9 +295,10 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
             return await _attempt_gallery_download(final_url)
         video_os_path = await yt_dlp_download(final_url)
         if video_os_path:
-            video_path = os.path.join(*video_os_path.split(os.path.sep)[-1:])
+            video_path = os.path.basename(video_os_path)
             try:
-                preview.generate_preview(video_os_path)
+                # #BUG-0006: ffmpeg runs off the event loop
+                await asyncio.to_thread(preview.generate_preview, video_os_path)
             except OSError as e:
                 logger.warning(f"Failed to generate preview for {video_path}: {e}")
             try:
@@ -232,14 +317,17 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
     return None
 
 
-# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0013, #UFB-0014
+# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014, #UFB-0055
 async def process_url_request(
-    url: str, is_group_chat: bool = False
+    url: str,
+    is_group_chat: bool = False,
+    on_download: Callable[[], None] | None = None,
 ) -> str | DownloadResult | None:
     url = str(url)  # Ensure url is a string
 
     # Follow redirects first to get the final URL
-    final_url = follow_redirects(url)
+    # #BUG-0006: blocking requests.head, kept off the event loop
+    final_url = await asyncio.to_thread(follow_redirects, url)
 
     # Check if the domain is allowed
     if not is_domain_allowed(final_url):
@@ -256,6 +344,10 @@ async def process_url_request(
         return messages.domain_not_allowed_with_mirror(modified_url, final_url)
 
     try:
+        if _domain_in_allowlist(final_url, ",".join(NO_DOWNLOAD_DOMAINS)):
+            raise UnsupportedUrlError("Known non-video platform.")
+        if on_download:
+            on_download()  # #UFB-0055: a reply is coming; show progress
         response = await attempt_download(final_url)
         if response:
             return response
@@ -265,5 +357,8 @@ async def process_url_request(
         # Check if modified URL is the same as the original
         if modified_url == final_url and is_group_chat:
             return None  # Silent response for unmodified URLs in group/supergroup
+
+        if modified_url == final_url:
+            return messages.download_failed(final_url)
 
         return messages.download_failed_mirror(modified_url, final_url)

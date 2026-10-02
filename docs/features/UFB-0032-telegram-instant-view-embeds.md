@@ -16,6 +16,8 @@ By default this is Telegram's native link-preview video player, driven by `og:vi
 
 A file larger than `INLINE_VIDEO_MAX_MB` gets a plain watch page instead — no `og:video`/`twitter:player` tags, no inline `<video>` element, just the per-file preview image and a download link. This is not optional above the threshold: Telegram's Instant View fetches and re-hosts every body media resource on its own servers when it builds the article, so an oversized `<video>` doesn't degrade gracefully — it makes the whole article fail with `NO_MEDIA_FOUND` (confirmed live, see Testing). Below the threshold the same fetch succeeds, so the `<video>` renders normally in both the automatic chat-preview card and Instant View's body.
 
+An audio file (e.g. a [UFB-0039](UFB-0039-tiktok-photo-galleries.md) photo post's track) gets an audio/gallery page instead: `<audio controls>` for the track, an `<img>` per gallery image, `og:image` set to the first image, and never `og:video`/`twitter:player` tags. Like `<video>`, neither `<audio>` nor `<img>` is wrapped in a `<p>`.
+
 For files too large for this page to play at all, see [UFB-0036](UFB-0036-native-video-replies.md): the bot sends the file directly as a native Telegram video instead, bypassing this page and its size limit entirely. This page's threshold stays fixed at what Telegram's own fetcher will accept, independent of `UFB-0036`'s (much larger) send ceiling.
 
 ## Implementation
@@ -40,6 +42,7 @@ For files too large for this page to play at all, see [UFB-0036](UFB-0036-native
 - A filename needing percent-encoding stays correctly encoded in both forms.
 - A media file at or under `INLINE_VIDEO_MAX_MB` → page keeps `og:video`/ `twitter:player` tags and the `<video>` element.
 - A media file over `INLINE_VIDEO_MAX_MB` → page has no `og:video`/ `twitter:player` tags and no `<video>` element, but keeps `og:image`/the fallback `<img>` and the download link.
+- An audio media file with gallery image URLs → page has `<audio>`, one `<img>` per image, `og:image` = first image, no `og:video`/`twitter:player` tags.
 - A missing media file → treated as small (tags kept), doesn't raise.
 
 ### Integration / Human

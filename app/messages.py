@@ -79,6 +79,11 @@ def domain_not_allowed_with_mirror(mirror_url: str, original_url: str) -> str:
 
 
 # #UFB-0013, #UFB-0037
+def download_failed(original_url: str) -> str:
+    return _render("download_failed.html.j2", original_url=original_url)
+
+
+# #UFB-0013, #UFB-0037
 def download_failed_mirror(mirror_url: str, original_url: str) -> str:
     return _render(
         "download_failed_mirror.html.j2",

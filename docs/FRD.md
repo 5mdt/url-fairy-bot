@@ -1,6 +1,6 @@
 # Feature Requirements Document
 
-Next free ID: **UFB-0041**.
+Next free ID: **UFB-0057**.
 
 ## Behavior diagrams
 
@@ -51,33 +51,49 @@ The two mermaid flowcharts are the source of truth for how the features below fi
 - [X] [UFB-0038. Cookie keepalive](features/UFB-0038-cookie-keepalive.md) - `#cookies` `#ops` `#runtime`
 - [X] [UFB-0039. TikTok photo-post galleries](features/UFB-0039-tiktok-photo-galleries.md) - `#download` `#media` `#telegram` `#ux`
 - [X] [UFB-0040. Near-silent audio normalization](features/UFB-0040-near-silent-audio-normalization.md) - `#download` `#media`
+- [ ] [UFB-0041. Link metadata in replies](features/UFB-0041-link-metadata-store.md) - `#download` `#hosting` `#ux`
+- [ ] [UFB-0042. Instagram post downloads](features/UFB-0042-instagram-post-downloads.md) - `#download` `#media`
+- [ ] [UFB-0043. Persistent work queue](features/UFB-0043-persistent-work-queue.md) - `#runtime` `#ops`
+- [ ] [UFB-0044. Receiver / downloader / messenger split](features/UFB-0044-component-split.md) - `#runtime` `#ops`
+- [ ] [UFB-0045. Usage metrics](features/UFB-0045-usage-metrics.md) - `#ops` `#api`
+- [ ] [UFB-0046. Inline mode](features/UFB-0046-inline-mode.md) - `#telegram` `#ux`
+- [ ] [UFB-0047. Profile link cards](features/UFB-0047-profile-cards.md) - `#telegram` `#hosting` `#ux`
+- [ ] [UFB-0048. Song identification](features/UFB-0048-song-identification.md) - `#media` `#ux`
+- [ ] [UFB-0049. `/stats` admin command](features/UFB-0049-admin-stats-command.md) - `#telegram` `#commands` `#ops`
+- [ ] [UFB-0050. Duplicate link detection](features/UFB-0050-duplicate-link-detection.md) - `#telegram` `#cache`
+- [ ] [UFB-0051. Report-broken-link button](features/UFB-0051-report-broken-link.md) - `#telegram` `#ux` `#ops`
+- [ ] [UFB-0052. Cobalt fallback downloader](features/UFB-0052-cobalt-fallback-downloader.md) - `#download` `#fallback`
+- [ ] [UFB-0053. Multiple cookie jars](features/UFB-0053-multiple-cookie-jars.md) - `#cookies` `#download`
+- [ ] [UFB-0054. Maintainer alerts](features/UFB-0054-maintainer-alerts.md) - `#ops` `#telegram` `#config`
+- [X] [UFB-0055. Progress chat action](features/UFB-0055-progress-chat-action.md) - `#telegram` `#ux`
+- [X] [UFB-0056. API authentication and rate limiting](features/UFB-0056-api-auth-rate-limiting.md) - `#api` `#ops` `#config`
 
 ## Deprecated
 
 ## Tags
 
-- `#telegram`: UFB-0001, UFB-0002, UFB-0003, UFB-0004, UFB-0005, UFB-0006, UFB-0014, UFB-0032, UFB-0035, UFB-0036, UFB-0037, UFB-0039
-- `#commands`: UFB-0001
+- `#telegram`: UFB-0001, UFB-0002, UFB-0003, UFB-0004, UFB-0005, UFB-0006, UFB-0014, UFB-0032, UFB-0035, UFB-0036, UFB-0037, UFB-0039, UFB-0046, UFB-0047, UFB-0049, UFB-0050, UFB-0051, UFB-0054, UFB-0055
+- `#commands`: UFB-0001, UFB-0049
 - `#url`: UFB-0002, UFB-0007, UFB-0008, UFB-0010
-- `#ux`: UFB-0003, UFB-0014, UFB-0032, UFB-0036, UFB-0037, UFB-0039
+- `#ux`: UFB-0003, UFB-0014, UFB-0032, UFB-0036, UFB-0037, UFB-0039, UFB-0041, UFB-0046, UFB-0047, UFB-0048, UFB-0051, UFB-0055
 - `#i18n`: UFB-0037
 - `#groups`: UFB-0004, UFB-0005
 - `#easter-egg`: UFB-0005
 - `#validation`: UFB-0006
 - `#redirects`: UFB-0007
 - `#privacy`: UFB-0008
-- `#config`: UFB-0009, UFB-0018, UFB-0021, UFB-0022, UFB-0023, UFB-0024
-- `#download`: UFB-0009, UFB-0013, UFB-0015, UFB-0016, UFB-0017, UFB-0018, UFB-0039, UFB-0040
+- `#config`: UFB-0009, UFB-0018, UFB-0021, UFB-0022, UFB-0023, UFB-0024, UFB-0054, UFB-0056
+- `#download`: UFB-0009, UFB-0013, UFB-0015, UFB-0016, UFB-0017, UFB-0018, UFB-0039, UFB-0040, UFB-0041, UFB-0042, UFB-0052, UFB-0053
 - `#allowlist`: UFB-0009, UFB-0023
 - `#rewrite`: UFB-0010, UFB-0011, UFB-0012, UFB-0013, UFB-0022, UFB-0023, UFB-0029
 - `#youtube`: UFB-0012
-- `#fallback`: UFB-0013
-- `#media`: UFB-0015, UFB-0035, UFB-0036, UFB-0039, UFB-0040
-- `#cache`: UFB-0016, UFB-0026
-- `#cookies`: UFB-0017, UFB-0018, UFB-0038
-- `#api`: UFB-0019, UFB-0034
-- `#runtime`: UFB-0020, UFB-0034, UFB-0038
-- `#ops`: UFB-0024, UFB-0025, UFB-0026, UFB-0027, UFB-0028, UFB-0030, UFB-0031, UFB-0033, UFB-0034, UFB-0038
-- `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033, UFB-0035, UFB-0036
+- `#fallback`: UFB-0013, UFB-0052
+- `#media`: UFB-0015, UFB-0035, UFB-0036, UFB-0039, UFB-0040, UFB-0042, UFB-0048
+- `#cache`: UFB-0016, UFB-0026, UFB-0050
+- `#cookies`: UFB-0017, UFB-0018, UFB-0038, UFB-0053
+- `#api`: UFB-0019, UFB-0034, UFB-0045, UFB-0056
+- `#runtime`: UFB-0020, UFB-0034, UFB-0038, UFB-0043, UFB-0044
+- `#ops`: UFB-0024, UFB-0025, UFB-0026, UFB-0027, UFB-0028, UFB-0030, UFB-0031, UFB-0033, UFB-0034, UFB-0038, UFB-0043, UFB-0044, UFB-0045, UFB-0049, UFB-0051, UFB-0054, UFB-0056
+- `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033, UFB-0035, UFB-0036, UFB-0041, UFB-0047
 - `#deploy`: UFB-0027, UFB-0030
 - `#ci`: UFB-0028

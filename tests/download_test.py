@@ -1,5 +1,6 @@
 # download_test.py
 
+import asyncio
 import os
 import time
 from unittest.mock import MagicMock, patch
@@ -10,14 +11,15 @@ import yt_dlp.utils
 
 from app.config import settings
 from app.download import (
+    _URL_LOCKS,
     UnsupportedUrlError,
     _resolve_cookie_path,
     _write_merged_cookies,
-    sanitize_subfolder_name,
+    url_to_filename_stem,
     yt_dlp_download,
 )
 
-# --- sanitize_subfolder_name ---
+# --- url_to_filename_stem (#UFB-0016) ---
 
 
 @pytest.mark.parametrize(
@@ -31,8 +33,32 @@ from app.download import (
         ("a b!c", "a_b_c"),
     ],
 )
-def test_sanitize_subfolder_name(url, expected):
-    assert sanitize_subfolder_name(url) == expected
+def test_url_to_filename_stem(url, expected):
+    assert url_to_filename_stem(url) == expected
+
+
+# #UFB-0016, #BUG-0014
+def test_url_to_filename_stem_long_url_stays_under_cap():
+    stem = url_to_filename_stem("https://example.com/" + "a" * 5000)
+    assert len(f"{stem}.f137.mp4.part".encode()) < 255
+
+
+# #UFB-0016, #BUG-0014
+def test_url_to_filename_stem_long_multibyte_url_stays_under_cap():
+    stem = url_to_filename_stem("https://example.com/" + "я" * 5000)
+    assert len(f"{stem}.f137.mp4.part".encode()) < 255
+
+
+# #UFB-0016, #BUG-0014
+def test_url_to_filename_stem_long_urls_differing_at_end_do_not_collide():
+    base = "https://example.com/" + "a" * 5000
+    assert url_to_filename_stem(base + "1") != url_to_filename_stem(base + "2")
+
+
+# #UFB-0016, #BUG-0014
+def test_url_to_filename_stem_is_deterministic_for_long_url():
+    url = "https://example.com/" + "a" * 5000
+    assert url_to_filename_stem(url) == url_to_filename_stem(url)
 
 
 # --- _write_merged_cookies ---
@@ -132,9 +158,9 @@ async def test_yt_dlp_download_cache_hit_skips_download(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
     monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
     url = "https://tiktok.com/@user/video/1"
-    from app.download import sanitize_subfolder_name
+    from app.download import url_to_filename_stem
 
-    cached_path = os.path.join(str(tmp_path), f"{sanitize_subfolder_name(url)}.mp4")
+    cached_path = os.path.join(str(tmp_path), f"{url_to_filename_stem(url)}.mp4")
     with open(cached_path, "w") as f:
         f.write("fake video data")
 
@@ -145,6 +171,35 @@ async def test_yt_dlp_download_cache_hit_skips_download(tmp_path, monkeypatch):
     mock_ydl.assert_not_called()
 
 
+# #UFB-0016, #BUG-0014
+@pytest.mark.asyncio
+async def test_yt_dlp_download_concurrent_same_url_downloads_once(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
+    url = "https://tiktok.com/@user/video/concurrent"
+    stem = url_to_filename_stem(url)
+    calls = []
+
+    def fake_download(_urls):
+        calls.append(1)
+        with open(os.path.join(str(tmp_path), f"{stem}.mp4"), "w") as f:
+            f.write("data")
+
+    mock_ydl = MagicMock()
+    mock_ydl.__enter__.return_value.download.side_effect = fake_download
+    with (
+        patch("app.download.yt_dlp.YoutubeDL", return_value=mock_ydl),
+        patch("app.download.media.normalize_if_quiet"),
+    ):
+        results = await asyncio.gather(yt_dlp_download(url), yt_dlp_download(url))
+
+    assert len(calls) == 1
+    assert results[0] == results[1]
+    assert stem not in _URL_LOCKS
+
+
 @pytest.mark.asyncio
 async def test_yt_dlp_download_cache_hit_resolves_real_extension(tmp_path, monkeypatch):
     """A cache hit finds whatever extension the file actually has on disk,
@@ -152,9 +207,9 @@ async def test_yt_dlp_download_cache_hit_resolves_real_extension(tmp_path, monke
     monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
     monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
     url = "https://tiktok.com/@user/video/1"
-    from app.download import sanitize_subfolder_name
+    from app.download import url_to_filename_stem
 
-    cached_path = os.path.join(str(tmp_path), f"{sanitize_subfolder_name(url)}.webm")
+    cached_path = os.path.join(str(tmp_path), f"{url_to_filename_stem(url)}.webm")
     with open(cached_path, "w") as f:
         f.write("fake video data")
 
@@ -170,12 +225,12 @@ async def test_yt_dlp_download_outtmpl_and_remuxer_configured(tmp_path, monkeypa
     monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
     monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
     url = "https://tiktok.com/@user/video/1"
-    from app.download import sanitize_subfolder_name
+    from app.download import url_to_filename_stem
 
     mock_instance = MagicMock()
 
     def _fake_download(urls):
-        stem = sanitize_subfolder_name(url)
+        stem = url_to_filename_stem(url)
         with open(os.path.join(str(tmp_path), f"{stem}.mp4"), "w") as f:
             f.write("fake video data")
 
@@ -201,9 +256,9 @@ async def test_yt_dlp_download_normalizes_fresh_download_only(tmp_path, monkeypa
     monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
     monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
     url = "https://tiktok.com/@user/video/1"
-    from app.download import sanitize_subfolder_name
+    from app.download import url_to_filename_stem
 
-    expected = os.path.join(str(tmp_path), f"{sanitize_subfolder_name(url)}.mp4")
+    expected = os.path.join(str(tmp_path), f"{url_to_filename_stem(url)}.mp4")
     mock_instance = MagicMock()
 
     def _fake_download(urls):
@@ -236,7 +291,7 @@ async def test_yt_dlp_download_cache_hit_refreshes_atime_not_mtime(
     monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
     url = "https://tiktok.com/@user/video/1"
 
-    cached_path = os.path.join(str(tmp_path), f"{sanitize_subfolder_name(url)}.mp4")
+    cached_path = os.path.join(str(tmp_path), f"{url_to_filename_stem(url)}.mp4")
     with open(cached_path, "w") as f:
         f.write("fake video data")
 

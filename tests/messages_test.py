@@ -70,6 +70,14 @@ def test_download_failed_mirror_renders_both_links():
     assert '<a href="https://x.com/a">📎 Source</a>' in html
 
 
+# #UFB-0013, #UFB-0037, #BUG-0033
+def test_download_failed_states_failure_without_mirror_claim():
+    html = messages.download_failed("https://x.com/a")
+    assert "cannot download" in html
+    assert "parsed better" not in html
+    assert '<a href="https://x.com/a">📎 Source</a>' in html
+
+
 # --- BUG-0016: HTML-significant characters in URLs are escaped ---
 
 

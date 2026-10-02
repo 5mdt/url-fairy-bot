@@ -15,6 +15,7 @@ A TikTok photo post (`https://www.tiktok.com/@user/photo/<id>`) is not supported
 - `app.download.is_tiktok_photo_url` detects photo URLs; `tiktok_gallery_download` reads the post data through yt-dlp's TikTok extractor (the `/photo/` URL rewritten to `/video/`) and saves images to `CACHE_DIR/gallery/<stem>/NN.jpg` and the audio to `CACHE_DIR/<stem>.mp3`. Cached galleries are reused ([UFB-0016](UFB-0016-download-caching.md)) and swept by TTL ([UFB-0026](UFB-0026-cached-file-ttl-cleanup.md)).
 - `attempt_download` routes photo URLs there; `DownloadResult` carries `image_paths`. The first image doubles as the audio's preview image.
 - `bot._reply_with_gallery` sends the album, then the audio.
+- The watch page for the audio track ([UFB-0032](UFB-0032-telegram-instant-view-embeds.md)) is in audio/gallery mode: the media file's audio extension selects it, and the gallery images (served from `https://BASE_URL/gallery/<stem>/NN.jpg`) are passed to `render_watch_page`. `seed_static_pages` re-derives them from the gallery directory when it re-renders an existing audio file.
 
 ## Quirks & Decisions
 
@@ -26,6 +27,7 @@ A TikTok photo post (`https://www.tiktok.com/@user/photo/<id>`) is not supported
 
 - Photo-URL detection.
 - Gallery download writes images and audio; cache hit skips the network; no images raises `UnsupportedUrlError`; missing audio yields `None`.
+- Watch page for a gallery's audio: `<audio controls>`, one `<img>` per image, `og:image` is the first image, no `og:video`/`twitter:player` tags (see [UFB-0032](UFB-0032-telegram-instant-view-embeds.md)).
 - Bot sends albums (10 per group) with the caption on the first photo, then the audio; failure falls back to text.
 
 ## Status

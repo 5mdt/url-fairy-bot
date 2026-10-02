@@ -1,10 +1,5 @@
 # Features to add
 
-Next free ID: **TODO-0006**.
+Next free ID: **TODO-0016**.
 
 New, not-yet-built behavior — ideas not yet promoted to a feature doc. Cleanups, defects, and missing coverage on already-shipped behavior go in `docs/BUGS.md` instead. Promoted to a feature doc (`docs/features/UFB-NNNN-slug.md` + `docs/FRD.md`) → delete the entry in the same commit. Leave the gap; IDs are never reused.
-
-- #TODO-0002 Attach the link's metadata to the reply: description, username, subtitles (?), etc. — yt-dlp's info dict (and the TikTok photo-post item data, [UFB-0039](features/UFB-0039-tiktok-photo-galleries.md)) already carries most of it; decide which fields go in the caption. Work around Telegram's 1024-char caption limit with Instant View: keep the caption short and put the full metadata (long description, subtitles) on the watch page ([UFB-0032](features/UFB-0032-telegram-instant-view-embeds.md)).
-- #TODO-0003 Instagram post download (photos, carousels, reels) instead of the `kkinstagram.com` mirror link fallback; likely needs the same gallery-style album handling as UFB-0039 for carousels.
-- #TODO-0004 Move the work queue out of process memory into separate storage (e.g. Redis or a SQLite file on a mounted volume), so a container restart doesn't lose pending/in-flight requests. Today there is no explicit queue: updates are handled in-process by aiogram polling ([UFB-0020](features/UFB-0020-in-process-bot-polling.md)) and downloads run inline, so a restart drops whatever is mid-download; decide the queue shape first, then the store, and what a restarted worker should resume or re-reply.
-- #TODO-0005 Split the single process into separate components — a receiver (gets updates from Telegram), a downloader, and a messenger (sends replies back to Telegram) — so each can be scaled and run in parallel. Today all three run in one process ([UFB-0020](features/UFB-0020-in-process-bot-polling.md)) and downloads block inline; needs a hand-off between components, which pairs with #TODO-0004 (queue in separate storage). Decide the component boundaries and the shared cache/volume access first.

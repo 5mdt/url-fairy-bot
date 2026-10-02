@@ -18,7 +18,7 @@ The Telegram Instant View example page is produced by the exact same renderer as
 - `write_watch_page(media_filename)` renders `<CACHE_DIR>/watch/<stem>.html` for a downloaded file; `attempt_download` (`app/url_processing.py`) calls it right after a download resolves, covering both a fresh download and a cache hit — so a watch page deleted independently of its media (or vice versa) repairs itself on the next request for that URL.
 - `seed_static_pages()` creates `CACHE_DIR`, writes the landing page (`index.html`) and 404 page (`404.html`), copies the bundled `app/assets/preview.png` and `app/assets/sample.mp4` into the cache, best-effort generates a per-file preview for `sample.mp4` ([UFB-0035](UFB-0035-per-file-preview-images.md)), and calls `write_watch_page("sample.mp4")` — producing the Instant View example page at `/watch/sample.html` via the real rendering path. It then calls `write_watch_page` again for every other media file already sitting at the top level of `CACHE_DIR`, so every watch page on disk reflects the currently-running code (e.g. a template or `og:video` threshold change) immediately after a restart, instead of only whenever that file's URL is next requested. A file that fails to re-render is logged and skipped — one bad file never blocks the rest. Called once from the `app/main.py` lifespan on startup.
 - The public URL for a watch page is `https://BASE_URL/watch/<stem>.html` (not `.../<stem>.mp4`), so the web server's extension-based MIME lookup serves it as `text/html` — the raw media keeps its own `.../<stem>.mp4` URL and `video/mp4` type unchanged.
-- Nothing is left for the web server to configure: the shared cache volume is mounted directly at nginx's own default docroot; see [UFB-0030](UFB-0030-registry-only-deployment.md) for the image this runs on and the startup-ordering healthcheck this mount requires.
+- The web server needs only a minimal config (`error_page 404 /404.html;`, shipped inline in `docker-compose.yml`; see [UFB-0025](UFB-0025-themed-download-file-server.md)): the shared cache volume is mounted directly at nginx's own default docroot; see [UFB-0030](UFB-0030-registry-only-deployment.md) for the image this runs on and the startup-ordering healthcheck this mount requires.
 
 ## Quirks & Decisions
 
@@ -33,6 +33,7 @@ Known gap: see [BUGS #30](../BUGS.md#30-seeded-permanent-pages-only-survive-unti
 - `write_watch_page` creates the `watch/` subdirectory when missing, overwrites an existing page, and leaves no leftover temp file.
 - `seed_static_pages` writes the landing page, 404 page, both bundled assets, and the sample watch page; running it twice is idempotent.
 - `seed_static_pages` re-renders the watch page of every pre-existing media file at the top level of `CACHE_DIR` (not just the sample); a file that raises on re-render is skipped without aborting the rest.
+- `seed_static_pages` re-rendering an audio file with a gallery directory includes the gallery images in its watch page.
 - The seeded sample watch page is byte-identical to calling `render_watch_page("sample.mp4")` directly.
 
 ### Integration / Human

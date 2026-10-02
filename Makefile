@@ -41,6 +41,11 @@ ddd:
 test:
 	$(UV) run pytest
 
+## test-cov: Run the tests with coverage (data and HTML report under build/)
+test-cov:
+	mkdir -p build
+	COVERAGE_FILE=build/.coverage $(UV) run pytest --cov=app --cov-report=term-missing --cov-report=html:build/htmlcov
+
 ## run: Run the app locally with uvicorn (reload enabled)
 run:
 	$(UV) run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

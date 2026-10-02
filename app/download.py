@@ -1,14 +1,16 @@
 # download.py
 # -*- coding: utf-8 -*-
 
+import asyncio
 import glob
+import hashlib
 import logging
 import os
 import re
 import tempfile
 import threading
 import time
-from contextlib import contextmanager, nullcontext
+from contextlib import asynccontextmanager, contextmanager, nullcontext
 from dataclasses import dataclass
 
 import yt_dlp
@@ -39,6 +41,10 @@ def _write_merged_cookies(dest: str, cookie_files: list[str]) -> None:
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     for line in f:
+                        # Drop real comments ("# ..." or a bare "#") but keep
+                        # a single "#" with no space: Netscape jars mark
+                        # HttpOnly cookies as "#HttpOnly_<domain>\t...", and
+                        # those are data lines yt-dlp must still read.
                         if not line.startswith("# ") and line.strip() != "#":
                             out.write(line)
             except Exception as e:
@@ -158,9 +164,45 @@ def _map_download_errors(url: str, e: Exception) -> Exception:
     )
 
 
-# #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040
+# #BUG-0014: per-stem locks; entries are dropped once nobody holds/awaits them.
+_URL_LOCKS: dict[str, tuple[asyncio.Lock, int]] = {}
+
+
+# #UFB-0016, #BUG-0014
+@asynccontextmanager
+async def _url_lock(stem: str):
+    """Serialize the cache check + download for one URL stem."""
+    lock, users = _URL_LOCKS.get(stem, (None, 0))
+    lock = lock or asyncio.Lock()
+    _URL_LOCKS[stem] = (lock, users + 1)
+    try:
+        async with lock:
+            yield
+    finally:
+        lock, users = _URL_LOCKS[stem]
+        if users <= 1:
+            del _URL_LOCKS[stem]
+        else:
+            _URL_LOCKS[stem] = (lock, users - 1)
+
+
+# #BUG-0006, #UFB-0015
+def _run_ydl_download(ydl_opts: dict, url: str) -> None:
+    """The blocking yt-dlp download, including the cookie setup and the jar
+    lock acquisition (#UFB-0038); always called via asyncio.to_thread."""
+    with _youtube_dl(ydl_opts) as ydl:
+        ydl.download([url])
+
+
+# #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040, #BUG-0014
 async def yt_dlp_download(url: str) -> str:
-    stem = sanitize_subfolder_name(url)
+    stem = url_to_filename_stem(url)
+    async with _url_lock(stem):
+        return await _yt_dlp_download_locked(url, stem)
+
+
+# #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040, #BUG-0014
+async def _yt_dlp_download_locked(url: str, stem: str) -> str:
     cached_path = _cached_media_path(stem)
 
     if cached_path:
@@ -177,13 +219,12 @@ async def yt_dlp_download(url: str) -> str:
             "merge_output_format": "mp4",
             "postprocessors": [{"key": "FFmpegVideoRemuxer", "preferedformat": "mp4"}],
         }
-        with _youtube_dl(ydl_opts) as ydl:
-            ydl.download([url])
+        await asyncio.to_thread(_run_ydl_download, ydl_opts, url)
 
         logger.info(f"Download successful for URL: {url}")
         path = _cached_media_path(stem)
         if path:
-            media.normalize_if_quiet(path)
+            await asyncio.to_thread(media.normalize_if_quiet, path)
         return path
 
     except Exception as e:
@@ -248,11 +289,17 @@ def _cached_gallery(gallery_dir: str, audio_path: str) -> GalleryDownload | None
     return GalleryDownload(audio_path=audio, image_paths=images)
 
 
-# #UFB-0039
+# #UFB-0016, #UFB-0039, #BUG-0014
 async def tiktok_gallery_download(url: str) -> GalleryDownload:
     """Download a TikTok photo post's images and audio into the cache.
     Raises UnsupportedUrlError when the post has no images."""
-    stem = sanitize_subfolder_name(url)
+    stem = url_to_filename_stem(url)
+    async with _url_lock(stem):
+        return await _tiktok_gallery_download_locked(url, stem)
+
+
+# #UFB-0016, #UFB-0039, #BUG-0014
+async def _tiktok_gallery_download_locked(url: str, stem: str) -> GalleryDownload:
     gallery_dir = os.path.join(settings.CACHE_DIR, "gallery", stem)
     audio_path = os.path.join(settings.CACHE_DIR, f"{stem}.mp3")
 
@@ -294,6 +341,20 @@ async def tiktok_gallery_download(url: str) -> GalleryDownload:
         raise mapped from e
 
 
-# #UFB-0016
-def sanitize_subfolder_name(url: str) -> str:
-    return "".join(c if c.isalnum() else "_" for c in url)
+# Stems longer than this many UTF-8 bytes are truncated + hashed (#BUG-0014);
+# leaves headroom under 255 for ".f137.mp4.part", ".jpg.tmp" and similar.
+_MAX_STEM_BYTES = 200
+_STEM_HASH_CHARS = 16
+
+
+# #UFB-0016, #BUG-0014
+def url_to_filename_stem(url: str) -> str:
+    """Cache filename stem (no extension) derived from the whole URL.
+    Over-long stems are truncated and end in a sha256 suffix of the URL."""
+    stem = "".join(c if c.isalnum() else "_" for c in url)
+    if len(stem.encode()) <= _MAX_STEM_BYTES:
+        return stem
+    digest = hashlib.sha256(url.encode()).hexdigest()[:_STEM_HASH_CHARS]
+    keep = _MAX_STEM_BYTES - _STEM_HASH_CHARS - 1
+    head = stem.encode()[:keep].decode(errors="ignore")
+    return f"{head}_{digest}"

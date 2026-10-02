@@ -1,6 +1,7 @@
 # preview_test.py
 
 import os
+import shutil
 import subprocess
 from unittest.mock import MagicMock, patch
 
@@ -135,3 +136,16 @@ def test_generate_preview_returns_none_on_timeout(cache_dir):
         result = preview.generate_preview(media_path)
 
     assert result is None
+
+
+# #UFB-0035, #BUG-0071
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
+def test_generate_preview_real_ffmpeg_writes_a_jpeg(cache_dir):
+    sample = os.path.join(os.path.dirname(preview.__file__), "assets", "sample.mp4")
+
+    result = preview.generate_preview(sample)
+
+    assert result == str(cache_dir / "preview" / "sample.jpg")
+    assert os.path.isfile(result)
+    with open(result, "rb") as f:
+        assert f.read(2) == b"\xff\xd8"

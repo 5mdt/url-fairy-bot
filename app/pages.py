@@ -47,6 +47,26 @@ def watch_page_url(media_filename: str) -> str:
     return f"https://{settings.BASE_URL}/watch/{quote(stem)}.html"
 
 
+# #UFB-0032, #UFB-0039
+def gallery_image_url(media_filename: str, image_filename: str) -> str:
+    """Public URL of a gallery image (CACHE_DIR/gallery/<stem>/NN.jpg)."""
+    stem = os.path.splitext(os.path.basename(media_filename))[0]
+    return (
+        f"https://{settings.BASE_URL}/gallery/{quote(stem)}/"
+        f"{quote(os.path.basename(image_filename))}"
+    )
+
+
+# #UFB-0039
+def _gallery_image_urls_from_disk(media_filename: str) -> list[str]:
+    stem = os.path.splitext(os.path.basename(media_filename))[0]
+    try:
+        names = sorted(os.listdir(os.path.join(settings.CACHE_DIR, "gallery", stem)))
+    except OSError:
+        return []
+    return [gallery_image_url(media_filename, n) for n in names if n.endswith(".jpg")]
+
+
 # #UFB-0032
 def _fits_inline_video(media_filename: str) -> bool:
     """Whether the media file is small enough for an inline og:video/
@@ -67,8 +87,12 @@ def _fits_inline_video(media_filename: str) -> bool:
     return size_mb <= settings.INLINE_VIDEO_MAX_MB
 
 
-# #UFB-0032, #UFB-0033, #UFB-0035
-def render_watch_page(media_filename: str) -> str:
+# #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0039
+def render_watch_page(
+    media_filename: str, gallery_image_urls: list[str] | None = None
+) -> str:
+    """An audio file gets the audio/gallery page (#BUG-0079); its images are
+    `gallery_image_urls`, or those found in the gallery dir when None."""
     basename = os.path.basename(media_filename)
     media_url = f"https://{settings.BASE_URL}/{quote(basename)}"
     video_type = mimetypes.guess_type(basename)[0] or "video/mp4"
@@ -78,8 +102,17 @@ def render_watch_page(media_filename: str) -> str:
     else:
         image_url = f"https://{settings.BASE_URL}/{PREVIEW_IMAGE_FILENAME}"
         image_type = mimetypes.guess_type(PREVIEW_IMAGE_FILENAME)[0] or "image/png"
+    audio_mode = (mimetypes.guess_type(basename)[0] or "").startswith("audio/")
+    if audio_mode:
+        if gallery_image_urls is None:
+            gallery_image_urls = _gallery_image_urls_from_disk(media_filename)
+        if gallery_image_urls:
+            image_url = gallery_image_urls[0]
+            image_type = mimetypes.guess_type(gallery_image_urls[0])[0] or "image/jpeg"
     template = _env.get_template("watch.html")
     return template.render(
+        audio_mode=audio_mode,
+        gallery_image_urls=gallery_image_urls or [],
         page_url=watch_page_url(media_filename),
         media_url=media_url,
         image_url=image_url,
@@ -89,10 +122,12 @@ def render_watch_page(media_filename: str) -> str:
     )
 
 
-# #UFB-0032, #UFB-0033
-def write_watch_page(media_filename: str) -> str:
+# #UFB-0032, #UFB-0033, #UFB-0039
+def write_watch_page(
+    media_filename: str, gallery_image_urls: list[str] | None = None
+) -> str:
     path = watch_page_path(media_filename)
-    _write_atomic(path, render_watch_page(media_filename))
+    _write_atomic(path, render_watch_page(media_filename, gallery_image_urls))
     return path
 
 

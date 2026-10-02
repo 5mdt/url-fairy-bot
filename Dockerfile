@@ -24,7 +24,11 @@ RUN uv sync --frozen --no-dev --no-editable \
 
 FROM python:${PYTHON_VERSION}-alpine
 
-RUN apk add --no-cache ffmpeg
+# #BUG-0043: fixed-UID unprivileged user; su-exec drops to it in entrypoint.sh
+RUN apk add --no-cache ffmpeg su-exec \
+    && adduser -D -u 1000 app \
+    && mkdir -p /tmp/url-fairy-bot-cache /config \
+    && chown app /tmp/url-fairy-bot-cache /config
 
 WORKDIR /app
 

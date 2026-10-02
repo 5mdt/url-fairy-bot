@@ -2,9 +2,25 @@
 
 ## Unreleased
 
+- `#UFB-0056` — `POST /process_url/` takes an `X-API-Key` header checked against `API_KEY` (comma-separated, unset keeps it open with a startup warning) and is rate limited per client (`API_RATE_LIMIT` / `API_RATE_WINDOW`, `429` + `Retry-After`); `X-Forwarded-For` is trusted only from `TRUSTED_PROXIES`. `/health` stays open.
+
+- Fix: `#BUG-0012` — `POST /process_url/` now validates `url` as an HTTP(S) URL, and redirect resolution refuses any target (first URL or any redirect hop) that resolves to a private, loopback, link-local, reserved, multicast or unspecified address. The API answers `400`; the bot replies with the invalid-URL message in private chats and stays silent in groups.
+
+## 2.10.0 (2026-10-02)
+
+- UFB-0055: the chat shows "typing…" while the bot resolves and downloads a link, and "sending a video…" during a native video upload (refreshed every 4 s, cancelled on success or failure; quiet group links and instant cache hits show nothing).
+- Fix: `#BUG-0006` — redirect resolution, the yt-dlp download, preview generation and the `ffmpeg`/`ffprobe` calls now run in worker threads, so one slow request no longer stalls every other chat.
+- Fix: `#BUG-0014` — cache filename stems over 200 bytes are truncated and end in a sha256 suffix of the URL (short URLs are unchanged, so existing caches stay valid), and concurrent requests for the same uncached URL now share one download through a per-URL lock.
+- Fix: `#BUG-0079` — the watch page for a TikTok photo post now shows an `<audio>` player and the post's images (`og:image` is the first one) instead of treating the mp3 as a video. `#BUG-0032` — Spotify links skip the pointless yt-dlp attempt and go straight to the mirror link.
+- Fix: `#BUG-0043` — the container no longer runs as root. `entrypoint.sh` starts as root only to `chown` `CACHE_DIR` and `COOKIES_DIR` to the new `app` user (uid 1000), so volumes from earlier root-running versions need no manual fix, then drops to `app` with `su-exec`. `#BUG-0067` — nginx now serves the generated `404.html`, through an inline `configs:` entry in `docker-compose.yml` (needs a Compose version with `configs.content`).
+- Chore: `#BUG-0037` — `Settings` fields are plain typed defaults read by `pydantic-settings`; `#BUG-0052` — `pytest-cov`, a `make test-cov` target (output under `build/`) and a coverage report in CI, with no threshold; `#BUG-0071` — a real-ffmpeg preview test. Also fixed the `make yamllint` failure (a long traefik label and the `on:` key in `ci.yml`).
+- Fix: `#BUG-0068` — a failing reply for one URL no longer escapes `handle_message`; it is logged and the next URL is processed. `#BUG-0070` — `_fits_native_send`'s docstring now matches its reachability-only gating. `#BUG-0075` — `start_polling` probes the local Bot API server off the event loop. `#BUG-0073` — added the missing UFB-0036 thumbnail and declined-send tests.
+- Fix: `#BUG-0033` — a failed download with no mirror alternative now says "I cannot download this." and links only the original, instead of claiming the link "can be parsed better". `#BUG-0031` — Instagram's `/p/` and `/reel/` scope is now documented as deliberate. `#BUG-0039` — `sanitize_subfolder_name` renamed `url_to_filename_stem`. `#BUG-0040`, `#BUG-0041`, `#BUG-0045` — small cleanups in `app/url_processing.py` and `app/download.py`.
+- Fix: `#BUG-0038` — `LOG_LEVEL` is validated against `DEBUG`/`INFO`/`WARNING`/`ERROR` (case-insensitive) at settings load. `#BUG-0069` — the 10 MB `CLOUD_SEND_VIDEO_MAX_MB` default is documented as intentional. `#BUG-0074` — removed the redundant `networks: [default]` and documented the `CACHE_DIR`/mount coupling. `#BUG-0058` — README API example matches the real HTML reply.
+- Chore: `#BUG-0050` dropped unused `pyyaml`; `#BUG-0077` removed the nonexistent `test-cov` from `.PHONY`; `#BUG-0055` set `asyncio_mode = strict`; `#BUG-0056` deleted stale `tests/test_messages.yml`; `#BUG-0049` closed as not a bug (the `name-tests-test` hook already accepts `*_test.py`).
 - `#UFB-0040` — opt-in loudness normalization of near-silent downloads (`AUDIO_NORMALIZE_ENABLED`, `AUDIO_NORMALIZE_BELOW_LUFS`): audio quieter than the threshold is normalized to −16 LUFS with the video stream copied untouched. Promotes `#TODO-0001`.
 
-## 2.9.0
+## 2.9.0 (2026-10-01)
 
 - `#UFB-0028` — main now publishes the `stable` image tag (was `latest`; `IMAGE_TAG` default follows), and the pipeline also runs on a weekly cron (Sunday, configure in Woodpecker) besides push/tag/manual.
 - `#UFB-0039` — TikTok photo posts (`/photo/` URLs) are sent as a photo album plus the post's audio instead of falling back to a mirror link.

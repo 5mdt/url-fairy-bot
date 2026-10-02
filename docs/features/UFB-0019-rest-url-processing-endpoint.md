@@ -19,9 +19,12 @@ An HTTP API exposes the same URL-processing logic used by the Telegram bot: a cl
 
 ## Quirks & Decisions
 
+Fixed:
+
+- #BUG-0012: `url` is validated as `HttpUrl` (malformed input gets `422` before any outbound request), and redirect resolution refuses private, loopback, link-local, reserved, multicast and unspecified targets, including via redirects ([UFB-0007](UFB-0007-redirect-resolution.md)); a refused target gets a `400` with a generic message. Authentication and rate limiting are [UFB-0056](UFB-0056-api-auth-rate-limiting.md).
+
 Known gaps:
 
-- The request body's `url` field is untyped `str` (no URL-format validation), and a `HEAD` request is issued to whatever value is given — usable to probe internal/link-local addresses from the server ([BUGS #12](../BUGS.md#12-unauthenticated-api-is-an-ssrf-capable-open-proxy-lowcontextual-p2d3)).
 - On failure, the raw exception message (e.g. DNS errors, internal paths) is returned as the HTTP error detail ([BUGS #11](../BUGS.md#11-follow_redirects-only-handles-the-timeout-case-low-p3d2)).
 
 ## Testing
@@ -29,6 +32,7 @@ Known gaps:
 ### Integration
 
 - Valid URL → 200 with the processed reply text.
+- A target resolving to a private/loopback address → 400, no request sent.
 - Malformed input → 4xx before any outbound request is made.
 - A processing failure → error response with no internal exception detail.
 

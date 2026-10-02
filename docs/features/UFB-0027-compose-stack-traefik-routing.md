@@ -15,6 +15,7 @@ The whole stack (app, file server, cache cleanup) deploys as one Docker Compose 
 - `app`, `nginx`, and `cron` (cleanup) services share a `cache` volume.
 - `nginx` carries the Traefik routing/TLS labels; `app` is reached only through it.
 - Compose environment blocks forward every operator-facing setting to the service that consumes it.
+- The `app` container starts as root only long enough for `entrypoint.sh` to `chown` `CACHE_DIR` and `COOKIES_DIR` to the fixed-UID `app` user (uid 1000), then drops privileges with `su-exec` and runs `uvicorn` as that user ([BUG-0043](../BUGS.md)). The ownership fix for volumes created by earlier root-running versions is automatic; no manual `chown` is needed.
 - `app` and `nginx` run `restart: unless-stopped`; see [UFB-0030](UFB-0030-registry-only-deployment.md) for images sourced from a registry instead of a local build, and for why `nginx` waits on `app`'s healthcheck before starting.
 
 ## Testing

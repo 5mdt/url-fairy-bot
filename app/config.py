@@ -1,66 +1,63 @@
 # config.py
-import os
+from typing import Literal
 
 from dotenv import load_dotenv
+from pydantic import field_validator
 from pydantic_settings import BaseSettings  # Updated import
 
 load_dotenv()
 
 
-# #UFB-0021
+# #UFB-0021, #BUG-0037: plain typed defaults; BaseSettings reads the env itself.
 class Settings(BaseSettings):
-    BASE_URL: str = os.getenv("BASE_URL", "")
-    IV_RHASH: str = os.getenv("IV_RHASH", "")
-    INLINE_VIDEO_MAX_MB: int = int(os.getenv("INLINE_VIDEO_MAX_MB", 10))
+    BASE_URL: str = ""
+    IV_RHASH: str = ""
+    INLINE_VIDEO_MAX_MB: int = 10
     # #UFB-0036
-    TELEGRAM_API_URL: str = os.getenv("TELEGRAM_API_URL", "")
-    CLOUD_SEND_VIDEO_MAX_MB: int = int(os.getenv("CLOUD_SEND_VIDEO_MAX_MB", 10))
-    LOCAL_SEND_VIDEO_MAX_MB: int = int(os.getenv("LOCAL_SEND_VIDEO_MAX_MB", 500))
-    BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-    CACHE_DIR: str = os.getenv("CACHE_DIR", "/tmp/url-fairy-bot-cache/")
-    FILE_TTL: int = int(os.getenv("FILE_TTL", 3))  # days untouched before deletion
-    CLEANUP_INTERVAL: int = int(os.getenv("CLEANUP_INTERVAL", 3600))  # seconds
-    COOKIES_DIR: str = os.getenv("COOKIES_DIR", "/config/")
-    DOWNLOAD_ALLOWED_DOMAINS: str = os.getenv("DOWNLOAD_ALLOWED_DOMAINS", "")
-    REWRITE_ALLOWED_DOMAINS: str = os.getenv("REWRITE_ALLOWED_DOMAINS", "")
-    FOLLOW_REDIRECT_TIMEOUT: int = int(os.getenv("FOLLOW_REDIRECT_TIMEOUT", 10))
-    COOKIE_JAR_ENABLED: bool = os.getenv("COOKIE_JAR_ENABLED", "false").lower() not in (
-        "false",
-        "0",
-        "no",
-    )
+    TELEGRAM_API_URL: str = ""
+    CLOUD_SEND_VIDEO_MAX_MB: int = 10
+    LOCAL_SEND_VIDEO_MAX_MB: int = 500
+    BOT_TOKEN: str = ""
+    CACHE_DIR: str = "/tmp/url-fairy-bot-cache/"
+    FILE_TTL: int = 3  # days untouched before deletion
+    CLEANUP_INTERVAL: int = 3600  # seconds
+    COOKIES_DIR: str = "/config/"
+    DOWNLOAD_ALLOWED_DOMAINS: str = ""
+    REWRITE_ALLOWED_DOMAINS: str = ""
+    FOLLOW_REDIRECT_TIMEOUT: int = 10
+    # #UFB-0056
+    API_KEY: str = ""  # comma-separated; empty = endpoint open
+    API_RATE_LIMIT: int = 30  # requests per window per client; 0 disables
+    API_RATE_WINDOW: int = 60  # seconds
+    TRUSTED_PROXIES: str = ""  # comma-separated IPs/CIDRs
+    COOKIE_JAR_ENABLED: bool = False
     # #UFB-0038
-    COOKIE_KEEPALIVE_INTERVAL: int = int(os.getenv("COOKIE_KEEPALIVE_INTERVAL", 3600))
-    COOKIE_HEALTHCHECK: bool = os.getenv("COOKIE_HEALTHCHECK", "false").lower() not in (
-        "false",
-        "0",
-        "no",
-    )
+    COOKIE_KEEPALIVE_INTERVAL: int = 3600
+    COOKIE_HEALTHCHECK: bool = False
     # #UFB-0040
-    AUDIO_NORMALIZE_ENABLED: bool = os.getenv(
-        "AUDIO_NORMALIZE_ENABLED", "false"
-    ).lower() not in ("false", "0", "no")
-    AUDIO_NORMALIZE_BELOW_LUFS: float = float(
-        os.getenv("AUDIO_NORMALIZE_BELOW_LUFS", -40)
-    )
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO").upper()
+    AUDIO_NORMALIZE_ENABLED: bool = False
+    AUDIO_NORMALIZE_BELOW_LUFS: float = -40.0
+    # #BUG-0038: restricted so a typo fails at settings load, not in basicConfig
+    LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    @field_validator("LOG_LEVEL", mode="before")
+    @classmethod
+    def _upper_log_level(cls, v):
+        return v.upper() if isinstance(v, str) else v
+
     # #UFB-0037
-    MESSAGE_LOCALE: str = os.getenv("MESSAGE_LOCALE", "en")
+    MESSAGE_LOCALE: str = "en"
 
     # Domain-rewrite mirror destinations (source-matching regex stays in code)
     # #UFB-0022
-    SPOTIFY_MIRROR_DOMAIN: str = os.getenv("SPOTIFY_MIRROR_DOMAIN", "fxspotify.com")
-    INSTAGRAM_MIRROR_DOMAIN: str = os.getenv(
-        "INSTAGRAM_MIRROR_DOMAIN", "kkinstagram.com"
-    )
-    REDDIT_MIRROR_DOMAIN: str = os.getenv("REDDIT_MIRROR_DOMAIN", "rxddit.com")
-    THREADS_MIRROR_DOMAIN: str = os.getenv("THREADS_MIRROR_DOMAIN", "fx.akitsuki.me")
-    TIKTOK_MIRROR_DOMAIN: str = os.getenv("TIKTOK_MIRROR_DOMAIN", "tfxktok.com")
-    TWITTER_MIRROR_DOMAIN: str = os.getenv("TWITTER_MIRROR_DOMAIN", "fxtwitter.com")
-    YOUTUBE_MIRROR_DOMAIN: str = os.getenv("YOUTUBE_MIRROR_DOMAIN", "yfxtube.com")
-    YOUTUBE_SHORT_MIRROR_DOMAIN: str = os.getenv(
-        "YOUTUBE_SHORT_MIRROR_DOMAIN", "fxyoutu.be"
-    )
+    SPOTIFY_MIRROR_DOMAIN: str = "fxspotify.com"
+    INSTAGRAM_MIRROR_DOMAIN: str = "kkinstagram.com"
+    REDDIT_MIRROR_DOMAIN: str = "rxddit.com"
+    THREADS_MIRROR_DOMAIN: str = "fx.akitsuki.me"
+    TIKTOK_MIRROR_DOMAIN: str = "tfxktok.com"
+    TWITTER_MIRROR_DOMAIN: str = "fxtwitter.com"
+    YOUTUBE_MIRROR_DOMAIN: str = "yfxtube.com"
+    YOUTUBE_SHORT_MIRROR_DOMAIN: str = "fxyoutu.be"
 
 
 settings = Settings()
