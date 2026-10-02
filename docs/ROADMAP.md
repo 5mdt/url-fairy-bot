@@ -4,19 +4,11 @@ Order, not scope. An item's contract stays in its feature doc or tracker entry.
 
 | # | Epic                | Why here                                                                                                                        |
 |---|---------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| 1 | Hardening           | Two P1 bugs: any slow request stalls everyone, and the public API is an open proxy; plus instant feedback while a request runs. |
 | 2 | Observability       | Measure before building more; alerts and `/stats` build on the counters.                                                        |
 | 3 | Metadata foundation | The store that duplicates, reports and richer replies share.                                                                    |
 | 4 | Platform coverage   | New downloaders, judged by the metrics from epic 2.                                                                             |
 | 5 | UX extras           | Nice-to-have surfaces on top of a solid base.                                                                                   |
 | 6 | Later / scale       | Only if load requires it.                                                                                                       |
-
-## 1. Hardening
-
-1. #BUG-0006 - blocking calls on the event loop, now including the preview and `ffmpeg` calls; one slow download stalls every user.
-2. #UFB-0055 - progress chat action ("typing…" / "sending a video…") [P1/D2, target 2.10.0]; needs #BUG-0006 first, since a blocked loop can't refresh the indicator.
-
-**Done when:** one slow download doesn't stall other requests, `/process_url/` rejects private and loopback targets, and a user sees a chat action within a second of posting a link.
 
 ## 2. Observability
 

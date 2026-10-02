@@ -1,11 +1,13 @@
 # url_processing.py
 
+import asyncio
 import ipaddress
 import logging
 import os
 import re
 import shutil
 import socket
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from urllib.parse import (
     parse_qsl,
@@ -295,7 +297,8 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
         if video_os_path:
             video_path = os.path.basename(video_os_path)
             try:
-                preview.generate_preview(video_os_path)
+                # #BUG-0006: ffmpeg runs off the event loop
+                await asyncio.to_thread(preview.generate_preview, video_os_path)
             except OSError as e:
                 logger.warning(f"Failed to generate preview for {video_path}: {e}")
             try:
@@ -314,14 +317,17 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
     return None
 
 
-# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014
+# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014, #UFB-0055
 async def process_url_request(
-    url: str, is_group_chat: bool = False
+    url: str,
+    is_group_chat: bool = False,
+    on_download: Callable[[], None] | None = None,
 ) -> str | DownloadResult | None:
     url = str(url)  # Ensure url is a string
 
     # Follow redirects first to get the final URL
-    final_url = follow_redirects(url)
+    # #BUG-0006: blocking requests.head, kept off the event loop
+    final_url = await asyncio.to_thread(follow_redirects, url)
 
     # Check if the domain is allowed
     if not is_domain_allowed(final_url):
@@ -340,6 +346,8 @@ async def process_url_request(
     try:
         if _domain_in_allowlist(final_url, ",".join(NO_DOWNLOAD_DOMAINS)):
             raise UnsupportedUrlError("Known non-video platform.")
+        if on_download:
+            on_download()  # #UFB-0055: a reply is coming; show progress
         response = await attempt_download(final_url)
         if response:
             return response

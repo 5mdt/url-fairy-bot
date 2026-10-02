@@ -2,7 +2,7 @@
 
 import asyncio
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, patch
 
 import pytest
 from aiogram.enums import ParseMode
@@ -10,6 +10,7 @@ from aiogram.enums import ParseMode
 from app import bot as bot_module
 from app import messages, preview
 from app.bot import (
+    ChatActionIndicator,
     _build_session,
     _fits_native_send,
     _reply_with_video,
@@ -239,7 +240,7 @@ async def test_small_file_tries_video_reply():
         ) as mock_video,
     ):
         await handle_message(message)
-    mock_video.assert_awaited_once_with(message, "/tmp/clip.mp4", "caption")
+    mock_video.assert_awaited_once_with(message, "/tmp/clip.mp4", "caption", ANY)
     message.reply.assert_not_awaited()
 
 
@@ -714,3 +715,161 @@ async def test_gallery_audio_failure_does_not_trigger_text_fallback(tmp_path):
         await handle_message(message)
 
     message.reply.assert_not_awaited()
+
+
+# --- UFB-0055: progress chat action ---
+
+
+# #UFB-0055
+@pytest.mark.asyncio
+async def test_indicator_resends_on_interval_and_follows_action_change():
+    sent = []
+
+    async def send(action):
+        sent.append(action)
+
+    ind = ChatActionIndicator(send, interval=0.02, delay=0)
+    ind.start()
+    await asyncio.sleep(0.07)
+    ind.action = "upload_video"
+    await asyncio.sleep(0.05)
+    await ind.stop()
+    assert sent[0] == "typing" and sent.count("typing") >= 2
+    assert sent[-1] == "upload_video"
+
+
+# #UFB-0055
+@pytest.mark.asyncio
+async def test_indicator_start_delay_skips_instant_replies():
+    send = AsyncMock()
+    ind = ChatActionIndicator(send, interval=0.02, delay=0.2)
+    ind.start()
+    await asyncio.sleep(0.02)
+    await ind.stop()
+    send.assert_not_awaited()
+
+
+# #UFB-0055
+@pytest.mark.asyncio
+async def test_indicator_stop_cancels_task_and_stops_sending():
+    send = AsyncMock()
+    ind = ChatActionIndicator(send, interval=0.01, delay=0)
+    ind.start()
+    ind.start()  # idempotent
+    await asyncio.sleep(0.03)
+    await ind.stop()
+    count = send.await_count
+    await asyncio.sleep(0.05)
+    assert send.await_count == count
+    await ind.stop()  # safe twice / without start
+
+
+# #UFB-0055
+@pytest.mark.asyncio
+async def test_indicator_survives_failing_send():
+    send = AsyncMock(side_effect=RuntimeError("telegram down"))
+    ind = ChatActionIndicator(send, interval=0.01, delay=0)
+    ind.start()
+    await asyncio.sleep(0.05)
+    await ind.stop()
+    assert send.await_count >= 2
+
+
+def _action_message(text, chat_type="private"):
+    message = make_message(text, chat_type=chat_type)
+    message.chat.id = 42
+    message.bot.send_chat_action = AsyncMock()
+    return message
+
+
+# #UFB-0055
+@pytest.mark.asyncio
+async def test_handle_message_private_shows_typing_while_processing(monkeypatch):
+    monkeypatch.setattr(bot_module, "CHAT_ACTION_START_DELAY_SECONDS", 0)
+    message = _action_message("https://example.com/x")
+
+    async def slow(*_a, **_k):
+        await asyncio.sleep(0.05)
+        return "reply"
+
+    with patch("app.bot.process_url_request", new=slow):
+        await handle_message(message)
+
+    message.bot.send_chat_action.assert_awaited()
+    assert message.bot.send_chat_action.await_args.args == (42, "typing")
+
+
+# #UFB-0055
+@pytest.mark.asyncio
+async def test_handle_message_invalid_url_shows_no_action(monkeypatch):
+    monkeypatch.setattr(bot_module, "CHAT_ACTION_START_DELAY_SECONDS", 0)
+    message = _action_message("https:///")
+    with patch("app.bot.process_url_request", new=AsyncMock()) as proc:
+        await handle_message(message)
+    proc.assert_not_awaited()
+    await asyncio.sleep(0.02)
+    message.bot.send_chat_action.assert_not_awaited()
+
+
+# #UFB-0055, #UFB-0004
+@pytest.mark.asyncio
+async def test_handle_message_group_quiet_link_shows_no_action(monkeypatch):
+    """The group indicator starts only via on_download; a quiet link never calls it."""
+    monkeypatch.setattr(bot_module, "CHAT_ACTION_START_DELAY_SECONDS", 0)
+    message = _action_message("https://example.com/x", chat_type="group")
+
+    async def quiet(*_a, **_k):
+        await asyncio.sleep(0.03)
+        return None
+
+    with patch("app.bot.process_url_request", new=quiet):
+        await handle_message(message)
+    message.bot.send_chat_action.assert_not_awaited()
+
+
+# #UFB-0055, #UFB-0004
+@pytest.mark.asyncio
+async def test_handle_message_group_download_shows_typing(monkeypatch):
+    monkeypatch.setattr(bot_module, "CHAT_ACTION_START_DELAY_SECONDS", 0)
+    message = _action_message("https://example.com/x", chat_type="group")
+
+    async def downloading(url, is_group, on_download=None):
+        on_download()
+        await asyncio.sleep(0.05)
+        return "reply"
+
+    with patch("app.bot.process_url_request", new=downloading):
+        await handle_message(message)
+    message.bot.send_chat_action.assert_awaited()
+
+
+# #UFB-0055
+@pytest.mark.asyncio
+async def test_handle_message_failure_cancels_indicator(monkeypatch):
+    monkeypatch.setattr(bot_module, "CHAT_ACTION_START_DELAY_SECONDS", 0)
+    monkeypatch.setattr(bot_module, "CHAT_ACTION_INTERVAL_SECONDS", 0.01)
+    message = _action_message("https://example.com/x")
+
+    async def boom(*_a, **_k):
+        await asyncio.sleep(0.03)
+        raise RuntimeError("download blew up")
+
+    with patch("app.bot.process_url_request", new=boom):
+        await handle_message(message)
+
+    count = message.bot.send_chat_action.await_count
+    await asyncio.sleep(0.05)
+    assert message.bot.send_chat_action.await_count == count
+
+
+# #UFB-0055, #UFB-0036
+@pytest.mark.asyncio
+async def test_reply_with_video_switches_action_to_upload_video(tmp_path):
+    clip = tmp_path / "clip.mp4"
+    clip.write_bytes(b"0")
+    message = MagicMock()
+    message.reply_video = AsyncMock()
+    ind = ChatActionIndicator(AsyncMock())
+    with patch("app.bot.media.probe", return_value=None):
+        await _reply_with_video(message, str(clip), "c", ind)
+    assert ind.action == "upload_video"
