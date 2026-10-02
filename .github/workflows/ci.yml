@@ -5,6 +5,7 @@
 # pipeline (one job per tool, running in parallel). The image build/publish
 # pipeline lives in `.woodpecker.yml`, not here.
 name: CI
+# yamllint disable-line rule:truthy
 on:
   - push
   - pull_request
@@ -46,4 +47,4 @@ jobs:
         with:
           python-version: "3.14"
       - run: uv sync --all-groups
-      - run: uv run pytest
+      - run: uv run pytest --cov=app --cov-report=term-missing

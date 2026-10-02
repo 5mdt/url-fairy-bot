@@ -597,6 +597,21 @@ async def test_process_url_request_download_failed_no_rewrite_private_states_fai
     assert 'href="https://example.com/x"' in result
 
 
+# #UFB-0011, #BUG-0032
+@pytest.mark.asyncio
+async def test_process_url_request_skips_yt_dlp_for_spotify(monkeypatch):
+    monkeypatch.setattr(settings, "DOWNLOAD_ALLOWED_DOMAINS", "spotify.com")
+    url = "https://open.spotify.com/track/abc"
+    with (
+        patch("app.url_processing.follow_redirects", return_value=url),
+        patch("app.url_processing.yt_dlp_download", new=AsyncMock()) as mock_dl,
+    ):
+        result = await process_url_request(url, is_group_chat=False)
+
+    mock_dl.assert_not_called()
+    assert "fxspotify.com" in result
+
+
 # --- UFB-0039: TikTok photo galleries ---
 
 
@@ -625,6 +640,10 @@ async def test_attempt_download_routes_photo_url_to_gallery(tmp_path, monkeypatc
     assert result.media_path == str(audio)
     assert "example.test/watch/post.html" in result.text
     assert (tmp_path / "preview" / "post.jpg").read_bytes() == b"jpg"
+    page = (tmp_path / "watch" / "post.html").read_text(encoding="utf-8")
+    assert "<audio" in page
+    assert "og:video" not in page
+    assert 'src="https://example.test/gallery/post/01.jpg"' in page
 
 
 @pytest.mark.asyncio

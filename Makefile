@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help install sync fmt lint yamllint check test run pre-commit ddd \
+.PHONY: help install sync fmt lint yamllint check test test-cov run pre-commit ddd \
 	docker-build docker-up docker-down docker-logs docker-restart deploy-check clean
 
 UV := uv
@@ -40,6 +40,11 @@ ddd:
 ## test: Run the test suite
 test:
 	$(UV) run pytest
+
+## test-cov: Run the tests with coverage (data and HTML report under build/)
+test-cov:
+	mkdir -p build
+	COVERAGE_FILE=build/.coverage $(UV) run pytest --cov=app --cov-report=term-missing --cov-report=html:build/htmlcov
 
 ## run: Run the app locally with uvicorn (reload enabled)
 run:

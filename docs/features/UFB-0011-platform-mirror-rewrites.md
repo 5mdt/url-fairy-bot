@@ -18,6 +18,8 @@ Links to Spotify, Instagram, Reddit, Threads, TikTok, Twitter/X, and YouTube are
 
 ## Quirks & Decisions
 
+- Spotify has no yt-dlp extractor, so `process_url_request` skips the download attempt for known non-video platforms (`NO_DOWNLOAD_DOMAINS`, currently Spotify) and goes straight to the mirror rewrite, like a failed download (#BUG-0032).
+
 Known gap:
 
 - Instagram is matched only under `/p/` and `/reel/`, unlike every other platform's whole-domain match — a profile or story link gets no rewrite. This is deliberate (`#BUG-0031`): the Instagram mirror only serves posts and reels, so rewriting other paths would produce broken links.
@@ -33,6 +35,7 @@ Fixed:
 
 - One representative URL per platform → rewritten to the platform's configured mirror domain.
 - A domain that merely contains a platform's name as a substring (e.g. `spotifyXcom.example`) → not rewritten.
+- A Spotify URL with downloads allowed → `yt_dlp_download` is never called; the reply is the mirror link.
 - A platform's domain excluded via `REWRITE_ALLOWED_DOMAINS` → URL passed through unchanged.
 
 ## Status

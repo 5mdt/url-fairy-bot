@@ -44,6 +44,11 @@ class DownloadResult:
 CONTENT_QUERY_PARAMS = frozenset({"v", "list", "t", "index", "id"})
 
 
+# Platforms yt-dlp has no extractor for; downloading is pointless (#BUG-0032).
+# #UFB-0011
+NO_DOWNLOAD_DOMAINS = ("spotify.com",)
+
+
 # #UFB-0009, #UFB-0023
 def _domain_in_allowlist(url: str, allowlist_csv: str) -> bool:
     """
@@ -198,7 +203,10 @@ async def _attempt_gallery_download(final_url: str) -> DownloadResult:
         except OSError as e:
             logger.warning(f"Failed to write gallery preview for {audio_name}: {e}")
         try:
-            pages.write_watch_page(audio_name)
+            pages.write_watch_page(
+                audio_name,
+                [pages.gallery_image_url(audio_name, p) for p in gallery.image_paths],
+            )
         except OSError as e:
             logger.error(f"Failed to write watch page for {audio_name}: {e}")
         watch_url = _iv_watch_url(pages.watch_page_url(audio_name))
@@ -236,7 +244,7 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
     return None
 
 
-# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0013, #UFB-0014
+# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014
 async def process_url_request(
     url: str, is_group_chat: bool = False
 ) -> str | DownloadResult | None:
@@ -260,6 +268,8 @@ async def process_url_request(
         return messages.domain_not_allowed_with_mirror(modified_url, final_url)
 
     try:
+        if _domain_in_allowlist(final_url, ",".join(NO_DOWNLOAD_DOMAINS)):
+            raise UnsupportedUrlError("Known non-video platform.")
         response = await attempt_download(final_url)
         if response:
             return response

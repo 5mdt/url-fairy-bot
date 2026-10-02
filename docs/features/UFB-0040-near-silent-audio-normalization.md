@@ -29,9 +29,9 @@ flowchart TD
   R -->|no| Z
 ```
 
-| Setting                      | Default | Meaning                                                  |
-|------------------------------|---------|----------------------------------------------------------|
-| `AUDIO_NORMALIZE_ENABLED`    | `false` | Opt in to measuring and normalizing downloads            |
+| Setting                      | Default | Meaning                                                    |
+|------------------------------|---------|------------------------------------------------------------|
+| `AUDIO_NORMALIZE_ENABLED`    | `false` | Opt in to measuring and normalizing downloads              |
 | `AUDIO_NORMALIZE_BELOW_LUFS` | `-40`   | Integrated loudness under which a file counts as too quiet |
 
 ## Implementation

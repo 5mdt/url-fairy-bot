@@ -129,6 +129,8 @@ The bot deploys straight from published images — no repository checkout needed
 
 > **Note:** `CLOUD_SEND_VIDEO_MAX_MB` defaults to `10`, an intentional behavior change from the earlier `SEND_VIDEO_MAX_MB` default of `50`: on a stock deployment, videos of 10-50 MB now arrive as a text link instead of a native video. Raise it (up to Telegram's 50 MB cloud limit) to restore the old behavior. Also, if you override `CACHE_DIR`, change the `cache` volume mount path in `docker-compose.yml` (for both `app` and `telegram-bot-api`) to match.
 
+> **Note:** The `app` container runs as a non-root `app` user (uid 1000). On start, its entrypoint automatically `chown`s `CACHE_DIR` and `COOKIES_DIR` (including a bind-mounted `/config`) to that user, so volumes created by earlier root-running versions need no manual fix. Cached files stay world-readable for `nginx` and `telegram-bot-api`.
+
 See [`.env.example`](.env.example) for a ready-to-copy file with every variable, including the mirror-domain overrides above.
 
 ### Cookie Support

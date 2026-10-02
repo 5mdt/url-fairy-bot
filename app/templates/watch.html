@@ -1,24 +1,29 @@
 {% extends "base.html" %}
 {% block title %}🪄 URL-Fairy{% endblock %}
 {% block meta %}
-    <meta property="og:type" content="video.other">
+    <meta property="og:type" content="{{ "music.song" if audio_mode else "video.other" }}">
     <meta property="og:title" content="🪄 URL Fairy">
     <meta property="og:url" content="{{ page_url }}">
-    {% if show_video_meta %}
+    {% if show_video_meta and not audio_mode %}
     <meta property="og:video" content="{{ media_url }}">
     <meta property="og:video:secure_url" content="{{ media_url }}">
     <meta property="og:video:type" content="{{ video_type }}">
     {% endif %}
     <meta property="og:image" content="{{ image_url }}">
     <meta property="og:image:type" content="{{ image_type }}">
-    {% if show_video_meta %}
+    {% if show_video_meta and not audio_mode %}
     <meta name="twitter:card" content="player">
     <meta name="twitter:player:stream" content="{{ media_url }}">
     {% endif %}
 {% endblock %}
 {% block content %}
     <h1>Hi, this is ✨URL Fairy✨:</h1>
-    {% if show_video_meta %}
+    {% if audio_mode %}
+    <audio controls preload="metadata" src="{{ media_url }}"></audio>
+    {% for gallery_image_url in gallery_image_urls %}
+    <img src="{{ gallery_image_url }}" alt="">
+    {% endfor %}
+    {% elif show_video_meta %}
     <video controls preload="metadata" src="{{ media_url }}"></video>
     {% else %}
     <img src="{{ image_url }}" alt="">

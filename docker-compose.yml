@@ -73,7 +73,8 @@ services:
       traefik.http.routers.url-fairy-bot.rule: Host(`${BASE_URL:-localhost}`)
       traefik.http.routers.url-fairy-bot.service: url-fairy-bot
       traefik.http.routers.url-fairy-bot.tls: true
-      traefik.http.routers.url-fairy-bot.tls.certresolver: ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
+      traefik.http.routers.url-fairy-bot.tls.certresolver: >-
+        ${LETSENCRYPT_RESOLVER_NAME:-letsencrypt-cloudflare-dns-challenge}
       traefik.http.services.url-fairy-bot.loadbalancer.server.port: 80
     ports:
       - ${PUBLIC_PORT:-80:80}
@@ -83,6 +84,10 @@ services:
       - traefik_default
     volumes:
       - cache:/usr/share/nginx/html:ro
+    # #BUG-0067: serve the app-generated 404 page (UFB-0025/UFB-0033)
+    configs:
+      - source: nginx_default_conf
+        target: /etc/nginx/conf.d/default.conf
   # Optional: a self-hosted Telegram Bot API server in local mode, raising
   # the video-send ceiling above the cloud API's 50 MB (the default
   # CLOUD_SEND_VIDEO_MAX_MB is a deliberately lower 10 MB; see
@@ -125,3 +130,20 @@ services:
 volumes:
   cache:
   botapi:
+# Inline content keeps the deployment checkout-free (UFB-0030).
+configs:
+  nginx_default_conf:
+    content: |
+      # no blank lines in here: pre-commit's sort-simple-yaml splits on them
+      server {
+          listen 80;
+          server_name localhost;
+          root /usr/share/nginx/html;
+          location / {
+              index index.html;
+          }
+          error_page 404 /404.html;
+          location = /404.html {
+              internal;
+          }
+      }

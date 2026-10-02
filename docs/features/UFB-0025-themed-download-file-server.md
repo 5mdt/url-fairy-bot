@@ -12,7 +12,8 @@ Cached downloaded files are served over plain HTTP at `BASE_URL`. Each file is r
 
 ## Implementation
 
-- nginx serves the cache directory read-only as plain static files — no server-side templating. The landing page, 404 page, and per-file watch pages are pre-rendered by the app; see [UFB-0033](UFB-0033-static-page-generation.md).
+- nginx serves the cache directory read-only as plain static files — no server-side templating. Its only configuration is a tiny server block shipped inline in `docker-compose.yml` (a Compose `configs:` entry mounted at `/etc/nginx/conf.d/default.conf`): the stock static server on port 80 plus `error_page 404 /404.html;` and `location = /404.html { internal; }`, so a missing path returns the generated `404.html` with status 404 ([BUG-0067](../BUGS.md)). `/`, `/watch/<stem>.html` and `/<file>` remain plain files in the docroot.
+- Cached files are world-readable (default umask), because nginx and the optional `telegram-bot-api` container read the shared volume as other users. The landing page, 404 page, and per-file watch pages are pre-rendered by the app; see [UFB-0033](UFB-0033-static-page-generation.md).
 
 ## Testing
 

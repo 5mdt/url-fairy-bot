@@ -31,6 +31,7 @@ A `/watch/<file>` page's `og:image` is a JPEG frame extracted from that file's o
 
 - `preview_path`/`preview_url` map a media filename to the right path/URL, including percent-encoding.
 - `generate_preview` invokes `ffmpeg` with the expected arguments and destination; a non-zero exit, a missing binary, and a timeout all return `None` without raising.
+- A real `ffmpeg` run through `generate_preview` against the bundled `sample.mp4` writes a JPEG (starts with `FF D8`); skipped when `ffmpeg` is not installed (#BUG-0071).
 - `render_watch_page`: preview file present → `og:image` is the per-file URL; absent → falls back to `/preview.png`; `og:video:type` matches the media's real extension.
 - A preview whose media goes stale is swept with it; an orphaned preview with no media is swept; the sample's preview is protected.
 
