@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.12.1 (2026-10-07)
+
 - `#UFB-0028` — the Woodpecker pipeline also pushes any git tag that points at the built commit on a push, manual or cron run.
 - `#UFB-0028` — before building, the pipeline re-tags an existing `<short sha>` registry image instead of rebuilding (cron always rebuilds), then lists every image of the run with digest and labels.
 
