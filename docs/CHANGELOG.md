@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.11.0 (2026-10-07)
+
 - `#UFB-0049` — `/stats` admin command replies with requests handled, download success, failure and mirror-fallback rates, a per-platform breakdown and cache size; only chats in `ADMIN_CHAT_ID` get an answer, everyone else is ignored, and the output never contains chat IDs or URLs.
 - `#UFB-0054` — maintainer alerts: with `ADMIN_CHAT_ID` set (comma-separated chat IDs) the bot messages the admin chats once when a cookie jar is logged out, a platform's downloads spike in failures (`ALERT_FAILURE_SPIKE_*`), the local Bot API server is unreachable, yt-dlp is out of date or the cache volume is nearly full, then once more on recovery. Each kind has an `ALERT_*` switch, rate limited by `ALERT_MIN_INTERVAL`.
 - `#UFB-0045` — `GET /metrics` serves Prometheus counters and histograms (requests, download outcome and downloader per platform, download and reply latency, cache size and hit rate, reply kind); platform labels are a fixed set plus `other`, never URLs or chat IDs.
