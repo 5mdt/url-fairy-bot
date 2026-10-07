@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 2.12.2 (2026-10-07)
+
 - Fix: `#BUG-0081` — TikTok photo posts whose author data carries `avatarThumb` as a plain URL string (not `{"urlList": [...]}`) no longer fail with "Download failed unexpectedly" after the images were already downloaded; `trim_tiktok_item` accepts both forms.
 
 ## 2.12.1 (2026-10-07)
