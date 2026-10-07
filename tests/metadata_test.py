@@ -95,6 +95,15 @@ def test_trim_tiktok_item_maps_author_and_description():
 
 
 # #UFB-0041, #UFB-0039
+def test_trim_tiktok_item_accepts_string_avatar():
+    item = {
+        "desc": "d",
+        "author": {"nickname": "N", "avatarThumb": "https://cdn/a.jpg"},
+    }
+    assert metadata.trim_tiktok_item(item)["avatar_url"] == "https://cdn/a.jpg"
+
+
+# #UFB-0041, #UFB-0039
 def test_trim_tiktok_item_tolerates_empty():
     assert metadata.trim_tiktok_item({}) is None
     assert metadata.trim_tiktok_item({"author": None, "desc": "d"})["title"] == "d"

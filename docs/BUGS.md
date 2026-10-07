@@ -2,7 +2,7 @@
 
 Defects, quirks, tech debt, and chores on already-shipped behavior. New, not-yet-built behavior goes in `docs/TODO.md` instead. Entries are deleted when fixed (the fix gets a `docs/CHANGELOG.md` bullet); IDs are never reused or renumbered, so deletions leave gaps. (BUG-0065 was allocated but never recorded here or in `CHANGELOG.md` — left as a gap rather than reused, per the policy above.)
 
-Next free ID: **BUG-0081**.
+Next free ID: **BUG-0082**.
 
 Each entry ends with a `[P#/D#]` marker:
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fix: `#BUG-0081` — TikTok photo posts whose author data carries `avatarThumb` as a plain URL string (not `{"urlList": [...]}`) no longer fail with "Download failed unexpectedly" after the images were already downloaded; `trim_tiktok_item` accepts both forms.
+
 ## 2.12.1 (2026-10-07)
 
 - `#UFB-0028` — the Woodpecker pipeline also pushes any git tag that points at the built commit on a push, manual or cron run.

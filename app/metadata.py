@@ -123,18 +123,27 @@ def trim_info(
 
 
 # #UFB-0041, #UFB-0039
+def _tiktok_avatar(thumb) -> str | None:
+    """TikTok sends `avatarThumb` as a URL string, or as `{"urlList": [...]}`."""
+    if isinstance(thumb, dict):
+        urls = thumb.get("urlList")
+        thumb = urls[0] if isinstance(urls, list) and urls else None
+    return thumb if isinstance(thumb, str) else None
+
+
+# #UFB-0041, #UFB-0039
 def trim_tiktok_item(item, *, source_url: str | None = None) -> dict | None:
     """The trimmed record for a TikTok photo post's raw item data."""
     if not isinstance(item, dict):
         return None
     author = item.get("author") if isinstance(item.get("author"), dict) else {}
-    avatar = (author.get("avatarThumb") or {}).get("urlList") or [None]
+    avatar = _tiktok_avatar(author.get("avatarThumb"))
     desc = item.get("desc")
     return _record(
         title=desc,
         uploader=author.get("nickname") or author.get("uniqueId"),
         description=desc,
-        avatar_url=avatar[0],
+        avatar_url=avatar,
         source_url=source_url,
         extractor="TikTok",
     )
