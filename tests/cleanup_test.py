@@ -206,3 +206,87 @@ def test_stale_gallery_images_are_swept_and_directory_pruned(cache_dir):
 
     assert not image.exists()
     assert not gallery.exists()
+
+
+# --- #UFB-0041: metadata records and subtitles ---
+
+
+# #UFB-0041
+def test_sweeping_stale_media_also_deletes_its_metadata_and_subtitles(cache_dir):
+    from app import metadata
+
+    media = cache_dir / "clip.mp4"
+    media.write_text("data")
+    metadata.write("clip", {"title": "T"})
+    (cache_dir / "subs" / "clip").mkdir(parents=True)
+    (cache_dir / "subs" / "clip" / "clip.en.vtt").write_text("WEBVTT")
+    _age(str(media), days=10)
+
+    cleanup.sweep_once()
+
+    assert not media.exists()
+    assert metadata.read("clip") is None
+    assert not (cache_dir / "subs" / "clip").exists()
+
+
+# #UFB-0041
+def test_metadata_of_live_media_is_kept_even_if_the_record_is_old(cache_dir):
+    from app import metadata
+
+    media = cache_dir / "clip.mp4"
+    media.write_text("data")
+    path = metadata.write("clip", {"title": "T"})
+    (cache_dir / "subs" / "clip").mkdir(parents=True)
+    sub = cache_dir / "subs" / "clip" / "clip.en.vtt"
+    sub.write_text("WEBVTT")
+    _age(path, days=10)
+    _age(str(sub), days=10)
+
+    cleanup.sweep_once()
+
+    assert metadata.read("clip") == {"title": "T"}
+    assert sub.exists()
+
+
+# #UFB-0041
+def test_orphaned_metadata_and_subtitles_without_media_are_deleted(cache_dir):
+    from app import metadata
+
+    metadata.write("gone", {"title": "T"})
+    (cache_dir / "subs" / "gone").mkdir(parents=True)
+    (cache_dir / "subs" / "gone" / "gone.en.vtt").write_text("WEBVTT")
+
+    cleanup.sweep_once()
+
+    assert metadata.read("gone") is None
+    assert not (cache_dir / "subs" / "gone").exists()
+
+
+# #UFB-0041, #UFB-0039
+def test_metadata_of_a_gallery_without_audio_lives_while_its_images_do(cache_dir):
+    from app import metadata
+
+    metadata.write("post", {"title": "T"})
+    (cache_dir / "gallery" / "post").mkdir(parents=True)
+    (cache_dir / "gallery" / "post" / "01.jpg").write_text("img")
+
+    cleanup.sweep_once()
+
+    assert metadata.read("post") == {"title": "T"}
+
+
+# #UFB-0050
+def test_reply_records_are_swept_by_window_not_file_ttl(cache_dir, monkeypatch):
+    from app import duplicates
+
+    monkeypatch.setattr(settings, "DUPLICATE_WINDOW", 3600)
+    duplicates.record(1, "https://e.com/old", 10, now=time.time() - 7200)
+    duplicates.record(1, "https://e.com/new", 11)
+    old = duplicates._path("https://e.com/old")
+    new = duplicates._path("https://e.com/new")
+    _age(new, 10)  # old file mtime must not matter
+
+    cleanup.sweep_once()
+
+    assert not os.path.exists(old)
+    assert duplicates.lookup(1, "https://e.com/new") == 11

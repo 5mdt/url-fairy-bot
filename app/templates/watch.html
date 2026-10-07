@@ -9,6 +9,9 @@
     <meta property="og:video:secure_url" content="{{ media_url }}">
     <meta property="og:video:type" content="{{ video_type }}">
     {% endif %}
+    {% if meta and meta.description %}
+    <meta property="og:description" content="{{ meta.description[:200] }}">
+    {% endif %}
     <meta property="og:image" content="{{ image_url }}">
     <meta property="og:image:type" content="{{ image_type }}">
     {% if show_video_meta and not audio_mode %}
@@ -29,4 +32,21 @@
     <img src="{{ image_url }}" alt="">
     {% endif %}
     <p>⬇️ <a href="{{ media_url }}">Download the file</a></p>
+    {% if meta %}
+    <section class="meta">
+        {% if meta.title %}<h2>{{ meta.title }}</h2>{% endif %}
+        {% if meta.uploader or meta.avatar_url %}
+        <p class="uploader">
+            {% if meta.avatar_url %}<img src="{{ meta.avatar_url }}" alt="" width="32" height="32">{% endif %}
+            {% if meta.uploader_url %}<a href="{{ meta.uploader_url }}">{{ meta.uploader }}</a>{% else %}{{ meta.uploader }}{% endif %}
+        </p>
+        {% endif %}
+        {% if meta.description %}<p style="white-space: pre-wrap">{{ meta.description }}</p>{% endif %}
+        {% if meta.subtitles %}
+        <p>💬 Subtitles:
+            {% for sub in meta.subtitles %}<a href="{{ sub.url }}">{{ sub.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        </p>
+        {% endif %}
+    </section>
+    {% endif %}
 {% endblock %}

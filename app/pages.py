@@ -9,7 +9,7 @@ from urllib.parse import quote
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from app import preview
+from app import metadata, preview
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -87,7 +87,37 @@ def _fits_inline_video(media_filename: str) -> bool:
     return size_mb <= settings.INLINE_VIDEO_MAX_MB
 
 
-# #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0039
+# #UFB-0041
+def _metadata_view(media_filename: str) -> dict | None:
+    """The full-form metadata for the watch page template, or None."""
+    record = metadata.read(media_filename)
+    if not record:
+        return None
+    avatar = record.get("avatar_url")
+    uploader_url = record.get("uploader_url")
+    subtitles = record.get("subtitles")
+    return {
+        "title": record.get("title"),
+        "uploader": record.get("uploader"),
+        "uploader_url": uploader_url
+        if isinstance(uploader_url, str) and uploader_url.startswith("https://")
+        else None,
+        "description": record.get("description"),
+        "avatar_url": avatar
+        if isinstance(avatar, str) and avatar.startswith("https://")
+        else None,
+        "subtitles": [
+            {
+                "name": name,
+                "url": metadata.subtitle_url(media_filename, name),
+            }
+            for name in (subtitles if isinstance(subtitles, list) else [])
+            if isinstance(name, str)
+        ],
+    }
+
+
+# #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0039, #UFB-0041
 def render_watch_page(
     media_filename: str, gallery_image_urls: list[str] | None = None
 ) -> str:
@@ -119,6 +149,7 @@ def render_watch_page(
         image_type=image_type,
         video_type=video_type,
         show_video_meta=_fits_inline_video(media_filename),
+        meta=_metadata_view(media_filename),
     )
 
 

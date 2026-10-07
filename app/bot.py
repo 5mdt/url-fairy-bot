@@ -12,10 +12,16 @@ from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.enums import ChatType, ParseMode
 from aiogram.filters import Command, CommandStart
-from aiogram.types import FSInputFile, InputMediaPhoto, Message
+from aiogram.types import (
+    CallbackQuery,
+    FSInputFile,
+    InputMediaPhoto,
+    Message,
+    ReplyParameters,
+)
 from pydantic import ValidationError
 
-from app import media, messages, metrics, preview, stats
+from app import duplicates, media, messages, metrics, preview, reports, stats
 from app.config import settings
 
 from .models import URLMessage
@@ -151,6 +157,14 @@ async def stats_command(message: Message):
     await message.reply(
         stats.format_stats(metrics.snapshot()), parse_mode=ParseMode.HTML
     )
+
+
+# #UFB-0051: the "Report broken link" button on failure replies.
+@dp.callback_query(F.data.startswith("rb:"))
+async def report_broken_link(query: CallbackQuery):
+    token = reports.parse_callback(query.data)
+    kind = reports.submit(query.from_user.id, token) if token else "expired"
+    await query.answer(messages.report(kind))
 
 
 # #UFB-0055: Telegram clears a chat action after ~5 s, so refresh sooner.
@@ -347,7 +361,7 @@ async def _deliver_result(
         metrics.observe_reply(kind, time.perf_counter() - start)
 
 
-# #UFB-0014, #UFB-0036, #UFB-0039, #UFB-0045, #UFB-0055
+# #UFB-0014, #UFB-0036, #UFB-0039, #UFB-0045, #UFB-0051, #UFB-0055
 async def _send_reply(
     message: Message,
     result: str | DownloadResult,
@@ -378,11 +392,36 @@ async def _send_reply(
             if await _reply_with_video(message, media_path, text, indicator):
                 return "native_video"
 
-    await message.reply(text, parse_mode=ParseMode.HTML)
+    markup = reports.keyboard_for(result)  # #UFB-0051: failure replies only
+    extra = {"reply_markup": markup} if markup else {}
+    await message.reply(text, parse_mode=ParseMode.HTML, **extra)
     return "text_link"
 
 
-# #UFB-0002, #UFB-0003, #UFB-0004, #UFB-0005, #UFB-0006, #UFB-0014, #UFB-0055, #BUG-0068
+# #UFB-0050
+async def _answer_duplicate(message: Message, url: str) -> bool:
+    """True when `url` was already answered in this chat within the window
+    and the short pointer reply went out. A pointer that fails (earlier
+    message deleted) drops the entry and returns False: reply normally."""
+    earlier_id = duplicates.lookup(message.chat.id, url)
+    if earlier_id is None:
+        return False
+    try:
+        await message.answer(
+            messages.duplicate_link(),
+            parse_mode=ParseMode.HTML,
+            reply_parameters=ReplyParameters(
+                message_id=earlier_id, allow_sending_without_reply=False
+            ),
+        )
+        return True
+    except Exception as e:
+        logger.info(f"Earlier reply {earlier_id} unavailable for {url}: {e}")
+        duplicates.forget(message.chat.id, url)
+        return False
+
+
+# #UFB-0002, #UFB-0003, #UFB-0004, #UFB-0005, #UFB-0006, #UFB-0014, #UFB-0050, #UFB-0055, #BUG-0068
 @dp.message(F.text)
 async def handle_message(message: Message):
     """
@@ -419,6 +458,9 @@ async def handle_message(message: Message):
             url_message = URLMessage(
                 url=url, is_group_chat=message.chat.type in GROUP_CHAT_TYPES
             )
+            if await _answer_duplicate(message, url):  # #UFB-0050
+                continue
+            recorder = duplicates.ReplyRecorder(message)  # #UFB-0050
             # #UFB-0055: a group link starts it only once a download is
             # attempted (process_url_request's on_download), so quiet links
             # show nothing; a private link shows it from validation on.
@@ -430,7 +472,9 @@ async def handle_message(message: Message):
                 on_download=indicator.start,
             )
             if result is not None:
-                await _deliver_result(message, result, indicator)
+                await _deliver_result(recorder, result, indicator)
+                if recorder.first_id is not None:  # #UFB-0050
+                    duplicates.record(message.chat.id, url, recorder.first_id)
 
         except ValidationError as e:
             logger.warning(f"Validation error for URL: {url} - {e}")

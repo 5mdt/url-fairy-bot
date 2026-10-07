@@ -796,3 +796,86 @@ async def test_attempt_download_gallery_without_audio_links_source_only(
         result = await attempt_download("https://www.tiktok.com/@u/photo/1")
     assert result.media_path is None
     assert result.text.count("https://www.tiktok.com/@u/photo/1") == 2
+
+
+# --- UFB-0041: metadata in the reply caption ---
+
+
+# #UFB-0041
+@pytest.mark.asyncio
+async def test_attempt_download_caption_includes_metadata(monkeypatch, tmp_path):
+    from app import metadata
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    metadata.write(
+        "some_video",
+        {"title": "Cool <clip>", "uploader": "Bob", "description": "About it"},
+    )
+    with patch(
+        "app.url_processing.yt_dlp_download",
+        new=AsyncMock(return_value="/cache/some_video.mp4"),
+    ):
+        result = await attempt_download("https://tiktok.com/@user/video/1")
+
+    assert result.text.startswith("<b>Cool &lt;clip&gt;</b>\nBob\n<i>About it</i>\n\n")
+    assert "https://example.test/watch/some_video.html" in result.text
+    assert "Cool" in (tmp_path / "watch" / "some_video.html").read_text()
+
+
+# #UFB-0041
+@pytest.mark.asyncio
+async def test_attempt_download_caption_stays_under_telegram_limit(
+    monkeypatch, tmp_path
+):
+    from app import metadata
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "IV_RHASH", "abcdef123456")
+    metadata.write(
+        "some_video",
+        {"title": "T&" * 400, "uploader": "U<" * 400, "description": "D&" * 5000},
+    )
+    long_url = "https://tiktok.com/@user/video/1?" + "a=b&" * 50
+    with patch(
+        "app.url_processing.yt_dlp_download",
+        new=AsyncMock(return_value="/cache/some_video.mp4"),
+    ):
+        result = await attempt_download(long_url)
+
+    assert len(result.text) < 1024
+
+
+# #UFB-0041
+@pytest.mark.asyncio
+async def test_attempt_download_without_metadata_replies_as_before(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    with patch(
+        "app.url_processing.yt_dlp_download",
+        new=AsyncMock(return_value="/cache/some_video.mp4"),
+    ):
+        result = await attempt_download("https://tiktok.com/@user/video/1")
+
+    assert result.text.startswith("<a ")
+
+
+# #UFB-0041, #UFB-0039
+@pytest.mark.asyncio
+async def test_attempt_download_gallery_caption_includes_metadata(
+    tmp_path, monkeypatch
+):
+    from app import metadata
+    from app.download import GalleryDownload, url_to_filename_stem
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    url = "https://www.tiktok.com/@u/photo/1"
+    metadata.write(url_to_filename_stem(url), {"title": "Photos", "uploader": "Nick"})
+    gallery = GalleryDownload(audio_path=None, image_paths=["/x/01.jpg"])
+    with patch(
+        "app.url_processing.tiktok_gallery_download",
+        new=AsyncMock(return_value=gallery),
+    ):
+        result = await attempt_download(url)
+
+    assert result.text.startswith("<b>Photos</b>\nNick\n\n")

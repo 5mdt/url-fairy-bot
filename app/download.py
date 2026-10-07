@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 import yt_dlp
 
-from app import media, metrics
+from app import media, metadata, metrics
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -186,12 +186,26 @@ async def _url_lock(stem: str):
             _URL_LOCKS[stem] = (lock, users - 1)
 
 
-# #BUG-0006, #UFB-0015
-def _run_ydl_download(ydl_opts: dict, url: str) -> None:
+# #BUG-0006, #UFB-0015, #UFB-0041
+def _run_ydl_download(ydl_opts: dict, url: str):
     """The blocking yt-dlp download, including the cookie setup and the jar
-    lock acquisition (#UFB-0038); always called via asyncio.to_thread."""
+    lock acquisition (#UFB-0038); always called via asyncio.to_thread.
+    Returns yt-dlp's info dict (#UFB-0041)."""
     with _youtube_dl(ydl_opts) as ydl:
-        ydl.download([url])
+        return ydl.extract_info(url, download=True)
+
+
+# #UFB-0041
+def _subtitle_names(stem: str) -> list[str]:
+    """File names of the subtitles yt-dlp saved for `stem`."""
+    try:
+        return sorted(
+            n
+            for n in os.listdir(metadata.subs_dir(stem))
+            if not n.endswith(_INCOMPLETE_SUFFIXES)
+        )
+    except OSError:
+        return []
 
 
 # #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040, #BUG-0014
@@ -201,7 +215,7 @@ async def yt_dlp_download(url: str) -> str:
         return await _yt_dlp_download_locked(url, stem)
 
 
-# #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040, #BUG-0014
+# #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040, #UFB-0041, #BUG-0014
 async def _yt_dlp_download_locked(url: str, stem: str) -> str:
     cached_path = _cached_media_path(stem)
 
@@ -215,18 +229,30 @@ async def _yt_dlp_download_locked(url: str, stem: str) -> str:
 
     try:
         ydl_opts = {
-            "outtmpl": os.path.join(settings.CACHE_DIR, f"{stem}.%(ext)s"),
+            # #UFB-0041: subtitles go to subs/<stem>/, away from the media.
+            "outtmpl": {
+                "default": os.path.join(settings.CACHE_DIR, f"{stem}.%(ext)s"),
+                "subtitle": os.path.join(metadata.subs_dir(stem), f"{stem}.%(ext)s"),
+            },
+            "writesubtitles": True,
+            "subtitleslangs": ["en.*"],
             "format": "best",
             # Losslessly repackage a compatible non-mp4 container into a
             # real .mp4 instead of leaving the file mislabeled (#BUG-0015).
             "merge_output_format": "mp4",
             "postprocessors": [{"key": "FFmpegVideoRemuxer", "preferedformat": "mp4"}],
         }
-        await asyncio.to_thread(_run_ydl_download, ydl_opts, url)
+        info = await asyncio.to_thread(_run_ydl_download, ydl_opts, url)
 
         logger.info(f"Download successful for URL: {url}")
         path = _cached_media_path(stem)
         if path:
+            metadata.write(
+                stem,
+                metadata.trim_info(
+                    info, source_url=url, subtitles=_subtitle_names(stem)
+                ),
+            )
             await asyncio.to_thread(media.normalize_if_quiet, path)
             metrics.record_downloader("yt-dlp")  # #UFB-0045
         return path
@@ -302,7 +328,7 @@ async def tiktok_gallery_download(url: str) -> GalleryDownload:
         return await _tiktok_gallery_download_locked(url, stem)
 
 
-# #UFB-0016, #UFB-0039, #BUG-0014
+# #UFB-0016, #UFB-0039, #UFB-0041, #BUG-0014
 async def _tiktok_gallery_download_locked(url: str, stem: str) -> GalleryDownload:
     gallery_dir = os.path.join(settings.CACHE_DIR, "gallery", stem)
     audio_path = os.path.join(settings.CACHE_DIR, f"{stem}.mp3")
@@ -338,6 +364,7 @@ async def _tiktok_gallery_download_locked(url: str, stem: str) -> GalleryDownloa
                 except Exception as e:
                     logger.warning(f"Failed to download audio for {url}: {e}")
 
+        metadata.write(stem, metadata.trim_tiktok_item(item, source_url=url))
         logger.info(f"Gallery download successful for URL: {url}")
         metrics.record_downloader("yt-dlp")  # #UFB-0045
         return GalleryDownload(audio_path=audio, image_paths=image_paths)

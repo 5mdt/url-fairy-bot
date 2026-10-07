@@ -256,3 +256,57 @@ def test_seed_static_pages_skips_a_file_that_fails_to_regenerate(cache_dir):
         pages.seed_static_pages()  # doesn't raise
 
     assert (cache_dir / "watch" / "sample.html").is_file()
+
+
+# --- #UFB-0041: metadata on the watch page ---
+
+
+# #UFB-0041
+def test_watch_page_shows_full_metadata(cache_dir):
+    from app import metadata
+
+    metadata.write(
+        "clip",
+        {
+            "title": "My <title>",
+            "uploader": "Bob",
+            "uploader_url": "https://example.com/bob",
+            "description": "Line one\nLine two <script>",
+            "avatar_url": "https://cdn.example/av.jpg",
+            "subtitles": ["clip.en.vtt"],
+        },
+    )
+    html = pages.render_watch_page("clip.mp4")
+
+    assert "My &lt;title&gt;" in html
+    assert "Bob" in html
+    assert "Line one\nLine two &lt;script&gt;" in html
+    assert 'src="https://cdn.example/av.jpg"' in html
+    assert 'href="https://example.test/subs/clip/clip.en.vtt"' in html
+    assert "<script>" not in html
+
+
+# #UFB-0041
+def test_watch_page_ignores_non_https_avatar(cache_dir):
+    from app import metadata
+
+    metadata.write("clip", {"title": "t", "avatar_url": "javascript:alert(1)"})
+    assert "javascript:" not in pages.render_watch_page("clip.mp4")
+
+
+# #UFB-0041
+def test_watch_page_without_metadata_has_no_metadata_block(cache_dir):
+    html = pages.render_watch_page("clip.mp4")
+    assert 'class="meta"' not in html
+
+
+# #UFB-0041
+def test_seed_static_pages_rerenders_metadata_after_restart(cache_dir):
+    from app import metadata
+
+    (cache_dir / "clip.mp4").write_bytes(b"x")
+    metadata.write("clip", {"title": "Survives restart", "uploader": "Bob"})
+    with patch("app.pages.preview.generate_preview"):
+        pages.seed_static_pages()
+
+    assert "Survives restart" in (cache_dir / "watch" / "clip.html").read_text()

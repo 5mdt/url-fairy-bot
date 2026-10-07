@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     API_RATE_LIMIT: int = 30  # requests per window per client; 0 disables
     API_RATE_WINDOW: int = 60  # seconds
     TRUSTED_PROXIES: str = ""  # comma-separated IPs/CIDRs
+    # #UFB-0051
+    REPORT_RATE_LIMIT: int = 3  # broken-link reports per window per user; 0 disables
+    REPORT_RATE_WINDOW: int = 3600  # seconds
+    # #UFB-0050
+    DUPLICATE_WINDOW: int = (
+        3600  # seconds a repeat link is answered by a pointer; 0 off
+    )
     COOKIE_JAR_ENABLED: bool = False
     # #UFB-0038
     COOKIE_KEEPALIVE_INTERVAL: int = 3600

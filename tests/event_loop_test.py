@@ -68,13 +68,13 @@ async def test_ydl_download_and_normalize_do_not_block_loop(tmp_path, monkeypatc
     url = "https://tiktok.com/@user/video/loop"
     out = os.path.join(str(tmp_path), f"{url_to_filename_stem(url)}.mp4")
 
-    def slow_download(_urls):
+    def slow_download(_url, download=True):
         _slow()
         with open(out, "w") as f:
             f.write("data")
 
     mock_ydl = MagicMock()
-    mock_ydl.__enter__.return_value.download.side_effect = slow_download
+    mock_ydl.__enter__.return_value.extract_info.side_effect = slow_download
     with (
         patch("app.download.yt_dlp.YoutubeDL", return_value=mock_ydl),
         patch("app.download.media.normalize_if_quiet", side_effect=_slow),

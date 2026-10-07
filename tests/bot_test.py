@@ -240,7 +240,8 @@ async def test_small_file_tries_video_reply():
         ) as mock_video,
     ):
         await handle_message(message)
-    mock_video.assert_awaited_once_with(message, "/tmp/clip.mp4", "caption", ANY)
+    # #UFB-0050: the handler passes a reply-recording wrapper of the message
+    mock_video.assert_awaited_once_with(ANY, "/tmp/clip.mp4", "caption", ANY)
     message.reply.assert_not_awaited()
 
 
@@ -948,3 +949,28 @@ async def test_stats_unauthorized_is_silent(monkeypatch, admin, chat_type):
 def test_stats_handler_registered_before_generic_handler():
     names = [h.callback.__name__ for h in dp.message.handlers]
     assert names.index("stats_command") < names.index("handle_message")
+
+
+# --- report button on failure replies (#UFB-0051) ---
+
+
+# #UFB-0051
+@pytest.mark.asyncio
+async def test_failure_reply_gets_report_button():
+    from app import reports
+
+    message = make_message("https://example.org/v")
+    reply = reports.FailureReply("failed", "https://example.org/v", "failure")
+    with patch("app.bot.process_url_request", AsyncMock(return_value=reply)):
+        await handle_message(message)
+    markup = message.reply.call_args.kwargs["reply_markup"]
+    assert markup.inline_keyboard[0][0].callback_data.startswith("rb:")
+
+
+# #UFB-0051
+@pytest.mark.asyncio
+async def test_plain_reply_has_no_report_button():
+    message = make_message("https://example.org/v")
+    with patch("app.bot.process_url_request", AsyncMock(return_value="fine")):
+        await handle_message(message)
+    assert "reply_markup" not in message.reply.call_args.kwargs

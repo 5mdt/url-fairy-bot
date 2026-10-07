@@ -51,7 +51,7 @@ The two mermaid flowcharts are the source of truth for how the features below fi
 - [X] [UFB-0038. Cookie keepalive](features/UFB-0038-cookie-keepalive.md) - `#cookies` `#ops` `#runtime`
 - [X] [UFB-0039. TikTok photo-post galleries](features/UFB-0039-tiktok-photo-galleries.md) - `#download` `#media` `#telegram` `#ux`
 - [X] [UFB-0040. Near-silent audio normalization](features/UFB-0040-near-silent-audio-normalization.md) - `#download` `#media`
-- [ ] [UFB-0041. Link metadata in replies](features/UFB-0041-link-metadata-store.md) - `#download` `#hosting` `#ux`
+- [X] [UFB-0041. Link metadata in replies](features/UFB-0041-link-metadata-store.md) - `#download` `#hosting` `#ux`
 - [ ] [UFB-0042. Instagram post downloads](features/UFB-0042-instagram-post-downloads.md) - `#download` `#media`
 - [ ] [UFB-0043. Persistent work queue](features/UFB-0043-persistent-work-queue.md) - `#runtime` `#ops`
 - [ ] [UFB-0044. Receiver / downloader / messenger split](features/UFB-0044-component-split.md) - `#runtime` `#ops`
@@ -60,8 +60,8 @@ The two mermaid flowcharts are the source of truth for how the features below fi
 - [ ] [UFB-0047. Profile link cards](features/UFB-0047-profile-cards.md) - `#telegram` `#hosting` `#ux`
 - [ ] [UFB-0048. Song identification](features/UFB-0048-song-identification.md) - `#media` `#ux`
 - [X] [UFB-0049. `/stats` admin command](features/UFB-0049-admin-stats-command.md) - `#telegram` `#commands` `#ops`
-- [ ] [UFB-0050. Duplicate link detection](features/UFB-0050-duplicate-link-detection.md) - `#telegram` `#cache`
-- [ ] [UFB-0051. Report-broken-link button](features/UFB-0051-report-broken-link.md) - `#telegram` `#ux` `#ops`
+- [X] [UFB-0050. Duplicate link detection](features/UFB-0050-duplicate-link-detection.md) - `#telegram` `#cache`
+- [X] [UFB-0051. Report-broken-link button](features/UFB-0051-report-broken-link.md) - `#telegram` `#ux` `#ops`
 - [ ] [UFB-0052. Cobalt fallback downloader](features/UFB-0052-cobalt-fallback-downloader.md) - `#download` `#fallback`
 - [ ] [UFB-0053. Multiple cookie jars](features/UFB-0053-multiple-cookie-jars.md) - `#cookies` `#download`
 - [X] [UFB-0054. Maintainer alerts](features/UFB-0054-maintainer-alerts.md) - `#ops` `#telegram` `#config`

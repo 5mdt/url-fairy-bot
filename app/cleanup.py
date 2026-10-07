@@ -7,6 +7,7 @@ import os
 import threading
 import time
 
+from app import duplicates, metadata
 from app.config import settings
 from app.pages import PREVIEW_IMAGE_FILENAME, SAMPLE_MEDIA_FILENAME, watch_page_path
 from app.preview import preview_path
@@ -82,7 +83,42 @@ def _sweep_preview_image(path: str, ttl_seconds: float) -> bool:
     return stale and _delete(path)
 
 
-# #UFB-0026, #UFB-0035
+# #UFB-0041
+def _media_exists(stem: str) -> bool:
+    """Whether media for `stem` is still cached: a top-level file, or a
+    photo gallery directory (a post without audio has no top-level file)."""
+    if os.path.isdir(os.path.join(settings.CACHE_DIR, "gallery", stem)):
+        return True
+    try:
+        return any(
+            os.path.splitext(name)[0] == stem
+            and os.path.isfile(os.path.join(settings.CACHE_DIR, name))
+            for name in os.listdir(settings.CACHE_DIR)
+        )
+    except OSError as e:
+        logger.warning(f"Failed to list {settings.CACHE_DIR}: {e}")
+        return True  # unknown: keep it
+
+
+# #UFB-0041
+def _sweep_orphan_sidecar(path: str, stem: str) -> bool:
+    """A metadata record or subtitle file is swept only once its media is
+    gone, so it never disappears from a still-served watch page."""
+    return not _media_exists(stem) and _delete(path)
+
+
+# #UFB-0041
+def _delete_subtitles(filename: str) -> None:
+    subs = metadata.subs_dir(filename)
+    try:
+        names = os.listdir(subs)
+    except OSError:
+        return
+    for name in names:
+        _delete(os.path.join(subs, name))
+
+
+# #UFB-0026, #UFB-0035, #UFB-0041
 def _sweep_media_file(path: str, filename: str, protected: set[str]) -> bool:
     watch_path = watch_page_path(filename)
     if watch_path not in protected and os.path.exists(watch_path):
@@ -90,6 +126,8 @@ def _sweep_media_file(path: str, filename: str, protected: set[str]) -> bool:
     preview_file = preview_path(filename)
     if preview_file not in protected and os.path.exists(preview_file):
         _delete(preview_file)
+    metadata.delete(filename)
+    _delete_subtitles(filename)
     return _delete(path)
 
 
@@ -105,12 +143,15 @@ def _prune_empty_dirs() -> None:
             logger.warning(f"Failed to remove empty directory {root}: {e}")
 
 
-# #UFB-0026, #UFB-0035
+# #UFB-0026, #UFB-0035, #UFB-0041, #UFB-0050
 def sweep_once() -> int:
     """Delete cache files untouched longer than FILE_TTL. Returns the number
     of files deleted."""
     ttl_seconds = settings.FILE_TTL * 86400
     protected = protected_paths()
+    meta_root = os.path.join(settings.CACHE_DIR, "meta")
+    subs_root = os.path.join(settings.CACHE_DIR, "subs")
+    replies_root = duplicates.replies_dir()
     deleted = 0
 
     for root, _dirs, filenames in os.walk(settings.CACHE_DIR):
@@ -122,7 +163,14 @@ def sweep_once() -> int:
             if path in protected:
                 continue
 
-            if is_watch_dir and filename.endswith(".html"):
+            if root == replies_root:  # #UFB-0050
+                deleted += duplicates.sweep_file(path)
+            elif root == meta_root:
+                stem = filename.split(".", 1)[0]
+                deleted += _sweep_orphan_sidecar(path, stem)
+            elif os.path.dirname(root) == subs_root:
+                deleted += _sweep_orphan_sidecar(path, os.path.basename(root))
+            elif is_watch_dir and filename.endswith(".html"):
                 deleted += _sweep_watch_page(path, ttl_seconds)
             elif is_preview_dir and filename.endswith(".jpg"):
                 deleted += _sweep_preview_image(path, ttl_seconds)

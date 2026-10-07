@@ -182,13 +182,13 @@ async def test_yt_dlp_download_concurrent_same_url_downloads_once(
     stem = url_to_filename_stem(url)
     calls = []
 
-    def fake_download(_urls):
+    def fake_download(_url, download=True):
         calls.append(1)
         with open(os.path.join(str(tmp_path), f"{stem}.mp4"), "w") as f:
             f.write("data")
 
     mock_ydl = MagicMock()
-    mock_ydl.__enter__.return_value.download.side_effect = fake_download
+    mock_ydl.__enter__.return_value.extract_info.side_effect = fake_download
     with (
         patch("app.download.yt_dlp.YoutubeDL", return_value=mock_ydl),
         patch("app.download.media.normalize_if_quiet"),
@@ -229,12 +229,12 @@ async def test_yt_dlp_download_outtmpl_and_remuxer_configured(tmp_path, monkeypa
 
     mock_instance = MagicMock()
 
-    def _fake_download(urls):
+    def _fake_download(_url, download=True):
         stem = url_to_filename_stem(url)
         with open(os.path.join(str(tmp_path), f"{stem}.mp4"), "w") as f:
             f.write("fake video data")
 
-    mock_instance.download.side_effect = _fake_download
+    mock_instance.extract_info.side_effect = _fake_download
     mock_ydl = MagicMock()
     mock_ydl.__enter__.return_value = mock_instance
 
@@ -244,7 +244,7 @@ async def test_yt_dlp_download_outtmpl_and_remuxer_configured(tmp_path, monkeypa
         result = await yt_dlp_download(url)
 
     ydl_opts = mock_ydl_class.call_args[0][0]
-    assert ydl_opts["outtmpl"].endswith("%(ext)s")
+    assert ydl_opts["outtmpl"]["default"].endswith("%(ext)s")
     assert ydl_opts["merge_output_format"] == "mp4"
     assert result.endswith(".mp4")
 
@@ -261,11 +261,11 @@ async def test_yt_dlp_download_normalizes_fresh_download_only(tmp_path, monkeypa
     expected = os.path.join(str(tmp_path), f"{url_to_filename_stem(url)}.mp4")
     mock_instance = MagicMock()
 
-    def _fake_download(urls):
+    def _fake_download(_url, download=True):
         with open(expected, "w") as f:
             f.write("fake video data")
 
-    mock_instance.download.side_effect = _fake_download
+    mock_instance.extract_info.side_effect = _fake_download
     mock_ydl = MagicMock()
     mock_ydl.__enter__.return_value = mock_instance
 
@@ -315,7 +315,9 @@ async def test_yt_dlp_download_unsupported_url_maps_to_custom_error(
     monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
 
     mock_instance = MagicMock()
-    mock_instance.download.side_effect = yt_dlp.DownloadError("Unsupported URL: foo")
+    mock_instance.extract_info.side_effect = yt_dlp.DownloadError(
+        "Unsupported URL: foo"
+    )
     mock_ydl = MagicMock()
     mock_ydl.__enter__.return_value = mock_instance
 
@@ -332,7 +334,9 @@ async def test_yt_dlp_download_other_download_error_maps_to_runtime_error(
     monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
 
     mock_instance = MagicMock()
-    mock_instance.download.side_effect = yt_dlp.DownloadError("network is unreachable")
+    mock_instance.extract_info.side_effect = yt_dlp.DownloadError(
+        "network is unreachable"
+    )
     mock_ydl = MagicMock()
     mock_ydl.__enter__.return_value = mock_instance
 
@@ -349,7 +353,7 @@ async def test_yt_dlp_download_postprocessing_error_maps_to_runtime_error(
     monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path))
 
     mock_instance = MagicMock()
-    mock_instance.download.side_effect = yt_dlp.utils.PostProcessingError(
+    mock_instance.extract_info.side_effect = yt_dlp.utils.PostProcessingError(
         "post-process failed"
     )
     mock_ydl = MagicMock()
@@ -372,7 +376,7 @@ async def test_yt_dlp_download_deletes_temp_cookie_file_on_failure(
     cookie_file.write_text("cookie_data\n", encoding="utf-8")
 
     mock_instance = MagicMock()
-    mock_instance.download.side_effect = yt_dlp.DownloadError("boom")
+    mock_instance.extract_info.side_effect = yt_dlp.DownloadError("boom")
     mock_ydl = MagicMock()
     mock_ydl.__enter__.return_value = mock_instance
 
@@ -501,3 +505,110 @@ async def test_tiktok_gallery_download_without_music_has_no_audio(
         result = await tiktok_gallery_download(PHOTO_URL)
     assert result.audio_path is None
     assert len(result.image_paths) == 2
+
+
+# --- #UFB-0041: metadata store ---
+
+
+def _info_download(tmp_path, url, info, subtitle_names=()):
+    stem = url_to_filename_stem(url)
+
+    def fake(_url, download=True):
+        with open(os.path.join(str(tmp_path), f"{stem}.mp4"), "w") as f:
+            f.write("data")
+        for name in subtitle_names:
+            os.makedirs(tmp_path / "subs" / stem, exist_ok=True)
+            (tmp_path / "subs" / stem / name).write_text("WEBVTT")
+        return info
+
+    ydl = MagicMock()
+    ydl.__enter__.return_value.extract_info.side_effect = fake
+    return ydl
+
+
+# #UFB-0041
+@pytest.mark.asyncio
+async def test_yt_dlp_download_writes_trimmed_metadata(tmp_path, monkeypatch):
+    from app import metadata
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path / "nocookies"))
+    url = "https://youtube.com/watch?v=abc"
+    info = {"title": "T", "uploader": "U", "description": "D", "formats": [1] * 99}
+    ydl = _info_download(tmp_path, url, info, subtitle_names=["x.en.vtt"])
+    with (
+        patch("app.download.yt_dlp.YoutubeDL", return_value=ydl),
+        patch("app.download.media.normalize_if_quiet"),
+    ):
+        await yt_dlp_download(url)
+
+    rec = metadata.lookup(url)
+    assert rec["title"] == "T" and rec["uploader"] == "U"
+    assert rec["source_url"] == url
+    assert rec["subtitles"] == ["x.en.vtt"]
+    assert "formats" not in rec
+
+
+# #UFB-0041
+@pytest.mark.asyncio
+async def test_yt_dlp_download_requests_manual_subtitles_in_subs_dir(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path / "nocookies"))
+    url = "https://youtube.com/watch?v=abc"
+    ydl = _info_download(tmp_path, url, None)
+    with (
+        patch("app.download.yt_dlp.YoutubeDL", return_value=ydl) as cls,
+        patch("app.download.media.normalize_if_quiet"),
+    ):
+        await yt_dlp_download(url)
+
+    opts = cls.call_args[0][0]
+    stem = url_to_filename_stem(url)
+    assert opts["writesubtitles"] is True
+    assert not opts.get("writeautomaticsub")
+    assert opts["outtmpl"]["default"].endswith(f"{stem}.%(ext)s")
+    assert f"subs/{stem}/" in opts["outtmpl"]["subtitle"]
+
+
+# #UFB-0041
+@pytest.mark.asyncio
+async def test_yt_dlp_download_without_info_writes_no_metadata(tmp_path, monkeypatch):
+    from app import metadata
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path / "nocookies"))
+    url = "https://youtube.com/watch?v=abc"
+    with (
+        patch(
+            "app.download.yt_dlp.YoutubeDL",
+            return_value=_info_download(tmp_path, url, None),
+        ),
+        patch("app.download.media.normalize_if_quiet"),
+    ):
+        result = await yt_dlp_download(url)
+
+    assert result.endswith(".mp4")
+    assert metadata.lookup(url) is None
+    assert not (tmp_path / "meta").exists()
+
+
+# #UFB-0041, #UFB-0039
+@pytest.mark.asyncio
+async def test_tiktok_gallery_download_writes_metadata(tmp_path, monkeypatch):
+    from app import metadata
+    from app.download import tiktok_gallery_download
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "COOKIES_DIR", str(tmp_path / "nocookies"))
+    item = _item()
+    item["desc"] = "my photos"
+    item["author"] = {"nickname": "Nick"}
+    with patch("app.download.yt_dlp.YoutubeDL", return_value=_fake_ydl(item)):
+        await tiktok_gallery_download(PHOTO_URL)
+
+    rec = metadata.lookup(PHOTO_URL)
+    assert rec["title"] == "my photos"
+    assert rec["uploader"] == "Nick"
+    assert rec["source_url"] == PHOTO_URL

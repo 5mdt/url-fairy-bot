@@ -52,10 +52,19 @@ def shrug() -> str:
     return _render("shrug.html.j2")
 
 
-# #UFB-0015, #UFB-0032, #UFB-0036, #UFB-0037
-def download_result(watch_url: str, source_url: str) -> str:
+# #UFB-0050, #UFB-0037
+def duplicate_link() -> str:
+    return _render("duplicate_link.html.j2")
+
+
+# #UFB-0015, #UFB-0032, #UFB-0036, #UFB-0037, #UFB-0041
+def download_result(watch_url: str, source_url: str, meta: str = "") -> str:
+    """`meta` is the already-escaped short-form metadata HTML (metadata.caption)."""
     return _render(
-        "download_result.html.j2", watch_url=watch_url, source_url=source_url
+        "download_result.html.j2",
+        watch_url=watch_url,
+        source_url=source_url,
+        meta=meta,
     )
 
 
@@ -90,3 +99,10 @@ def download_failed_mirror(mirror_url: str, original_url: str) -> str:
         mirror_url=mirror_url,
         original_url=original_url,
     )
+
+
+# #UFB-0051, #UFB-0037
+def report(kind: str) -> str:
+    """Plain-text report-button texts: `button`, `thanks`, `duplicate`,
+    `limited` or `expired`."""
+    return _render(f"report_{kind}.html.j2")

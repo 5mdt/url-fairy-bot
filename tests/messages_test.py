@@ -114,3 +114,26 @@ def test_unknown_locale_falls_back_to_english(monkeypatch):
 def test_missing_context_variable_raises():
     with pytest.raises(jinja2.exceptions.UndefinedError):
         messages._render("download_result.html.j2")
+
+
+# #UFB-0041
+def test_download_result_prepends_metadata_block():
+    html = messages.download_result(
+        "https://example.test/watch/x.html",
+        "https://x.com/source",
+        meta="<b>Title</b>\nBob",
+    )
+    assert html.startswith("<b>Title</b>\nBob\n\n")
+    assert "Download" in html and "Source" in html
+
+
+# #UFB-0041
+def test_download_result_without_metadata_is_unchanged():
+    plain = messages.download_result("https://w", "https://s")
+    assert plain == messages.download_result("https://w", "https://s", meta="")
+    assert plain.startswith("<a ")
+
+
+# #UFB-0050
+def test_duplicate_link_points_at_the_earlier_reply():
+    assert messages.duplicate_link() == "Same link as above ☝️"

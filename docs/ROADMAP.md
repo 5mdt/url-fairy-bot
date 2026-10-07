@@ -2,20 +2,11 @@
 
 Order, not scope. An item's contract stays in its feature doc or tracker entry.
 
-| # | Epic                | Why here                                                     |
-|---|---------------------|--------------------------------------------------------------|
-| 3 | Metadata foundation | The store that duplicates, reports and richer replies share. |
-| 4 | Platform coverage   | New downloaders, judged by the metrics from epic 2.          |
-| 5 | UX extras           | Nice-to-have surfaces on top of a solid base.                |
-| 6 | Later / scale       | Only if load requires it.                                    |
-
-## 3. Metadata foundation
-
-1. #UFB-0041 - link metadata store [P1/D3]; the shared store.
-2. #UFB-0050 - duplicate link detection [P3/D2]; reuses the store.
-3. #UFB-0051 - report-broken-link button [P3/D2]; reuses the store and the failure reasons.
-
-**Done when:** watch pages show metadata and survive a restart.
+| # | Epic              | Why here                                            |
+|---|-------------------|-----------------------------------------------------|
+| 4 | Platform coverage | New downloaders, judged by the metrics from epic 2. |
+| 5 | UX extras         | Nice-to-have surfaces on top of a solid base.       |
+| 6 | Later / scale     | Only if load requires it.                           |
 
 ## 4. Platform coverage
 

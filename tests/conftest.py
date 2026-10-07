@@ -37,6 +37,7 @@ def pinned_settings(monkeypatch):
     monkeypatch.setattr(settings, "API_RATE_LIMIT", 30)
     monkeypatch.setattr(settings, "API_RATE_WINDOW", 60)
     monkeypatch.setattr(settings, "TRUSTED_PROXIES", "")
+    monkeypatch.setattr(settings, "DUPLICATE_WINDOW", 0)  # #UFB-0050
     monkeypatch.setattr(settings, "COOKIE_JAR_ENABLED", False)
     monkeypatch.setattr(settings, "COOKIE_KEEPALIVE_INTERVAL", 3600)
     monkeypatch.setattr(settings, "COOKIE_HEALTHCHECK", False)

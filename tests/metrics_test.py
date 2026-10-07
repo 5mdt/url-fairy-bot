@@ -133,7 +133,9 @@ async def test_yt_dlp_download_records_cache_miss_downloader_then_hit(
 
     expected = tmp_path / f"{url_to_filename_stem(url)}.mp4"
     instance = MagicMock()
-    instance.download.side_effect = lambda urls: expected.write_text("x" * 100)
+    instance.extract_info.side_effect = lambda url, download=True: expected.write_text(
+        "x" * 100
+    )
     ydl = MagicMock()
     ydl.__enter__.return_value = instance
     with (

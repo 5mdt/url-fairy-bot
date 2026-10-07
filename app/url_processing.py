@@ -22,7 +22,7 @@ import requests
 
 from app.config import settings
 
-from . import messages, metrics, pages, preview
+from . import messages, metadata, metrics, pages, preview, reports
 from .download import (
     UnsupportedUrlError,
     is_tiktok_photo_url,
@@ -261,7 +261,23 @@ def _iv_watch_url(page_url: str) -> str:
     )
 
 
-# #UFB-0039
+# Telegram's caption limit; the reply text is the caption of a native video.
+_CAPTION_LIMIT = 1024
+
+
+# #UFB-0041
+def _download_text(watch_url: str, source_url: str, record: dict | None) -> str:
+    """The reply text: the short metadata block (when a record exists and
+    fits) above the links, always under Telegram's caption limit."""
+    links = messages.download_result(watch_url, source_url)
+    # Budget counts markup and escapes, so it is conservative; 2 = the blank line.
+    meta = metadata.caption(record, _CAPTION_LIMIT - 1 - len(links) - 2)
+    if not meta:
+        return links
+    return messages.download_result(watch_url, source_url, meta=meta)
+
+
+# #UFB-0039, #UFB-0041
 async def _attempt_gallery_download(final_url: str) -> DownloadResult:
     gallery = await tiktok_gallery_download(final_url)
     watch_url = final_url
@@ -282,13 +298,13 @@ async def _attempt_gallery_download(final_url: str) -> DownloadResult:
         except OSError as e:
             logger.error(f"Failed to write watch page for {audio_name}: {e}")
         watch_url = _iv_watch_url(pages.watch_page_url(audio_name))
-    text = messages.download_result(watch_url, final_url)
+    text = _download_text(watch_url, final_url, metadata.lookup(final_url))
     return DownloadResult(
         text=text, media_path=gallery.audio_path, image_paths=gallery.image_paths
     )
 
 
-# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0036, #UFB-0039
+# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0036, #UFB-0039, #UFB-0041
 async def attempt_download(final_url: str) -> DownloadResult | None:
     try:
         if is_tiktok_photo_url(final_url):
@@ -307,7 +323,7 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
                 logger.error(f"Failed to write watch page for {video_path}: {e}")
             page_url = pages.watch_page_url(video_path)
             watch_url = _iv_watch_url(page_url)
-            text = messages.download_result(watch_url, final_url)
+            text = _download_text(watch_url, final_url, metadata.read(video_path))
             return DownloadResult(text=text, media_path=video_os_path)
     except UnsupportedUrlError:
         raise
@@ -317,7 +333,7 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
     return None
 
 
-# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014, #UFB-0045, #UFB-0055
+# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014, #UFB-0045, #UFB-0051, #UFB-0055
 async def process_url_request(
     url: str,
     is_group_chat: bool = False,
@@ -371,6 +387,12 @@ async def process_url_request(
             return None  # Silent response for unmodified URLs in group/supergroup
 
         if modified_url == final_url:
-            return messages.download_failed(final_url)
+            return reports.FailureReply(
+                messages.download_failed(final_url), final_url, "failure"
+            )  # #UFB-0051
 
-        return messages.download_failed_mirror(modified_url, final_url)
+        return reports.FailureReply(  # #UFB-0051
+            messages.download_failed_mirror(modified_url, final_url),
+            final_url,
+            "fallback_mirror",
+        )
