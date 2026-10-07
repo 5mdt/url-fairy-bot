@@ -10,19 +10,19 @@ As a bot operator, I want `POST /process_url/` to require a key and limit how of
 
 The REST URL-processing endpoint ([UFB-0019](UFB-0019-rest-url-processing-endpoint.md)) checks two things before doing any work:
 
-| Check                                                              | Failure                           |
-|--------------------------------------------------------------------|-----------------------------------|
-| The `X-API-Key` header matches one of the keys in `API_KEY`        | `401`                             |
+| Check                                                                        | Failure                           |
+|------------------------------------------------------------------------------|-----------------------------------|
+| The `X-API-Key` header matches one of the keys in `API_KEY`                  | `401`                             |
 | The caller is within `API_RATE_LIMIT` requests per `API_RATE_WINDOW` seconds | `429` with a `Retry-After` header |
 
 `/health` and `/healthz` ([UFB-0034](UFB-0034-health-endpoints.md)) stay open. The SSRF protection (validating the URL and blocking private targets) was #BUG-0012 and does not depend on this feature.
 
-| Setting           | Default   | Meaning                                                                             |
-|-------------------|-----------|-------------------------------------------------------------------------------------|
+| Setting           | Default   | Meaning                                                                                 |
+|-------------------|-----------|-----------------------------------------------------------------------------------------|
 | `API_KEY`         | *(empty)* | Comma-separated list of accepted keys; empty leaves the endpoint open (startup warning) |
-| `API_RATE_LIMIT`  | `30`      | Requests allowed per client per window; `0` disables rate limiting                  |
-| `API_RATE_WINDOW` | `60`      | Window length in seconds                                                            |
-| `TRUSTED_PROXIES` | *(empty)* | Comma-separated IPs/CIDRs of reverse proxies whose `X-Forwarded-For` is believed    |
+| `API_RATE_LIMIT`  | `30`      | Requests allowed per client per window; `0` disables rate limiting                      |
+| `API_RATE_WINDOW` | `60`      | Window length in seconds                                                                |
+| `TRUSTED_PROXIES` | *(empty)* | Comma-separated IPs/CIDRs of reverse proxies whose `X-Forwarded-For` is believed        |
 
 ## Implementation
 

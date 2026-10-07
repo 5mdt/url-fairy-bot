@@ -19,10 +19,8 @@ An inline query must be answered within seconds, which a real download usually c
 
 ## Quirks & Decisions
 
-- Quirk: downloads are slower than the inline answer deadline.
-  Open: text result immediately, or a placeholder that is edited when the video is ready.
-- Quirk: group chats are kept quiet today ([UFB-0004](UFB-0004-group-chat-quietness.md)).
-  Open: whether that quietness applies to inline use. The user chose to send, so it likely does not.
+- Quirk: downloads are slower than the inline answer deadline. Open: text result immediately, or a placeholder that is edited when the video is ready.
+- Quirk: group chats are kept quiet today ([UFB-0004](UFB-0004-group-chat-quietness.md)). Open: whether that quietness applies to inline use. The user chose to send, so it likely does not.
 
 ## Testing
 

@@ -29,6 +29,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from checks import ERROR, WARN, run_all  # noqa: E402
 from model import Corpus, TrackerEntry, code_refs  # noqa: E402
 
+VERSION = "2026-10-06T15:36:00Z"  # RFC 3339 date-time; bump on EVERY edit to this script (`date -u +%Y-%m-%dT%H:%M:%SZ`)
+
 TTY = sys.stdout.isatty()
 BOLD, DIM, RED, YELLOW, GREEN, RESET = (
     ("\033[1m", "\033[2m", "\033[31m", "\033[33m", "\033[32m", "\033[0m")
@@ -353,7 +355,7 @@ def _wrap(text: str, indent: str = "  ") -> str:
 
 
 def _plain_md(text: str) -> str:
-    """Flatten Markdown link syntax for terminal display: `[CAL-0014](…md)` -> `CAL-0014`.
+    """Flatten Markdown link syntax for terminal display: `[CAL-0014](...md)` -> `CAL-0014`.
 
     Display only. `brief` writes a Markdown file and deliberately keeps the links.
     """
@@ -380,7 +382,7 @@ def _show_tracker(c: Corpus, e, view: str) -> None:
 
     if view in ("short", "files"):
         width = max(48, shutil.get_terminal_size((100, 24)).columns - len(e.id) - 12)
-        one = detail if len(detail) <= width else detail[: width - 1].rstrip() + "…"
+        one = detail if len(detail) <= width else detail[: width - 1].rstrip() + "..."
         print(f"{BOLD}{e.id}{RESET} {DIM}{pd}{RESET}  {one}")
         return
 
@@ -417,7 +419,7 @@ def _show_feature(c: Corpus, d, view: str) -> None:
 
     print(f"{BOLD}{d.title}{RESET} {mark}")
     print(
-        f"{DIM}  {d.path.relative_to(c.root)}  ·  status: {d.status}  ·  "
+        f"{DIM}  {d.path.relative_to(c.root)}  -  status: {d.status}  -  "
         f"{' '.join(d.tags)}{RESET}"
     )
     pos = _position_line(c, d.id)
@@ -460,7 +462,7 @@ def _show_files(c: Corpus, ident: str, text: str) -> None:
             nums += f", +{len(lines) - 8}"
         note = ""
         if rel.endswith("hypermnesia-seed.sql"):
-            note = f"  {YELLOW}← re-seed if reworded{RESET}"
+            note = f"  {YELLOW}<- re-seed if reworded{RESET}"
         print(f"    {rel:<{width}}  {DIM}{nums}{RESET}{note}")
 
 
@@ -554,7 +556,7 @@ def _item_label(c: Corpus, item) -> str:
     if budget < 12:
         return head_shown
     if len(detail) > budget:
-        detail = detail[: budget - 1].rstrip() + "…"
+        detail = detail[: budget - 1].rstrip() + "..."
     return f"{head_shown}  {detail}"
 
 
@@ -600,7 +602,7 @@ def cmd_roadmap(args: argparse.Namespace) -> int:
         total = len(e.items)
         if current is None and done < total:
             current = e
-        flag = f"  {YELLOW}← current{RESET}" if current is e else ""
+        flag = f"  {YELLOW}<- current{RESET}" if current is e else ""
         print(
             f"  {e.number}  {e.name:<{width}}  {done:>2}/{total:<2} {_bar(done, total)}{flag}"
         )
@@ -620,7 +622,7 @@ def cmd_roadmap(args: argparse.Namespace) -> int:
         print(f"   {item.ordinal:>3} {_item_label(c, item)}")
     if len(todo) > args.next:
         print(
-            f"   {DIM}… {len(todo) - args.next} more - ddd roadmap --epic "
+            f"   {DIM}... {len(todo) - args.next} more - ddd roadmap --epic "
             f"{current.number}{RESET}"
         )
     return 0
@@ -716,6 +718,7 @@ def main(argv: list[str] | None = None) -> int:
         epilog=MAIN_EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    p.add_argument("--version", action="version", version=f"ddd {VERSION}")
     sub = p.add_subparsers(dest="cmd")
 
     pc = sub.add_parser(

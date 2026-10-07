@@ -48,6 +48,42 @@ class Settings(BaseSettings):
     # #UFB-0037
     MESSAGE_LOCALE: str = "en"
 
+    # #UFB-0054, #UFB-0049
+    ADMIN_CHAT_ID: str = ""  # comma-separated chat IDs; empty = alerts and /stats off
+
+    @property
+    def admin_chat_ids(self) -> list[int]:
+        """#UFB-0054, #UFB-0049: parsed ADMIN_CHAT_ID; blank entries are skipped."""
+        return [int(p) for p in self.ADMIN_CHAT_ID.split(",") if p.strip()]
+
+    # #UFB-0054: per-kind switches; None = on when ADMIN_CHAT_ID is set
+    ALERT_COOKIES: bool | None = None
+    ALERT_FAILURE_SPIKE: bool | None = None
+    ALERT_BOT_API: bool | None = None
+    ALERT_YTDLP: bool | None = None
+    ALERT_CACHE: bool | None = None
+
+    @field_validator(
+        "ALERT_COOKIES",
+        "ALERT_FAILURE_SPIKE",
+        "ALERT_BOT_API",
+        "ALERT_YTDLP",
+        "ALERT_CACHE",
+        mode="before",
+    )
+    @classmethod
+    def _blank_switch_is_auto(cls, v):
+        """#UFB-0054: an empty env value (docker-compose default) means auto."""
+        return None if isinstance(v, str) and not v.strip() else v
+
+    ALERT_CHECK_INTERVAL: int = 60  # seconds between checks
+    ALERT_MIN_INTERVAL: int = 3600  # seconds between alerts for one fault
+    ALERT_FAILURE_SPIKE_MIN_ATTEMPTS: int = 5
+    ALERT_FAILURE_SPIKE_WINDOW_MINUTES: int = 10
+    ALERT_FAILURE_SPIKE_RATIO: float = 0.5
+    ALERT_YTDLP_MAX_AGE_DAYS: int = 60
+    ALERT_CACHE_FULL_PERCENT: int = 90
+
     # Domain-rewrite mirror destinations (source-matching regex stays in code)
     # #UFB-0022
     SPOTIFY_MIRROR_DOMAIN: str = "fxspotify.com"

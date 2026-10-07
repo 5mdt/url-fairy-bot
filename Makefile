@@ -1,8 +1,9 @@
 .DEFAULT_GOAL := help
-.PHONY: help install sync fmt lint yamllint check test test-cov run pre-commit ddd \
+.PHONY: help install sync fmt lint yamllint check test test-cov run pre-commit ddd release \
 	docker-build docker-up docker-down docker-logs docker-restart deploy-check clean
 
 UV := uv
+BUMP ?= minor
 COMPOSE_DEV := sudo docker compose -f docker-compose.yml -f compose.dev.yml
 
 ## help: Show this help
@@ -36,6 +37,10 @@ check: fmt lint yamllint test
 ## ddd: Verify docs bookkeeping (IDs, FRD, trackers) with scripts/ddd
 ddd:
 	./scripts/ddd/ddd check
+
+## release: Gate, move CHANGELOG Unreleased into a version section, commit and tag (BUMP=patch|minor|major; nothing is pushed)
+release:
+	SKIP=no-commit-to-branch ./scripts/release.sh $(BUMP)
 
 ## test: Run the test suite
 test:

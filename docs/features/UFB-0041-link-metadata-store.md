@@ -26,12 +26,9 @@ The source is yt-dlp's info dict, plus the TikTok photo-post item data ([UFB-003
 
 ## Quirks & Decisions
 
-- Quirk: nothing besides the media, preview, watch page and gallery files is saved to the cache today, so there is nothing to render metadata from after a restart.
-  Proposed: the trimmed JSON store above.
-- Quirk: which fields go in the caption is undecided.
-  Open: title and uploader only, or also a description excerpt.
-- Quirk: subtitles may be long or absent.
-  Open: link them from the watch page only, or inline an excerpt.
+- Quirk: nothing besides the media, preview, watch page and gallery files is saved to the cache today, so there is nothing to render metadata from after a restart. Proposed: the trimmed JSON store above.
+- Quirk: which fields go in the caption is undecided. Open: title and uploader only, or also a description excerpt.
+- Quirk: subtitles may be long or absent. Open: link them from the watch page only, or inline an excerpt.
 
 ## Testing
 

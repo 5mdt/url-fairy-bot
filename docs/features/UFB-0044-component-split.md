@@ -23,12 +23,9 @@ All three run in one process today ([UFB-0020](UFB-0020-in-process-bot-polling.m
 
 ## Quirks & Decisions
 
-- Quirk: the component boundaries are not drawn yet.
-  Open: whether the messenger is separate at all, or part of the receiver.
-- Quirk: the downloader and messenger must see the same cache files.
-  Open: a shared volume, or the downloader returning a file reference only.
-- Quirk: it multiplies the compose services.
-  Open: one image with a role switch, or separate images.
+- Quirk: the component boundaries are not drawn yet. Open: whether the messenger is separate at all, or part of the receiver.
+- Quirk: the downloader and messenger must see the same cache files. Open: a shared volume, or the downloader returning a file reference only.
+- Quirk: it multiplies the compose services. Open: one image with a role switch, or separate images.
 
 ## Testing
 

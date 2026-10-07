@@ -873,3 +873,78 @@ async def test_reply_with_video_switches_action_to_upload_video(tmp_path):
     with patch("app.bot.media.probe", return_value=None):
         await _reply_with_video(message, str(clip), "c", ind)
     assert ind.action == "upload_video"
+
+
+# --- /stats admin command (#UFB-0049) ---
+
+
+# #UFB-0049
+def test_format_stats_has_numbers_and_no_urls_or_chat_ids():
+    from app.stats import format_stats
+
+    text = format_stats(
+        {
+            "requests": {"youtube": 3, "other": 1},
+            "downloads": {
+                "youtube": {"success": 2, "failure": 1},
+                "other": {"fallback_mirror": 1},
+            },
+            "cache_size_bytes": 2048,
+        }
+    )
+    assert "Requests handled: 4" in text
+    assert "success: 50%" in text
+    assert "failure: 25%" in text
+    assert "mirror fallback: 25%" in text
+    assert "youtube: 3 requests, 2 ok, 1 failed, 0 mirror" in text
+    assert "Cache size: 2.0 KB" in text
+    assert "http" not in text
+
+
+# #UFB-0049
+def test_format_stats_empty_snapshot():
+    from app.stats import format_stats
+
+    text = format_stats({})
+    assert "Requests handled: 0" in text
+    assert "success: n/a" in text
+    assert "Cache size: 0 B" in text
+
+
+# #UFB-0049
+def test_is_admin():
+    from app.stats import is_admin
+
+    assert is_admin(5, [5, 6])
+    assert not is_admin(7, [5, 6])
+    assert not is_admin(5, [])
+
+
+# #UFB-0049
+@pytest.mark.asyncio
+@pytest.mark.parametrize("chat_type", ["private", "group"])
+async def test_stats_admin_gets_reply(monkeypatch, chat_type):
+    monkeypatch.setattr(settings, "ADMIN_CHAT_ID", "42")
+    message = make_message("/stats", chat_type=chat_type)
+    message.chat.id = 42
+    await bot_module.stats_command(message)
+    message.reply.assert_awaited_once()
+    assert "Requests handled" in message.reply.await_args.args[0]
+
+
+# #UFB-0049
+@pytest.mark.asyncio
+@pytest.mark.parametrize("admin", ["42", ""])
+@pytest.mark.parametrize("chat_type", ["private", "group"])
+async def test_stats_unauthorized_is_silent(monkeypatch, admin, chat_type):
+    monkeypatch.setattr(settings, "ADMIN_CHAT_ID", admin)
+    message = make_message("/stats", chat_type=chat_type)
+    message.chat.id = 99
+    await bot_module.stats_command(message)
+    message.reply.assert_not_awaited()
+
+
+# #UFB-0049
+def test_stats_handler_registered_before_generic_handler():
+    names = [h.callback.__name__ for h in dp.message.handlers]
+    assert names.index("stats_command") < names.index("handle_message")

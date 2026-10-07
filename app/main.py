@@ -8,7 +8,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 
-from . import api_security, bot, cleanup, cookie_keepalive, pages
+from . import alerts, api_security, bot, cleanup, cookie_keepalive, pages
 from .api import api_router
 
 # Logging configuration
@@ -17,7 +17,7 @@ logging.basicConfig(level=settings.LOG_LEVEL)
 logger = logging.getLogger(__name__)
 
 
-# #UFB-0020, #UFB-0026, #UFB-0033, #UFB-0038, #UFB-0056
+# #UFB-0020, #UFB-0026, #UFB-0033, #UFB-0038, #UFB-0054, #UFB-0056
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
@@ -28,7 +28,9 @@ async def lifespan(app: FastAPI):
     bot.start_polling()
     cleanup.start_cleanup()
     cookie_keepalive.start_keepalive()
+    alerts.start_alerts()
     yield
+    await alerts.stop_alerts()
     cookie_keepalive.stop_keepalive()
     cleanup.stop_cleanup()
     await bot.stop_polling()

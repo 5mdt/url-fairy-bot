@@ -22,8 +22,7 @@ With `COBALT_API_URL` empty, nothing changes. The result is saved under the same
 
 ## Quirks & Decisions
 
-- Quirk: a second downloader is another dependency to run.
-  Open: keep it only if the metrics show it recovers a meaningful share of failures.
+- Quirk: a second downloader is another dependency to run. Open: keep it only if the metrics show it recovers a meaningful share of failures.
 
 ## Testing
 

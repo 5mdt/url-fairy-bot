@@ -18,12 +18,9 @@ Today an Instagram link is only rewritten to the `kkinstagram.com` mirror ([UFB-
 
 ## Quirks & Decisions
 
-- Quirk: Instagram is matched only on `/p/` and `/reel/`.
-  Open: whether `/tv/` and story links should be included.
-- Quirk: Instagram usually needs a logged-in cookie jar ([UFB-0017](UFB-0017-cookie-file-merging.md)).
-  Open: what a reply says when the post needs a login and no jar is configured. It likely falls back to the mirror link.
-- Quirk: carousels mix photos and videos.
-  Open: whether the album handling from UFB-0039 can be reused unchanged.
+- Quirk: Instagram is matched only on `/p/` and `/reel/`. Open: whether `/tv/` and story links should be included.
+- Quirk: Instagram usually needs a logged-in cookie jar ([UFB-0017](UFB-0017-cookie-file-merging.md)). Open: what a reply says when the post needs a login and no jar is configured. It likely falls back to the mirror link.
+- Quirk: carousels mix photos and videos. Open: whether the album handling from UFB-0039 can be reused unchanged.
 
 ## Testing
 

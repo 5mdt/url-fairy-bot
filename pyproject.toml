@@ -17,6 +17,7 @@ dependencies = [
   "requests>=2.34.2,<3.0.0",
   "yt-dlp>=2026.8.19",
   "pydantic-settings>=2.15.0,<3.0.0",
+  "prometheus-client>=0.26.0",
 ]
 
 [dependency-groups]

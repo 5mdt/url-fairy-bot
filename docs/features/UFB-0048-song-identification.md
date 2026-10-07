@@ -25,10 +25,8 @@ It is opt-in through a setting and on demand (a button on the reply or a `/song`
 
 ## Quirks & Decisions
 
-- Quirk: every recognizer has a trade-off between reliability, cost and terms of service.
-  Open: which one to use.
-- Quirk: recognition is slow and external.
-  Open: button on the reply versus a `/song` command.
+- Quirk: every recognizer has a trade-off between reliability, cost and terms of service. Open: which one to use.
+- Quirk: recognition is slow and external. Open: button on the reply versus a `/song` command.
 
 ## Testing
 

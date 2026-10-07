@@ -4,17 +4,18 @@ import logging
 import os
 import re
 import socket
+import time
 from urllib.parse import urlparse
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
 from aiogram.enums import ChatType, ParseMode
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 from aiogram.types import FSInputFile, InputMediaPhoto, Message
 from pydantic import ValidationError
 
-from app import media, messages, preview
+from app import media, messages, metrics, preview, stats
 from app.config import settings
 
 from .models import URLMessage
@@ -139,6 +140,17 @@ def is_polling_alive() -> bool:
 @dp.message(CommandStart())
 async def start(message: Message):
     await message.reply(messages.start(), parse_mode=ParseMode.HTML)
+
+
+# #UFB-0049: admin-only; anyone else (and an empty admin list) is ignored
+# silently, in every chat type, so the command is not discoverable.
+@dp.message(Command("stats"))
+async def stats_command(message: Message):
+    if not stats.is_admin(message.chat.id, settings.admin_chat_ids):
+        return
+    await message.reply(
+        stats.format_stats(metrics.snapshot()), parse_mode=ParseMode.HTML
+    )
 
 
 # #UFB-0055: Telegram clears a chat action after ~5 s, so refresh sooner.
@@ -313,7 +325,7 @@ async def _reply_with_gallery(message: Message, result: DownloadResult) -> bool:
     return True
 
 
-# #UFB-0014, #UFB-0036, #UFB-0039, #UFB-0055
+# #UFB-0014, #UFB-0036, #UFB-0039, #UFB-0045, #UFB-0055
 async def _deliver_result(
     message: Message,
     result: str | DownloadResult,
@@ -324,15 +336,33 @@ async def _deliver_result(
     "too large to upload" notice above LOCAL_SEND_VIDEO_MAX_MB, or the
     reply text as-is for everything else (no media, send declined, or send
     failed). The reply text always carries the Download/Source links, so
-    every outcome leaves the user with a way to get the file."""
+    every outcome leaves the user with a way to get the file. The reply
+    kind and delivery latency are recorded (#UFB-0045)."""
+    start = time.perf_counter()
+    kind = "text_link"
+    try:
+        kind = await _send_reply(message, result, indicator)
+        metrics.record_reply_kind(kind)  # only replies that went out
+    finally:
+        metrics.observe_reply(kind, time.perf_counter() - start)
+
+
+# #UFB-0014, #UFB-0036, #UFB-0039, #UFB-0045, #UFB-0055
+async def _send_reply(
+    message: Message,
+    result: str | DownloadResult,
+    indicator: ChatActionIndicator | None = None,
+) -> str:
+    """Send the reply and return its kind: `native_video`, `gallery` or
+    `text_link`."""
     text = result.text if isinstance(result, DownloadResult) else result
     media_path = result.media_path if isinstance(result, DownloadResult) else None
 
     if isinstance(result, DownloadResult) and result.image_paths:
         if await _reply_with_gallery(message, result):
-            return
+            return "gallery"
         await message.reply(text, parse_mode=ParseMode.HTML)
-        return
+        return "text_link"
 
     if media_path:
         try:
@@ -342,13 +372,14 @@ async def _deliver_result(
 
         if size_mb is not None and size_mb > settings.LOCAL_SEND_VIDEO_MAX_MB:
             await message.reply(messages.too_large(text), parse_mode=ParseMode.HTML)
-            return
+            return "text_link"
 
         if size_mb is not None and await _fits_native_send(size_mb):
             if await _reply_with_video(message, media_path, text, indicator):
-                return
+                return "native_video"
 
     await message.reply(text, parse_mode=ParseMode.HTML)
+    return "text_link"
 
 
 # #UFB-0002, #UFB-0003, #UFB-0004, #UFB-0005, #UFB-0006, #UFB-0014, #UFB-0055, #BUG-0068

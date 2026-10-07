@@ -3,8 +3,15 @@
 #
 # Wraps the markdownfmt binary with this repo's fixed formatting options, so
 # pre-commit and CI don't each hardcode the same flags (markdownfmt has no
-# config-file support of its own — see docs/BUGS.md if that changes).
+# config-file support of its own - see docs/BUGS.md if that changes).
 set -euo pipefail
+
+VERSION="2026-10-06T15:36:00Z" # RFC 3339 date-time; bump on EVERY edit to this script (`date -u +%Y-%m-%dT%H:%M:%SZ`)
+
+if [ "${1:-}" = --version ]; then
+  echo "markdownfmt wrapper $VERSION"
+  exit 0
+fi
 
 # pre-commit runs this hook with `always_run`, so with no staged Markdown
 # files it is called with only flags. markdownfmt then formats stdin and, under

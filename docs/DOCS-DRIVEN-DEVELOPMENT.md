@@ -1,35 +1,35 @@
 # Docs-Driven Development Approach
 
-**Version:** 1.8 · **Last updated:** 2026-10-01
+**Version:** 1.9 - **Last updated:** 2026-10-06T15:36:00Z
 
-<!-- Bump both whenever this document's rules or templates change. -->
+<!-- Bump both whenever this document's rules or templates change. Timestamp: RFC 3339 UTC, `date -u +%Y-%m-%dT%H:%M:%SZ`. -->
 
 ## Glossary
 
-- **Feature** – a user-visible behavior. One feature = one document.
-- **FRD** – index of all features.
-- **Todo** – an idea for new behavior, not yet promoted to a feature. `TODO-NNNN`.
-- **Bug** – a defect or debt item in shipped behavior; not a feature. `BUG-NNNN`.
-- **Roadmap** – the order to work Todo and Bug items in. Holds no behavior.
-- **Epic** – a named group of items worked as one stretch.
+- **Feature** - a user-visible behavior. One feature = one document.
+- **FRD** - index of all features.
+- **Todo** - an idea for new behavior, not yet promoted to a feature. `TODO-NNNN`.
+- **Bug** - a defect or debt item in shipped behavior; not a feature. `BUG-NNNN`.
+- **Roadmap** - the order to work Todo and Bug items in. Holds no behavior.
+- **Epic** - a named group of items worked as one stretch.
 
 ## Philosophy
 
 - Docs are the contract. Code just proves it.
-- Docs → Tests → Code. Never the other order.
+- Docs -> Tests -> Code. Never the other order.
 - Short docs get updated. Long docs get skipped.
 - See a gap? Write it down now, not later.
 
 ## Rules
 
-- Docs → Tests → Code. Never the other order.
+- Docs -> Tests -> Code. Never the other order.
 - New behavior gets a new ID. Changed behavior edits its existing doc.
 - Take the next free ID from `FRD.md` / `BUGS.md` / `TODO.md` and bump it, same commit.
 - Cite an ID as `#<PREFIX>-NNNN` in commits, code comments, and prose (e.g. `paging #MDV-0018`). Inside `docs/`, link instead: `[<PREFIX>-NNNN](<PREFIX>-NNNN-slug.md)`.
 - Top-level functions/classes and tests carry the IDs they implement or cover - a comment above, or the first line of the docstring (comma-separated if several).
 - Required feature doc sections: Title, Tags, User Story, Behavior, Testing, Status.
-- Status change → update `FRD.md`, same commit. User-visible change → add a `CHANGELOG.md` line, same commit.
-- Closing a `BUGS.md`/`TODO.md` entry → delete its `ROADMAP.md` line, same commit.
+- Status change -> update `FRD.md`, same commit. User-visible change -> add a `CHANGELOG.md` line, same commit.
+- Closing a `BUGS.md`/`TODO.md` entry -> delete its `ROADMAP.md` line, same commit.
 - If the project ships `scripts/ddd`, query trackers through it (`ddd show --view short`, `ddd brief`, `ddd check --summary`) instead of reading `BUGS.md`/`TODO.md`/`ROADMAP.md` whole.
 
 ## Visuals
@@ -41,7 +41,7 @@
 | Ordered steps, branches  | `mermaid` flowchart    |
 | States and transitions   | `mermaid` stateDiagram |
 | Paths, trees, layout     | Fenced ASCII           |
-| Two axes (item × target) | Table                  |
+| Two axes (item x target) | Table                  |
 
 - If the prose is longer than the drawing, delete the prose.
 - Label every branch. An unlabeled arrow is not a spec.
@@ -84,9 +84,9 @@ Both use the same skeleton:
 # <Page|Module>: <name>
 
 **Route:** `/accounts/{id}` (pages only)
-**Features:** [<PREFIX>-NNNN](../../features/<PREFIX>-NNNN-slug.md), …
-**Uses modules:** [<slug>](../modules/<slug>.md), … (pages only)
-**Used by:** [<slug>](../pages/<slug>.md), … (modules only)
+**Features:** [<PREFIX>-NNNN](../../features/<PREFIX>-NNNN-slug.md), ...
+**Uses modules:** [<slug>](../modules/<slug>.md), ... (pages only)
+**Used by:** [<slug>](../pages/<slug>.md), ... (modules only)
 
 ## View
 ```text
@@ -106,8 +106,8 @@ Both use the same skeleton:
 Rules:
 
 - A feature doc with a UI gets a `## UX` section (see the feature template) linking its page/module docs; those docs list the feature(s) they implement in `**Features:**`, so the link goes both ways.
-- A page doesn't redraw a module's view. It shows a placeholder (`[calendar-row ×N]`) and links the module doc.
-- Order stays feature doc → UX doc → tests → code. A view change edits the UX doc in the same commit as the feature doc it belongs to.
+- A page doesn't redraw a module's view. It shows a placeholder (`[calendar-row xN]`) and links the module doc.
+- Order stays feature doc -> UX doc -> tests -> code. A view change edits the UX doc in the same commit as the feature doc it belongs to.
 - `docs/ux/README.md` indexes every page and module and the symbol legend; keep it current when a page or module is added, renamed, or removed.
 
 ## Workflow
@@ -119,7 +119,7 @@ Rules:
 5. Update status.
 6. User-visible change? Add a changelog entry.
 
-Steps 1–6 are for a specific feature.
+Steps 1-6 are for a specific feature.
 
 ```mermaid
 flowchart LR
@@ -262,7 +262,7 @@ Next free ID: **TODO-0001**.
 - #TODO-0001 <one-line idea>
 ```
 
-Promoted to a feature doc → delete the entry and its `ROADMAP.md` line, same commit. Leave the gap; IDs are never reused.
+Promoted to a feature doc -> delete the entry and its `ROADMAP.md` line, same commit. Leave the gap; IDs are never reused.
 
 ## BUGS.md template
 
@@ -334,7 +334,7 @@ Rules:
 
 - Newest releases first; within `## Unreleased`, newest entries first.
 - One line per user-visible change, keyed by feature or BUG ID. Internal debt and chores stay out.
-- On release, rename `## Unreleased` to the version/date and start a new `## Unreleased` section above it.
+- On release, rename `## Unreleased` to the version/date and start a new `## Unreleased` section above it. `scripts/release.sh` (`make release BUMP=patch|minor|major`) does this, after the gates, then commits and tags.
 
 ## Known trade-offs
 

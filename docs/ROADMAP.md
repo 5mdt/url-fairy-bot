@@ -2,21 +2,12 @@
 
 Order, not scope. An item's contract stays in its feature doc or tracker entry.
 
-| # | Epic                | Why here                                                                                                                        |
-|---|---------------------|---------------------------------------------------------------------------------------------------------------------------------|
-| 2 | Observability       | Measure before building more; alerts and `/stats` build on the counters.                                                        |
-| 3 | Metadata foundation | The store that duplicates, reports and richer replies share.                                                                    |
-| 4 | Platform coverage   | New downloaders, judged by the metrics from epic 2.                                                                             |
-| 5 | UX extras           | Nice-to-have surfaces on top of a solid base.                                                                                   |
-| 6 | Later / scale       | Only if load requires it.                                                                                                       |
-
-## 2. Observability
-
-1. #UFB-0045 - usage metrics [P1/D3]; every later decision needs the numbers.
-2. #UFB-0054 - maintainer alerts [P2/D3]; introduces `ADMIN_CHAT_ID`.
-3. #UFB-0049 - `/stats` command [P3/D2]; reads the counters and reuses `ADMIN_CHAT_ID`.
-
-**Done when:** failure rate per platform is visible and a dead cookie jar sends an admin alert.
+| # | Epic                | Why here                                                     |
+|---|---------------------|--------------------------------------------------------------|
+| 3 | Metadata foundation | The store that duplicates, reports and richer replies share. |
+| 4 | Platform coverage   | New downloaders, judged by the metrics from epic 2.          |
+| 5 | UX extras           | Nice-to-have surfaces on top of a solid base.                |
+| 6 | Later / scale       | Only if load requires it.                                    |
 
 ## 3. Metadata foundation
 

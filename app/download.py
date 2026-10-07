@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 import yt_dlp
 
-from app import media
+from app import media, metrics
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -208,7 +208,10 @@ async def _yt_dlp_download_locked(url: str, stem: str) -> str:
     if cached_path:
         logger.info(f"File already exists for URL: {url}, skipping download.")
         _touch_atime(cached_path)
+        metrics.record_cache(hit=True)  # #UFB-0045
         return cached_path
+
+    metrics.record_cache(hit=False)  # #UFB-0045
 
     try:
         ydl_opts = {
@@ -225,6 +228,7 @@ async def _yt_dlp_download_locked(url: str, stem: str) -> str:
         path = _cached_media_path(stem)
         if path:
             await asyncio.to_thread(media.normalize_if_quiet, path)
+            metrics.record_downloader("yt-dlp")  # #UFB-0045
         return path
 
     except Exception as e:
@@ -306,7 +310,10 @@ async def _tiktok_gallery_download_locked(url: str, stem: str) -> GalleryDownloa
     cached = _cached_gallery(gallery_dir, audio_path)
     if cached:
         logger.info(f"Gallery already exists for URL: {url}, skipping download.")
+        metrics.record_cache(hit=True)  # #UFB-0045
         return cached
+
+    metrics.record_cache(hit=False)  # #UFB-0045
 
     try:
         with _youtube_dl({"quiet": True}) as ydl:
@@ -332,6 +339,7 @@ async def _tiktok_gallery_download_locked(url: str, stem: str) -> GalleryDownloa
                     logger.warning(f"Failed to download audio for {url}: {e}")
 
         logger.info(f"Gallery download successful for URL: {url}")
+        metrics.record_downloader("yt-dlp")  # #UFB-0045
         return GalleryDownload(audio_path=audio, image_paths=image_paths)
 
     except UnsupportedUrlError:

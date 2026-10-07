@@ -27,13 +27,9 @@ Telegram clears a chat action after about 5 seconds or when the bot sends a mess
 
 ## Quirks & Decisions
 
-- Quirk: the bot is kept quiet in group chats ([UFB-0004](UFB-0004-group-chat-quietness.md)).
-  Decided: the indicator shows in group chats too, but only for a link the bot has decided to reply to. A link it stays quiet about shows nothing.
-  Known limit: whether a download failure ends in silence is only known after the attempt, so the indicator can show during a download that then ends quietly.
-- Quirk: the action has to stop when processing fails.
-  Proposed: always cancel the refresh task in a `finally`.
-- Quirk: a link that resolves to nothing to do (disallowed, invalid) would flash the indicator for no reason.
-  Proposed: start it only after the URL passes validation.
+- Quirk: the bot is kept quiet in group chats ([UFB-0004](UFB-0004-group-chat-quietness.md)). Decided: the indicator shows in group chats too, but only for a link the bot has decided to reply to. A link it stays quiet about shows nothing. Known limit: whether a download failure ends in silence is only known after the attempt, so the indicator can show during a download that then ends quietly.
+- Quirk: the action has to stop when processing fails. Proposed: always cancel the refresh task in a `finally`.
+- Quirk: a link that resolves to nothing to do (disallowed, invalid) would flash the indicator for no reason. Proposed: start it only after the URL passes validation.
 
 ## Testing
 

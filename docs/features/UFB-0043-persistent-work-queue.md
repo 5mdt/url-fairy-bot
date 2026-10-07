@@ -20,12 +20,9 @@ Today there is no explicit queue: updates are handled in-process by aiogram poll
 
 ## Quirks & Decisions
 
-- Quirk: there is no queue shape yet.
-  Open: one queue for everything, or separate ones for download and reply.
-- Quirk: a job killed mid-download leaves a partial file.
-  Open: resume, restart the download, or re-reply with the mirror link.
-- Quirk: the store adds an operational dependency.
-  Open: Redis (another container) versus SQLite (a file, no extra service, but one writer).
+- Quirk: there is no queue shape yet. Open: one queue for everything, or separate ones for download and reply.
+- Quirk: a job killed mid-download leaves a partial file. Open: resume, restart the download, or re-reply with the mirror link.
+- Quirk: the store adds an operational dependency. Open: Redis (another container) versus SQLite (a file, no extra service, but one writer).
 
 ## Testing
 

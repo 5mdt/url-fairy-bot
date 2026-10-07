@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `#UFB-0049` — `/stats` admin command replies with requests handled, download success, failure and mirror-fallback rates, a per-platform breakdown and cache size; only chats in `ADMIN_CHAT_ID` get an answer, everyone else is ignored, and the output never contains chat IDs or URLs.
+- `#UFB-0054` — maintainer alerts: with `ADMIN_CHAT_ID` set (comma-separated chat IDs) the bot messages the admin chats once when a cookie jar is logged out, a platform's downloads spike in failures (`ALERT_FAILURE_SPIKE_*`), the local Bot API server is unreachable, yt-dlp is out of date or the cache volume is nearly full, then once more on recovery. Each kind has an `ALERT_*` switch, rate limited by `ALERT_MIN_INTERVAL`.
+- `#UFB-0045` — `GET /metrics` serves Prometheus counters and histograms (requests, download outcome and downloader per platform, download and reply latency, cache size and hit rate, reply kind); platform labels are a fixed set plus `other`, never URLs or chat IDs.
 - `#UFB-0056` — `POST /process_url/` takes an `X-API-Key` header checked against `API_KEY` (comma-separated, unset keeps it open with a startup warning) and is rate limited per client (`API_RATE_LIMIT` / `API_RATE_WINDOW`, `429` + `Retry-After`); `X-Forwarded-For` is trusted only from `TRUSTED_PROXIES`. `/health` stays open.
 
 - Fix: `#BUG-0012` — `POST /process_url/` now validates `url` as an HTTP(S) URL, and redirect resolution refuses any target (first URL or any redirect hop) that resolves to a private, loopback, link-local, reserved, multicast or unspecified address. The API answers `400`; the bot replies with the invalid-URL message in private chats and stays silent in groups.

@@ -174,3 +174,14 @@ def test_settings_read_env_at_construction_not_import(monkeypatch):
     assert fresh.COOKIE_JAR_ENABLED is True
     assert fresh.AUDIO_NORMALIZE_BELOW_LUFS == -12.5
     assert fresh.BOT_TOKEN == "tok"
+
+
+# #UFB-0054, #UFB-0049
+def test_admin_chat_ids_default_empty(reload_settings):
+    assert reload_settings(ADMIN_CHAT_ID="").admin_chat_ids == []
+
+
+# #UFB-0054, #UFB-0049
+def test_admin_chat_ids_parses_comma_list(reload_settings):
+    s = reload_settings(ADMIN_CHAT_ID="123, -1001,,456")
+    assert s.admin_chat_ids == [123, -1001, 456]

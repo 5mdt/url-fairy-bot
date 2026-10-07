@@ -43,12 +43,9 @@ flowchart TD
 
 ## Quirks & Decisions
 
-- Quirk: a file that is truly silent measures `-inf`. Nothing to amplify, so it is left alone.
-  Proposed: keep skipping.
-- Quirk: when the measured values don't allow `linear=true`, loudnorm silently falls back to dynamic processing, so the result is less predictable.
-  Proposed: accept it; the file is still far louder than before.
-- Quirk: TikTok photo-post audio ([UFB-0039](UFB-0039-tiktok-photo-galleries.md)) is a separate `.mp3` path and isn't normalized.
-  Open: whether gallery audio can be near-silent too.
+- Quirk: a file that is truly silent measures `-inf`. Nothing to amplify, so it is left alone. Proposed: keep skipping.
+- Quirk: when the measured values don't allow `linear=true`, loudnorm silently falls back to dynamic processing, so the result is less predictable. Proposed: accept it; the file is still far louder than before.
+- Quirk: TikTok photo-post audio ([UFB-0039](UFB-0039-tiktok-photo-galleries.md)) is a separate `.mp3` path and isn't normalized. Open: whether gallery audio can be near-silent too.
 
 ## Testing
 

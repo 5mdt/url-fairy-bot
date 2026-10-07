@@ -4,10 +4,10 @@
 import asyncio
 
 from fastapi import APIRouter, Body, Depends, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, HttpUrl
 
-from . import api_security, cleanup, cookie_keepalive, pages
+from . import api_security, cleanup, cookie_keepalive, metrics, pages
 from .bot import is_polling_alive, is_telegram_api_reachable
 from .config import settings
 from .url_processing import BlockedUrlError, DownloadResult, process_url_request
@@ -76,3 +76,10 @@ async def health():
         "cookies": cookies,
     }
     return JSONResponse(content=body, status_code=200 if ok else 503)
+
+
+# #UFB-0034, #UFB-0045
+@api_router.get("/metrics")
+async def metrics_endpoint():
+    """#UFB-0045: Prometheus text exposition, next to /health."""
+    return Response(content=metrics.render(), media_type=metrics.CONTENT_TYPE)

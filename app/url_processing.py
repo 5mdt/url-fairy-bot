@@ -22,7 +22,7 @@ import requests
 
 from app.config import settings
 
-from . import messages, pages, preview
+from . import messages, metrics, pages, preview
 from .download import (
     UnsupportedUrlError,
     is_tiktok_photo_url,
@@ -317,7 +317,7 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
     return None
 
 
-# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014, #UFB-0055
+# #UFB-0004, #UFB-0007, #UFB-0009, #UFB-0010, #UFB-0011, #UFB-0013, #UFB-0014, #UFB-0045, #UFB-0055
 async def process_url_request(
     url: str,
     is_group_chat: bool = False,
@@ -328,6 +328,9 @@ async def process_url_request(
     # Follow redirects first to get the final URL
     # #BUG-0006: blocking requests.head, kept off the event loop
     final_url = await asyncio.to_thread(follow_redirects, url)
+
+    platform = metrics.platform_for(final_url)  # #UFB-0045
+    metrics.record_request(platform)
 
     # Check if the domain is allowed
     if not is_domain_allowed(final_url):
@@ -348,11 +351,20 @@ async def process_url_request(
             raise UnsupportedUrlError("Known non-video platform.")
         if on_download:
             on_download()  # #UFB-0055: a reply is coming; show progress
-        response = await attempt_download(final_url)
+        with metrics.timed(metrics.observe_download, platform):
+            try:
+                response = await attempt_download(final_url)
+            except UnsupportedUrlError:
+                metrics.record_download_outcome(platform, "failure")
+                raise
         if response:
+            metrics.record_download_outcome(platform, "success")
             return response
+        metrics.record_download_outcome(platform, "failure")
     except UnsupportedUrlError:
         modified_url = apply_rewrite_map(final_url)
+        if modified_url != final_url:
+            metrics.record_download_outcome(platform, "fallback_mirror")
 
         # Check if modified URL is the same as the original
         if modified_url == final_url and is_group_chat:

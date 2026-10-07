@@ -14,12 +14,9 @@ The keepalive ([UFB-0038](UFB-0038-cookie-keepalive.md)) tracks health per jar a
 
 ## Quirks & Decisions
 
-- Quirk: jars are all merged today, so there is no way to tell accounts apart.
-  Open: how jars are named and mapped to sites, by file-name convention or a small config.
-- Quirk: rotation strategy is undecided.
-  Open: round-robin, or on-failure only.
-- Quirk: a jar that is out of rotation has to come back.
-  Open: when it is retried.
+- Quirk: jars are all merged today, so there is no way to tell accounts apart. Open: how jars are named and mapped to sites, by file-name convention or a small config.
+- Quirk: rotation strategy is undecided. Open: round-robin, or on-failure only.
+- Quirk: a jar that is out of rotation has to come back. Open: when it is retried.
 
 ## Testing
 

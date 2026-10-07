@@ -20,10 +20,8 @@ Reports are rate-limited per user so the button can't be spammed.
 
 ## Quirks & Decisions
 
-- Quirk: the button adds clutter to every reply.
-  Open: show it on fallbacks only, or on all replies.
-- Quirk: a report contains a URL.
-  Open: how long reports are kept and who can read them.
+- Quirk: the button adds clutter to every reply. Open: show it on fallbacks only, or on all replies.
+- Quirk: a report contains a URL. Open: how long reports are kept and who can read them.
 
 ## Testing
 

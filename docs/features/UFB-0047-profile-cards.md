@@ -27,10 +27,8 @@ Profile links get no useful treatment today. Instagram, for example, is only mat
 
 ## Quirks & Decisions
 
-- Quirk: platforms expose different profile fields.
-  Open: the minimum card every platform can fill, versus optional fields.
-- Quirk: the avatar needs caching.
-  Open: how long it lives and whether it is refreshed.
+- Quirk: platforms expose different profile fields. Open: the minimum card every platform can fill, versus optional fields.
+- Quirk: the avatar needs caching. Open: how long it lives and whether it is refreshed.
 
 ## Testing
 

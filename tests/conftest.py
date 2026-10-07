@@ -92,3 +92,11 @@ def fresh_rate_limiter():
     from app import api_security
 
     api_security.reset_rate_limiter()
+
+
+@pytest.fixture(autouse=True)
+def fresh_metrics():
+    """#UFB-0045: every test starts with zeroed usage metrics."""
+    from app import metrics
+
+    metrics.reset()

@@ -493,7 +493,7 @@ class Corpus:
     def seed_open_citations(self) -> dict[int, list[str]]:
         """Only the citations the seed marks as describing a *currently-open* defect.
 
-        The file uses `Open #BUG-NNNN: …` for exactly that, and a bare `(#BUG-NNNN)`
+        The file uses `Open #BUG-NNNN: ...` for exactly that, and a bare `(#BUG-NNNN)`
         for historical provenance - "hand-rolled JSON broke this once" stays true
         after the bug is fixed and is the rule's whole justification. Only the
         `Open` form goes stale on close.

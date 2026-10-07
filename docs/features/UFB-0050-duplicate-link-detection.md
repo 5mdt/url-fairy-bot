@@ -18,12 +18,9 @@ The download cache already avoids re-downloading ([UFB-0016](UFB-0016-download-c
 
 ## Quirks & Decisions
 
-- Quirk: there is no memory of earlier replies today.
-  Open: how long the window is, for example one hour or one day.
-- Quirk: group chats are kept quiet ([UFB-0004](UFB-0004-group-chat-quietness.md)).
-  Open: whether duplicate detection applies there at all.
-- Quirk: the earlier reply may have been deleted.
-  Proposed: fall back to a normal reply.
+- Quirk: there is no memory of earlier replies today. Open: how long the window is, for example one hour or one day.
+- Quirk: group chats are kept quiet ([UFB-0004](UFB-0004-group-chat-quietness.md)). Open: whether duplicate detection applies there at all.
+- Quirk: the earlier reply may have been deleted. Proposed: fall back to a normal reply.
 
 ## Testing
 

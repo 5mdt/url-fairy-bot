@@ -39,7 +39,7 @@ def _strip_code(line: str) -> str:
     """Blank out inline code spans.
 
     `DOCS-DRIVEN-DEVELOPMENT.md` quotes link *syntax* inside backticks - a template
-    `[<PREFIX>-NNNN](<PREFIX>-NNNN-slug.md)` and an example `See [dashboard](…)`.
+    `[<PREFIX>-NNNN](<PREFIX>-NNNN-slug.md)` and an example `See [dashboard](...)`.
     Those are illustrations of the form, not links to a file that should exist.
     """
     return CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), line)
@@ -170,7 +170,7 @@ GROUP_PRIORITY_RE = re.compile(r"^(P[1-3])\b")
 
 
 def check_roadmap_priority(c: Corpus) -> list[Finding]:
-    """An epic can group its items under a `**P1 - …**` heading. When it does, the
+    """An epic can group its items under a `**P1 - ...**` heading. When it does, the
     heading and the entry's own `[P#/D#]` marker are two claims about the same
     thing, and they drift: the roadmap gets reordered as understanding improves
     while `BUGS.md` keeps the priority from triage day.

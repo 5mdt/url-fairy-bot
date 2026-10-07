@@ -15,13 +15,12 @@ It only answers configured admin chat IDs, and the output never contains chat ID
 ## Implementation
 
 - The admin check reuses `ADMIN_CHAT_ID`, a comma-separated list of chat IDs, which [UFB-0054](UFB-0054-maintainer-alerts.md) introduces to the config, README and compose file. Any listed chat may run `/stats`.
+- The handler is registered next to `/start` in `app/bot.py`, ahead of the generic message handler; the formatter is the pure `format_stats(snapshot)` in `app/stats.py`, fed by `metrics.snapshot()`. It prints only fixed platform names and numbers.
 
 ## Quirks & Decisions
 
-- Quirk: an unauthorized `/stats` could either be ignored or answered with a refusal.
-  Proposed: ignore it, so the command isn't discoverable.
-- Quirk: more than one admin may be wanted.
-  Decided: a comma-separated list in `ADMIN_CHAT_ID`.
+- Quirk: an unauthorized `/stats` could either be ignored or answered with a refusal. Decided: ignore it, with no reply in any chat type, so the command isn't discoverable; an empty `ADMIN_CHAT_ID` means nobody is authorized.
+- Quirk: more than one admin may be wanted. Decided: a comma-separated list in `ADMIN_CHAT_ID`.
 
 ## Testing
 
@@ -39,4 +38,4 @@ It only answers configured admin chat IDs, and the output never contains chat ID
 
 ## Status
 
-Planned
+Implemented
