@@ -10,10 +10,10 @@ As a Telegram user, I want a reply to carry the link's description, uploader and
 
 A successful download stores a trimmed metadata record next to its media, and the reply and watch page use it.
 
-| Where                                                             | What it shows                                                                                                 |
-|-------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| Reply caption                                                     | Short form: title, uploader, a clipped description. Stays well under Telegram's 1024-character caption limit. |
-| Watch page ([UFB-0032](UFB-0032-telegram-instant-view-embeds.md)) | Full form: long description, uploader and avatar, subtitle files.                                             |
+| Where                                                             | What it shows                                                                                                                                         |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Reply caption                                                     | Short form: title, `👤` uploader (linked to the profile), a clipped description as a quote. Stays well under Telegram's 1024-character caption limit. |
+| Watch page ([UFB-0032](UFB-0032-telegram-instant-view-embeds.md)) | Full form: long description, uploader and avatar, subtitle files.                                                                                     |
 
 The source is yt-dlp's info dict, plus the TikTok photo-post item data ([UFB-0039](UFB-0039-tiktok-photo-galleries.md)). A download without metadata (for example a future fallback downloader) still replies exactly as today.
 
@@ -31,7 +31,8 @@ The source is yt-dlp's info dict, plus the TikTok photo-post item data ([UFB-003
 ## Quirks & Decisions
 
 - Quirk: nothing besides the media, preview, watch page and gallery files was saved to the cache, so there was nothing to render metadata from after a restart. Decision: the trimmed JSON store above.
-- Quirk: which fields go in the caption was undecided. Decision: title (bold), uploader, and a description excerpt (italic), clipped to fit. The excerpt shrinks first, then is dropped, then the title is clipped, so caption plus links stays under 1024 characters.
+- Quirk: which fields go in the caption was undecided. Decision: title (bold), `👤` plus the uploader name (a link when the record has an `https://` profile URL of at most 300 characters, plain text otherwise), and a description excerpt in a quote (`<blockquote>`), clipped to fit. The excerpt shrinks first, then is dropped, then the title is clipped, so caption plus links stays under 1024 characters.
+- Quirk: TikTok gives the same text as title and description. Decision: the text shows once. A description contained in the title (or equal to it) is left out; a title contained in the description (ignoring case and a trailing `…` or `...`, which TikTok adds when it cuts the title) is left out and the description quote stays.
 - Quirk: subtitles may be long or absent. Decision: the watch page links them, never inlines them, and the caption never mentions them.
 - Quirk: avatar URLs are remote CDN links that may expire. Decision: the watch page hotlinks `https` avatars only and omits the image when absent; nothing is downloaded.
 - Quirk: a cache hit has no yt-dlp info. Decision: the record written by the first download is reused; a download whose record is missing replies as before.
@@ -47,6 +48,7 @@ The source is yt-dlp's info dict, plus the TikTok photo-post item data ([UFB-003
 
 - The trimming function keeps only the agreed fields and tolerates missing keys.
 - The caption builder never exceeds its budget, escapes HTML, and shrinks the excerpt first.
+- The uploader line links the profile only for `https://` URLs, and repeated title/description text is shown once.
 - `write`/`read`/`lookup`/`delete` round-trip a record; a missing or corrupt file reads as `None`.
 - A download with no info dict writes no record and replies as before.
 - The watch page shows title, uploader, avatar, full description and subtitle links, and escapes them.

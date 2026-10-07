@@ -205,24 +205,54 @@ def _clip(text: str, limit: int) -> str:
     return text[: limit - 1].rstrip() + "…"
 
 
+_MAX_LINKED_URL = 300  # a longer profile URL would eat the caption budget
+
+
+# #UFB-0041
+def _dedupe(title: str, description: str) -> tuple[str, str]:
+    """Show the text once (TikTok sends the same text as title and description).
+    The shorter one is dropped when the longer contains it, ignoring case and a
+    title's trailing `…` or `...`; equal text keeps the title."""
+    title, description = " ".join(title.split()), " ".join(description.split())
+    stem = title.rstrip(".…").strip().lower()
+    if not stem or not description:
+        return title, description
+    low = description.lower()
+    if low == title.lower():
+        return title, ""
+    if stem in low:
+        return "", description
+    if low in title.lower():
+        return title, ""
+    return title, description
+
+
 # #UFB-0041
 def caption(record: dict | None, budget: int) -> str:
-    """Telegram HTML for the short form: bold title, uploader, italic
-    description excerpt. The result is at most `budget` characters (markup
+    """Telegram HTML for the short form: bold title, 👤 uploader (linked to the
+    profile when it is a short https URL), description excerpt as a quote. The
+    result is at most `budget` characters (markup
     and escapes included), or "" when nothing fits."""
     if not record or budget <= 0:
         return ""
     title = str(record.get("title") or "")
     uploader = str(record.get("uploader") or "")
     description = str(record.get("description") or "")
+    title, description = _dedupe(title, description)
+    profile = str(record.get("uploader_url") or "")
+    if not (profile.startswith("https://") and len(profile) <= _MAX_LINKED_URL):
+        profile = ""
     for title_max, uploader_max, excerpt_max in _CAPTION_STEPS:
         lines = []
         if clipped := _clip(title, title_max):
             lines.append(f"<b>{escape(clipped)}</b>")
         if clipped := _clip(uploader, uploader_max):
-            lines.append(escape(clipped))
+            name = escape(clipped)
+            if profile:
+                name = f'<a href="{escape(profile)}">{name}</a>'
+            lines.append(f"👤 {name}")
         if clipped := _clip(description, excerpt_max):
-            lines.append(f"<i>{escape(clipped)}</i>")
+            lines.append(f"<blockquote>{escape(clipped)}</blockquote>")
         html = "\n".join(lines)
         if len(html) <= budget:
             return html

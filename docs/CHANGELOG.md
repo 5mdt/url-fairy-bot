@@ -2,12 +2,14 @@
 
 ## Unreleased
 
+- `#UFB-0028` — the Woodpecker pipeline also pushes any git tag that points at the built commit on a push, manual or cron run.
+- `#UFB-0028` — before building, the pipeline re-tags an existing `<short sha>` registry image instead of rebuilding (cron always rebuilds), then lists every image of the run with digest and labels.
+
 ## 2.12.0 (2026-10-07)
 
 - `#UFB-0051` — failure replies (mirror-link fallback and "cannot download") carry a "Report broken link" button; pressing it logs the URL, failure reason and platform for the maintainer, notes it in the link's metadata record and thanks the user. Reports are limited per user (`REPORT_RATE_LIMIT` per `REPORT_RATE_WINDOW` seconds).
 - `#UFB-0050` — posting a link the bot already answered in the same chat within `DUPLICATE_WINDOW` seconds (default 3600, `0` disables) gets a short "same link as above" reply to the earlier answer instead of a repeat download and reply; a deleted earlier reply falls back to a normal reply.
-- `#UFB-0028` — the Woodpecker pipeline now also pushes any git tag that points at the built commit on a branch push, manual or cron run (the clone fetches tags), not just on tag events.
-- `#UFB-0041` — replies carry the link's title, uploader and a clipped description in the caption; the watch page shows the full description, uploader, avatar and subtitle links. The trimmed record lives in `CACHE_DIR/meta/<stem>.json`, survives restarts and is swept with its media.
+- `#UFB-0041` — replies carry the link's title, a `👤` uploader linked to the profile and a clipped description as a quote in the caption (text repeated between title and description shows once); the watch page shows the full description, uploader, avatar and subtitle links. The trimmed record lives in `CACHE_DIR/meta/<stem>.json`, survives restarts and is swept with its media.
 
 ## 2.11.0 (2026-10-07)
 

@@ -155,8 +155,59 @@ def test_caption_has_title_uploader_and_excerpt():
         budget=500,
     )
     assert "<b>My &lt;video&gt;</b>" in html
-    assert "Bob" in html
-    assert "<i>Line1 Line2</i>" in html
+    assert "👤 Bob" in html
+    assert "<blockquote>Line1 Line2</blockquote>" in html
+
+
+# #UFB-0041
+def test_caption_links_uploader_to_https_profile():
+    rec = {"title": "t", "uploader": "A&B", "uploader_url": "https://x.test/@a?b=1&c=2"}
+    html = metadata.caption(rec, budget=500)
+    assert '👤 <a href="https://x.test/@a?b=1&amp;c=2">A&amp;B</a>' in html
+
+
+# #UFB-0041
+@pytest.mark.parametrize(
+    "url", ["http://x.test/a", "javascript:alert(1)", "https://x.test/" + "a" * 300]
+)
+def test_caption_leaves_unsafe_or_long_profile_url_plain(url):
+    html = metadata.caption({"uploader": "Bob", "uploader_url": url}, budget=900)
+    assert "👤 Bob" in html
+    assert "<a " not in html
+
+
+# #UFB-0041
+@pytest.mark.parametrize(
+    "title,description",
+    [
+        ("same text", "same text"),
+        ("Same  text\nhere", "same text here"),
+        ("long caption here", "long caption"),
+    ],
+)
+def test_caption_shows_repeated_text_once_as_title(title, description):
+    html = metadata.caption({"title": title, "description": description}, budget=900)
+    assert "<b>" in html
+    assert "<blockquote>" not in html
+
+
+# #UFB-0041
+@pytest.mark.parametrize(
+    "title,description",
+    [
+        ("My video", "My video is about cats"),
+        ("about cats", "My video is about CATS and dogs"),
+        ("long caption…", "long caption here and more"),
+        (
+            "Berlin🇩🇪 Welche Stadt gefällt dir am besten?👀 Schreib in die Kommenta...",
+            "Berlin🇩🇪 Welche Stadt gefällt dir am besten?👀 Schreib in die Kommentare! #berlin",
+        ),
+    ],
+)
+def test_caption_drops_title_contained_in_description(title, description):
+    html = metadata.caption({"title": title, "description": description}, budget=900)
+    assert "<b>" not in html
+    assert f"<blockquote>{description}</blockquote>" in html
 
 
 # #UFB-0041
@@ -183,8 +234,8 @@ def test_caption_shrinks_excerpt_before_title():
     long_form = metadata.caption(rec, budget=900)
     short_form = metadata.caption(rec, budget=60)
     assert "Short title" in short_form
-    assert "<i>" not in short_form
-    assert "<i>" in long_form
+    assert "<blockquote>" not in short_form
+    assert "<blockquote>" in long_form
 
 
 # #UFB-0041

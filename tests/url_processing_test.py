@@ -817,7 +817,9 @@ async def test_attempt_download_caption_includes_metadata(monkeypatch, tmp_path)
     ):
         result = await attempt_download("https://tiktok.com/@user/video/1")
 
-    assert result.text.startswith("<b>Cool &lt;clip&gt;</b>\nBob\n<i>About it</i>\n\n")
+    assert result.text.startswith(
+        "<b>Cool &lt;clip&gt;</b>\n👤 Bob\n<blockquote>About it</blockquote>\n\n"
+    )
     assert "https://example.test/watch/some_video.html" in result.text
     assert "Cool" in (tmp_path / "watch" / "some_video.html").read_text()
 
@@ -878,4 +880,4 @@ async def test_attempt_download_gallery_caption_includes_metadata(
     ):
         result = await attempt_download(url)
 
-    assert result.text.startswith("<b>Photos</b>\nNick\n\n")
+    assert result.text.startswith("<b>Photos</b>\n👤 Nick\n\n")
