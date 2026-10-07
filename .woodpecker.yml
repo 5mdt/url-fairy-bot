@@ -29,6 +29,11 @@ when:
       - tag
       - manual
       - cron
+# Fetch tags so image-tags can see git tags pointing at a pushed commit.
+clone:
+  git:
+    settings:
+      tags: true
 steps:
   # PRs only prove the image still builds (no push).
   - name: image-check
@@ -45,6 +50,7 @@ steps:
   - name: image-tags
     image: docker.io/library/alpine:3
     commands:
+      - apk add --no-cache git
       - |
         if [ -n "$${CI_COMMIT_TAG}" ]; then
           tags="$${CI_COMMIT_TAG}"
@@ -52,6 +58,12 @@ steps:
           tags="$(printf 'stable\n%s' "$(printf %s "$${CI_COMMIT_SHA}" | cut -c1-7)")"
         else
           tags="$(printf %s "$${CI_COMMIT_BRANCH}" | tr / -)"
+        fi
+        # A branch commit that also carries git tags (e.g. a release commit
+        # tagged right after the push) gets those tags too.
+        if [ -z "$${CI_COMMIT_TAG}" ]; then
+          git config --global --add safe.directory "$${CI_WORKSPACE}"
+          tags="$(printf '%s\n%s' "$tags" "$(git tag --points-at "$${CI_COMMIT_SHA}")" | sed '/^$/d')"
         fi
         printf '%s\n' "$tags" > .tags
         echo "image tags: $(tr '\n' ' ' < .tags)"
