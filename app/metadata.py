@@ -16,7 +16,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-MAX_DESCRIPTION_CHARS = 5000
+MAX_DESCRIPTION_CHARS = 100_000
 _MAX_TITLE_CHARS = 500
 
 # Caption (title, uploader, excerpt) limits, tried in order until the escaped
@@ -237,11 +237,12 @@ def _dedupe(title: str, description: str) -> tuple[str, str]:
 
 
 # #UFB-0041
-def caption(record: dict | None, budget: int) -> str:
+def caption(record: dict | None, budget: int, more_url: str | None = None) -> str:
     """Telegram HTML for the short form: bold title, 👤 uploader (linked to the
     profile when it is a short https URL), description excerpt as a quote. The
     result is at most `budget` characters (markup
-    and escapes included), or "" when nothing fits."""
+    and escapes included), or "" when nothing fits. With `more_url`, a
+    `📖 Read more` line follows whenever the description is clipped or left out."""
     if not record or budget <= 0:
         return ""
     title = str(record.get("title") or "")
@@ -262,6 +263,8 @@ def caption(record: dict | None, budget: int) -> str:
             lines.append(f"👤 {name}")
         if clipped := _clip(description, excerpt_max):
             lines.append(f"<blockquote>{escape(clipped)}</blockquote>")
+        if more_url and description and clipped != description:
+            lines.append(f'<a href="{escape(more_url)}">📖 Read more</a>')
         html = "\n".join(lines)
         if len(html) <= budget:
             return html

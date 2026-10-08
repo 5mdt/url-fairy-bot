@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `#UFB-0041` — when a reply's description excerpt is clipped or left out, the caption adds a `📖 Read more` link that opens the full description on the watch page (in Instant View when `IV_RHASH` is set); the page keeps paragraphs and line breaks, and stored descriptions may be up to 100 000 characters.
+- `#UFB-0052` — optional `cobalt` service in `docker-compose.yml` behind the `cobalt` compose profile (internal only, not started by default), with a setup guide in `docs/cobalt-setup.md`; the bot does not call it yet.
+
 ## 2.12.2 (2026-10-07)
 
 - Fix: `#BUG-0081` — TikTok photo posts whose author data carries `avatarThumb` as a plain URL string (not `{"urlList": [...]}`) no longer fail with "Download failed unexpectedly" after the images were already downloaded; `trim_tiktok_item` accepts both forms.

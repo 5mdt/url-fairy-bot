@@ -849,6 +849,32 @@ async def test_attempt_download_caption_stays_under_telegram_limit(
 
 # #UFB-0041
 @pytest.mark.asyncio
+@pytest.mark.parametrize("rhash", ["", "abcdef123456"])
+async def test_attempt_download_long_description_links_read_more(
+    monkeypatch, tmp_path, rhash
+):
+    from app import metadata
+
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    monkeypatch.setattr(settings, "IV_RHASH", rhash)
+    metadata.write("some_video", {"title": "T", "description": "word " * 500})
+    with patch(
+        "app.url_processing.yt_dlp_download",
+        new=AsyncMock(return_value="/cache/some_video.mp4"),
+    ):
+        result = await attempt_download("https://tiktok.com/@user/video/1")
+
+    assert "📖 Read more</a>" in result.text
+    assert len(result.text) < 1024
+    if rhash:
+        assert "https://t.me/iv?url=" in result.text
+        assert "%23description" in result.text
+    else:
+        assert "watch/some_video.html#description" in result.text
+
+
+# #UFB-0041
+@pytest.mark.asyncio
 async def test_attempt_download_without_metadata_replies_as_before(
     monkeypatch, tmp_path
 ):

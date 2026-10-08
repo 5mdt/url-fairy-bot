@@ -10,10 +10,10 @@ As a Telegram user, I want a reply to carry the link's description, uploader and
 
 A successful download stores a trimmed metadata record next to its media, and the reply and watch page use it.
 
-| Where                                                             | What it shows                                                                                                                                         |
-|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Reply caption                                                     | Short form: title, `👤` uploader (linked to the profile), a clipped description as a quote. Stays well under Telegram's 1024-character caption limit. |
-| Watch page ([UFB-0032](UFB-0032-telegram-instant-view-embeds.md)) | Full form: long description, uploader and avatar, subtitle files.                                                                                     |
+| Where                                                             | What it shows                                                                                                                                                                                                                                  |
+|-------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Reply caption                                                     | Short form: title, `👤` uploader (linked to the profile), a clipped description as a quote, and a `📖 Read more` link to the watch page when the description is clipped or left out. Stays well under Telegram's 1024-character caption limit. |
+| Watch page ([UFB-0032](UFB-0032-telegram-instant-view-embeds.md)) | Full form: long description (paragraphs and line breaks kept), uploader and avatar, subtitle files.                                                                                                                                            |
 
 The source is yt-dlp's info dict, plus the TikTok photo-post item data ([UFB-0039](UFB-0039-tiktok-photo-galleries.md)). A download without metadata (for example a future fallback downloader) still replies exactly as today.
 
@@ -33,6 +33,9 @@ The source is yt-dlp's info dict, plus the TikTok photo-post item data ([UFB-003
 - Quirk: nothing besides the media, preview, watch page and gallery files was saved to the cache, so there was nothing to render metadata from after a restart. Decision: the trimmed JSON store above.
 - Quirk: which fields go in the caption was undecided. Decision: title (bold), `👤` plus the uploader name (a link when the record has an `https://` profile URL of at most 300 characters, plain text otherwise), and a description excerpt in a quote (`<blockquote>`), clipped to fit. The excerpt shrinks first, then is dropped, then the title is clipped, so caption plus links stays under 1024 characters.
 - Quirk: TikTok gives the same text as title and description. Decision: the text shows once. A description contained in the title (or equal to it) is left out; a title contained in the description (ignoring case and a trailing `…` or `...`, which TikTok adds when it cuts the title) is left out and the description quote stays.
+- Quirk: the caption can only hold a short excerpt. Decision: when the description is clipped or left out, the caption gets a `📖 Read more` line linking the watch page (`#description`), wrapped as `t.me/iv?...` when `IV_RHASH` is set ([UFB-0032](UFB-0032-telegram-instant-view-embeds.md)), so Instant View shows the full text. No link when the whole description fits, or when there is no watch page (a TikTok gallery without audio). The link costs caption budget like any other line.
+- Quirk: Instant View ignores `white-space: pre-wrap`. Decision: the watch page renders a blank line as a new `<p>` and a single newline as `<br>`.
+- Quirk: stored descriptions were capped at 5000 characters. Decision: the cap is 100 000.
 - Quirk: subtitles may be long or absent. Decision: the watch page links them, never inlines them, and the caption never mentions them.
 - Quirk: avatar URLs are remote CDN links that may expire. Decision: the watch page hotlinks `https` avatars only and omits the image when absent; nothing is downloaded.
 - Quirk: a cache hit has no yt-dlp info. Decision: the record written by the first download is reused; a download whose record is missing replies as before.
@@ -48,10 +51,11 @@ The source is yt-dlp's info dict, plus the TikTok photo-post item data ([UFB-003
 
 - The trimming function keeps only the agreed fields and tolerates missing keys.
 - The caption builder never exceeds its budget, escapes HTML, and shrinks the excerpt first.
+- A clipped or dropped description with a `more_url` adds a `📖 Read more` link within the budget; a fully shown or empty description, or no `more_url`, adds none; the URL is escaped.
 - The uploader line links the profile only for `https://` URLs, and repeated title/description text is shown once.
 - `write`/`read`/`lookup`/`delete` round-trip a record; a missing or corrupt file reads as `None`.
 - A download with no info dict writes no record and replies as before.
-- The watch page shows title, uploader, avatar, full description and subtitle links, and escapes them.
+- The watch page shows title, uploader, avatar, full description (blank line → `<p>`, newline → `<br>`) and subtitle links, and escapes them.
 
 ### Integration
 
