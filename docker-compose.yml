@@ -148,6 +148,48 @@ services:
       # same path for local-mode file sends (#BUG-0074).
       - cache:/tmp/url-fairy-bot-cache/
       - botapi:/var/lib/telegram-bot-api
+  # Optional: a self-hosted cobalt API, the fallback downloader of #UFB-0052.
+  # Internal only: no host port, not routed by traefik. Disabled by default;
+  # enable with `docker compose --profile cobalt up -d` (docs/cobalt-setup.md).
+  # `app` has no depends_on here: cobalt is a fallback, the bot starts without it.
+  cobalt:
+    image: ghcr.io/imputnet/cobalt:11
+    init: true
+    read_only: true
+    restart: unless-stopped
+    profiles:
+      - cobalt
+    environment:
+      # cobalt builds its tunnel URLs from this; `app` fetches them over the
+      # compose network, so it is the service name, not a public URL.
+      API_URL: ${COBALT_API_URL:-http://cobalt:9000/}
+      COOKIE_PATH: ${COBALT_COOKIE_PATH:-}
+      DURATION_LIMIT: ${COBALT_DURATION_LIMIT:-10800}
+      RATELIMIT_MAX: ${COBALT_RATELIMIT_MAX:-20}
+    # GET / answers with the instance info JSON.
+    healthcheck:
+      test:
+        - "CMD"
+        - "wget"
+        - "-qO-"
+        - "http://127.0.0.1:9000/"
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "3"
+        max-size: "1m"
+    volumes:
+      # The directory, not one file: Docker would create a directory in place
+      # of a missing file. Only read when COBALT_COOKIE_PATH points into it.
+      - ${GLOBAL_DATA_FOLDER:-/Data}/url-fairy-bot/config:/config:ro
+    networks:
+      - default
 volumes:
   cache:
   botapi:

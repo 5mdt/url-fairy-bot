@@ -168,6 +168,41 @@ def test_caption_has_title_uploader_and_excerpt():
     assert "<blockquote>Line1 Line2</blockquote>" in html
 
 
+MORE = "https://example.test/watch/x.html#description"
+
+
+# #UFB-0041
+def test_caption_adds_read_more_when_description_clipped():
+    rec = {"title": "T", "description": "word " * 500}
+    html = metadata.caption(rec, budget=700, more_url=MORE)
+    assert f'<a href="{MORE}">📖 Read more</a>' in html
+    assert len(html) <= 700
+
+
+# #UFB-0041
+def test_caption_adds_read_more_when_description_dropped():
+    rec = {"title": "T" * 200, "uploader": "U" * 80, "description": "word " * 500}
+    html = metadata.caption(rec, budget=330, more_url=MORE)
+    assert "Read more" in html
+    assert len(html) <= 330
+
+
+# #UFB-0041
+def test_caption_no_read_more_when_description_fits_or_no_url():
+    short = {"title": "T", "description": "short"}
+    assert "Read more" not in metadata.caption(short, budget=500, more_url=MORE)
+    long = {"title": "T", "description": "word " * 500}
+    assert "Read more" not in metadata.caption(long, budget=700)
+    assert "Read more" not in metadata.caption({"title": "T"}, 500, more_url=MORE)
+
+
+# #UFB-0041
+def test_caption_escapes_read_more_url():
+    rec = {"title": "T", "description": "word " * 500}
+    html = metadata.caption(rec, budget=700, more_url='https://x/?a=1&b="2"')
+    assert 'href="https://x/?a=1&amp;b=&quot;2&quot;"' in html
+
+
 # #UFB-0041
 def test_caption_links_uploader_to_https_profile():
     rec = {"title": "t", "uploader": "A&B", "uploader_url": "https://x.test/@a?b=1&c=2"}

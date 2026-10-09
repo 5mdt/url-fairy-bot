@@ -4,6 +4,7 @@
 import logging
 import mimetypes
 import os
+import re
 import shutil
 from urllib.parse import quote
 
@@ -88,6 +89,19 @@ def _fits_inline_video(media_filename: str) -> bool:
 
 
 # #UFB-0041
+def _description_paragraphs(description) -> list[list[str]]:
+    """Blank-line separated paragraphs of single lines: Instant View ignores
+    `white-space: pre-wrap`, so breaks are rendered as <p> and <br>."""
+    if not isinstance(description, str):
+        return []
+    paragraphs = [
+        [line.strip() for line in para.splitlines() if line.strip()]
+        for para in re.split(r"\n\s*\n", description)
+    ]
+    return [lines for lines in paragraphs if lines]
+
+
+# #UFB-0041
 def _metadata_view(media_filename: str) -> dict | None:
     """The full-form metadata for the watch page template, or None."""
     record = metadata.read(media_filename)
@@ -103,6 +117,7 @@ def _metadata_view(media_filename: str) -> dict | None:
         if isinstance(uploader_url, str) and uploader_url.startswith("https://")
         else None,
         "description": record.get("description"),
+        "description_paragraphs": _description_paragraphs(record.get("description")),
         "avatar_url": avatar
         if isinstance(avatar, str) and avatar.startswith("https://")
         else None,

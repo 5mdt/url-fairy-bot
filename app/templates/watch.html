@@ -41,7 +41,7 @@
             {% if meta.uploader_url %}<a href="{{ meta.uploader_url }}">{{ meta.uploader }}</a>{% else %}{{ meta.uploader }}{% endif %}
         </p>
         {% endif %}
-        {% if meta.description %}<p style="white-space: pre-wrap">{{ meta.description }}</p>{% endif %}
+        {% if meta.description_paragraphs %}<div id="description">{% for para in meta.description_paragraphs %}<p>{% for line in para %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</p>{% endfor %}</div>{% endif %}
         {% if meta.subtitles %}
         <p>💬 Subtitles:
             {% for sub in meta.subtitles %}<a href="{{ sub.url }}">{{ sub.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}

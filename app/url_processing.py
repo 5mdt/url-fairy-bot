@@ -266,12 +266,14 @@ _CAPTION_LIMIT = 1024
 
 
 # #UFB-0041
-def _download_text(watch_url: str, source_url: str, record: dict | None) -> str:
+def _download_text(
+    watch_url: str, source_url: str, record: dict | None, more_url: str | None = None
+) -> str:
     """The reply text: the short metadata block (when a record exists and
     fits) above the links, always under Telegram's caption limit."""
     links = messages.download_result(watch_url, source_url)
     # Budget counts markup and escapes, so it is conservative; 2 = the blank line.
-    meta = metadata.caption(record, _CAPTION_LIMIT - 1 - len(links) - 2)
+    meta = metadata.caption(record, _CAPTION_LIMIT - 1 - len(links) - 2, more_url)
     if not meta:
         return links
     return messages.download_result(watch_url, source_url, meta=meta)
@@ -281,6 +283,7 @@ def _download_text(watch_url: str, source_url: str, record: dict | None) -> str:
 async def _attempt_gallery_download(final_url: str) -> DownloadResult:
     gallery = await tiktok_gallery_download(final_url)
     watch_url = final_url
+    more_url = None
     if gallery.audio_path:
         audio_name = os.path.basename(gallery.audio_path)
         # The first image stands in as the audio's preview image.
@@ -297,8 +300,10 @@ async def _attempt_gallery_download(final_url: str) -> DownloadResult:
             )
         except OSError as e:
             logger.error(f"Failed to write watch page for {audio_name}: {e}")
-        watch_url = _iv_watch_url(pages.watch_page_url(audio_name))
-    text = _download_text(watch_url, final_url, metadata.lookup(final_url))
+        page_url = pages.watch_page_url(audio_name)
+        watch_url = _iv_watch_url(page_url)
+        more_url = _iv_watch_url(f"{page_url}#description")
+    text = _download_text(watch_url, final_url, metadata.lookup(final_url), more_url)
     return DownloadResult(
         text=text, media_path=gallery.audio_path, image_paths=gallery.image_paths
     )
@@ -323,7 +328,12 @@ async def attempt_download(final_url: str) -> DownloadResult | None:
                 logger.error(f"Failed to write watch page for {video_path}: {e}")
             page_url = pages.watch_page_url(video_path)
             watch_url = _iv_watch_url(page_url)
-            text = _download_text(watch_url, final_url, metadata.read(video_path))
+            text = _download_text(
+                watch_url,
+                final_url,
+                metadata.read(video_path),
+                _iv_watch_url(f"{page_url}#description"),
+            )
             return DownloadResult(text=text, media_path=video_os_path)
     except UnsupportedUrlError:
         raise

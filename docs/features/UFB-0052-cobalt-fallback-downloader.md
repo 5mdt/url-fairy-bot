@@ -14,7 +14,7 @@ With `COBALT_API_URL` empty, nothing changes. The result is saved under the same
 
 ## Implementation
 
-- An optional `cobalt` service in `docker-compose.yml` behind a profile, like `telegram-bot-api`.
+- An optional `cobalt` service in `docker-compose.yml` behind a profile, like `telegram-bot-api`. Shipped; setup and API-reuse notes in [docs/cobalt-setup.md](../cobalt-setup.md).
 - A `COBALT_API_URL` setting.
 - cobalt runs as a separate container and the bot calls its HTTP API only, so its AGPL license doesn't reach the bot.
 - The public `cobalt.tools` instance is not used: it is rate-limited and needs auth.

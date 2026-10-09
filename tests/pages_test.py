@@ -280,10 +280,19 @@ def test_watch_page_shows_full_metadata(cache_dir):
 
     assert "My &lt;title&gt;" in html
     assert "Bob" in html
-    assert "Line one\nLine two &lt;script&gt;" in html
+    assert "<p>Line one<br>Line two &lt;script&gt;</p>" in html
     assert 'src="https://cdn.example/av.jpg"' in html
     assert 'href="https://example.test/subs/clip/clip.en.vtt"' in html
     assert "<script>" not in html
+
+
+# #UFB-0041
+def test_watch_page_description_blank_line_starts_new_paragraph(cache_dir):
+    from app import metadata
+
+    metadata.write("clip", {"title": "t", "description": "One\n\n\nTwo\nThree"})
+    html = pages.render_watch_page("clip.mp4")
+    assert '<div id="description"><p>One</p><p>Two<br>Three</p></div>' in html
 
 
 # #UFB-0041
