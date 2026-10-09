@@ -44,6 +44,9 @@ def pinned_settings(monkeypatch):
     monkeypatch.setattr(settings, "SPOTIFY_MIRROR_DOMAIN", "fxspotify.com")
     monkeypatch.setattr(settings, "INSTAGRAM_MIRROR_DOMAIN", "kkinstagram.com")
     monkeypatch.setattr(settings, "REDDIT_MIRROR_DOMAIN", "rxddit.com")
+    monkeypatch.setattr(settings, "REDDIT_CLIENT_ID", "")  # #UFB-0057
+    monkeypatch.setattr(settings, "REDDIT_CLIENT_SECRET", "")
+    monkeypatch.setattr(settings, "REDDIT_USER_AGENT", "url-fairy-bot/test")
     monkeypatch.setattr(settings, "TIKTOK_MIRROR_DOMAIN", "tfxktok.com")
     monkeypatch.setattr(settings, "TWITTER_MIRROR_DOMAIN", "fxtwitter.com")
     monkeypatch.setattr(settings, "YOUTUBE_MIRROR_DOMAIN", "yfxtube.com")
@@ -65,6 +68,8 @@ def no_network(monkeypatch):
         )
 
     monkeypatch.setattr("requests.head", _blocked)
+    monkeypatch.setattr("requests.get", _blocked)  # #UFB-0057
+    monkeypatch.setattr("requests.post", _blocked)
 
 
 @pytest.fixture(autouse=True)

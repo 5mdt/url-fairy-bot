@@ -15,6 +15,7 @@ Order, not scope. An item's contract stays in its feature doc or tracker entry.
 3. #UFB-0053 - multiple cookie jars [P3/D3]; resilience for login-gated platforms.
 4. #BUG-0080 - TikTok private extractor dependency; fragile.
 5. #BUG-0076 - local-mode video send failure [P3]; undiagnosed and masked by a retry, so add the diagnostic logging and wait for a recurrence.
+6. #UFB-0058 - Reddit account login for gated content [P3/D2]; only if gated links turn up in real use.
 
 **Done when:** Instagram posts download natively and the mirror-fallback rate goes down.
 

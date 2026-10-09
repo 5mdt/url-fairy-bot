@@ -12,6 +12,9 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+# #UFB-0039, #UFB-0057: image types kept in CACHE_DIR/gallery/<stem>/
+GALLERY_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+
 _PROBE_TIMEOUT_SECONDS = 10
 _LOUDNORM_TIMEOUT_SECONDS = 120
 _LOUDNORM_TARGET = "I=-16:TP=-1.5:LRA=11"

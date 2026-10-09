@@ -319,3 +319,97 @@ def test_seed_static_pages_rerenders_metadata_after_restart(cache_dir):
         pages.seed_static_pages()
 
     assert "Survives restart" in (cache_dir / "watch" / "clip.html").read_text()
+
+
+# --- UFB-0057: Reddit Instant View pages ---
+
+
+def _reddit_view(**over):
+    view = {
+        "title": "Big <news>",
+        "description": "Hello",
+        "source_url": "https://www.reddit.com/r/deck/comments/abc/",
+        "banner": None,
+        "sections": [
+            {
+                "heading": None,
+                "title": "Big <news>",
+                "avatar": None,
+                "author": "u/alice",
+                "author_url": "https://www.reddit.com/user/alice/",
+                "subreddit": "r/deck",
+                "subreddit_url": "https://www.reddit.com/r/deck/",
+                "subtitle": None,
+                "body": "First\nline\n\n[[img:a]]\n\nLast",
+                "images": {"a": "https://example.test/gallery/s/01.jpg"},
+            }
+        ],
+    }
+    view.update(over)
+    return view
+
+
+# #UFB-0057
+def test_reddit_page_paths(cache_dir):
+    assert pages.reddit_page_path("s") == str(cache_dir / "reddit" / "s.html")
+    assert pages.reddit_page_url("s") == "https://example.test/reddit/s.html"
+
+
+# #UFB-0057
+def test_reddit_page_renders_text_and_inline_images_in_place():
+    html = pages.render_reddit_page("s", _reddit_view())
+    body = html.split("</head>", 1)[1]
+    assert "<h1>Big &lt;news&gt;</h1>" in html
+    assert '<a href="https://www.reddit.com/user/alice/">u/alice</a>' in html
+    assert "<p>First<br>line</p>" in html
+    assert body.index("First") < body.index("01.jpg") < body.index("Last")
+    assert 'property="og:image" content="https://example.test/gallery/s/01.jpg"' in html
+    assert 'id="description"' in html
+    assert "[[img" not in html
+
+
+# #UFB-0057
+def test_reddit_page_appends_images_the_text_never_mentions():
+    view = _reddit_view()
+    view["sections"][0]["body"] = "Only text"
+    body = pages.render_reddit_page("s", view).split("</head>", 1)[1]
+    assert body.index("Only text") < body.index("01.jpg")
+
+
+# #UFB-0057
+def test_reddit_page_comment_shows_comment_then_original_post():
+    view = _reddit_view()
+    original = {**view["sections"][0], "heading": "Original post", "body": "orig body"}
+    view["sections"][0]["body"] = "comment body"
+    view["sections"].append(original)
+    html = pages.render_reddit_page("s", view)
+    assert html.index("comment body") < html.index("Original post")
+    assert html.index("Original post") < html.index("orig body")
+    assert html.count('id="description"') == 1
+
+
+# #UFB-0057
+def test_reddit_page_profile_with_banner_and_avatar():
+    view = _reddit_view(banner="https://example.test/gallery/s/02.jpg")
+    view["sections"][0].update(
+        avatar="https://example.test/gallery/s/01.jpg", images={}
+    )
+    html = pages.render_reddit_page("s", view)
+    assert 'src="https://example.test/gallery/s/02.jpg"' in html
+    assert 'src="https://example.test/gallery/s/01.jpg"' in html
+
+
+# #UFB-0057
+def test_reddit_page_escapes_user_text():
+    view = _reddit_view()
+    view["sections"][0]["body"] = "<script>alert(1)</script>"
+    html = pages.render_reddit_page("s", view)
+    assert "<script>alert" not in html
+    assert "&lt;script&gt;" in html
+
+
+# #UFB-0057
+def test_write_reddit_page_writes_the_file(cache_dir):
+    path = pages.write_reddit_page("s", _reddit_view())
+    assert path == str(cache_dir / "reddit" / "s.html")
+    assert "Big &lt;news&gt;" in open(path, encoding="utf-8").read()

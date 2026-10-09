@@ -22,11 +22,12 @@ import requests
 
 from app.config import settings
 
-from . import messages, metadata, metrics, pages, preview, reports
+from . import messages, metadata, metrics, pages, preview, reddit, reports
 from .download import (
     UnsupportedUrlError,
     is_tiktok_photo_url,
     tiktok_gallery_download,
+    url_to_filename_stem,
     yt_dlp_download,
 )
 
@@ -263,6 +264,8 @@ def _iv_watch_url(page_url: str) -> str:
 
 # Telegram's caption limit; the reply text is the caption of a native video.
 _CAPTION_LIMIT = 1024
+# Telegram's text message limit (#UFB-0057: a Reddit reply with no media).
+_MESSAGE_LIMIT = 4096
 
 
 # #UFB-0041
@@ -309,32 +312,97 @@ async def _attempt_gallery_download(final_url: str) -> DownloadResult:
     )
 
 
-# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0036, #UFB-0039, #UFB-0041
+# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0036, #UFB-0041, #UFB-0057
+async def _video_result(final_url: str, video_os_path: str) -> DownloadResult:
+    video_path = os.path.basename(video_os_path)
+    try:
+        # #BUG-0006: ffmpeg runs off the event loop
+        await asyncio.to_thread(preview.generate_preview, video_os_path)
+    except OSError as e:
+        logger.warning(f"Failed to generate preview for {video_path}: {e}")
+    try:
+        pages.write_watch_page(video_path)
+    except OSError as e:
+        logger.error(f"Failed to write watch page for {video_path}: {e}")
+    page_url = pages.watch_page_url(video_path)
+    watch_url = _iv_watch_url(page_url)
+    text = _download_text(
+        watch_url,
+        final_url,
+        metadata.read(video_path),
+        _iv_watch_url(f"{page_url}#description"),
+    )
+    return DownloadResult(text=text, media_path=video_os_path)
+
+
+# #UFB-0057
+_REDDIT_IV_LABELS = {
+    "comment": "📄 Original post",
+    "profile": "📄 Profile",
+    "subreddit": "📄 Subreddit",
+}
+
+
+# #UFB-0057
+def _reddit_text(
+    source_url: str,
+    record: dict,
+    limit: int,
+    iv_url: str = "",
+    iv_label: str = "",
+    more_url: str | None = None,
+) -> str:
+    """The Reddit reply: metadata block above the links, within `limit`."""
+    links = messages.reddit_result(source_url, iv_url=iv_url, iv_label=iv_label)
+    meta = metadata.caption(
+        record,
+        limit - 1 - len(links) - 2,
+        more_url,
+        long_excerpt=limit > _CAPTION_LIMIT,
+    )
+    if not meta:
+        return links
+    return messages.reddit_result(
+        source_url, meta=meta, iv_url=iv_url, iv_label=iv_label
+    )
+
+
+# #UFB-0057
+async def _attempt_reddit(final_url: str) -> DownloadResult:
+    download = await reddit.reddit_download(final_url)
+    if download.video_path:
+        return await _video_result(final_url, download.video_path)
+    page_url = pages.reddit_page_url(url_to_filename_stem(final_url))
+    kind = download.record.get("reddit")
+    if kind == "post":
+        # A post links its page only when the text is clipped.
+        text = _reddit_text(
+            final_url,
+            download.record,
+            _CAPTION_LIMIT if download.image_paths else _MESSAGE_LIMIT,
+            more_url=_iv_watch_url(f"{page_url}#description"),
+        )
+    else:
+        text = _reddit_text(
+            final_url,
+            download.record,
+            _CAPTION_LIMIT if download.image_paths else _MESSAGE_LIMIT,
+            iv_url=_iv_watch_url(page_url),
+            iv_label=_REDDIT_IV_LABELS.get(kind, "📄 Instant View"),
+        )
+    return DownloadResult(text=text, media_path=None, image_paths=download.image_paths)
+
+
+# #UFB-0015, #UFB-0032, #UFB-0033, #UFB-0035, #UFB-0036, #UFB-0039, #UFB-0041, #UFB-0057
 async def attempt_download(final_url: str) -> DownloadResult | None:
     try:
+        if reddit.parse_link(final_url):
+            return await _attempt_reddit(final_url)
         if is_tiktok_photo_url(final_url):
             return await _attempt_gallery_download(final_url)
         video_os_path = await yt_dlp_download(final_url)
         if video_os_path:
-            video_path = os.path.basename(video_os_path)
-            try:
-                # #BUG-0006: ffmpeg runs off the event loop
-                await asyncio.to_thread(preview.generate_preview, video_os_path)
-            except OSError as e:
-                logger.warning(f"Failed to generate preview for {video_path}: {e}")
-            try:
-                pages.write_watch_page(video_path)
-            except OSError as e:
-                logger.error(f"Failed to write watch page for {video_path}: {e}")
-            page_url = pages.watch_page_url(video_path)
-            watch_url = _iv_watch_url(page_url)
-            text = _download_text(
-                watch_url,
-                final_url,
-                metadata.read(video_path),
-                _iv_watch_url(f"{page_url}#description"),
-            )
-            return DownloadResult(text=text, media_path=video_os_path)
+            return await _video_result(final_url, video_os_path)
     except UnsupportedUrlError:
         raise
     except Exception as e:

@@ -87,6 +87,32 @@ def test_tiktok_classifies_alive_logged_out_and_unknown():
 # --- check_once ---
 
 
+def test_reddit_classifies_alive_logged_out_and_unknown():
+    site = _site("reddit")
+    assert site.classify(FakeResp(body={"data": {"name": "bob"}})) is True
+    assert site.classify(FakeResp(body={})) is False
+    assert site.classify(FakeResp(body={"kind": "x"})) is False
+    assert site.classify(FakeResp(status=403, body={})) is None
+    assert site.classify(FakeResp(body=None)) is None
+    assert site.classify(FakeResp(body=[1])) is None
+
+
+# #UFB-0038, #UFB-0057
+def test_reddit_session_is_checked_and_reseeded_like_other_sites(env, monkeypatch):
+    tmp_path, jar = env
+    reddit = ".reddit.com\tTRUE\t/\tTRUE\t2000000000\treddit_session\t{}\n"
+    _write_source(tmp_path, reddit.format("fresh"))
+    calls = []
+
+    def fake_check(jar_obj, site):
+        calls.append(site.name)
+        return False if len(calls) == 1 else True
+
+    monkeypatch.setattr(ck, "_check_site", fake_check)
+    assert ck.check_once() is True
+    assert calls == ["reddit", "reddit"]
+
+
 def test_check_once_builds_jar_and_reports_alive(env, monkeypatch):
     tmp_path, jar = env
     _write_source(tmp_path, INSTAGRAM.format("abc"))

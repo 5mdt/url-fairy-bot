@@ -61,6 +61,22 @@ def _classify_tiktok(resp: requests.Response) -> bool | None:
     return False
 
 
+# #UFB-0038, #UFB-0057
+def _classify_reddit(resp: requests.Response) -> bool | None:
+    """`/api/me.json`: an object with `data.name` is a logged-in session,
+    an object without `data` (Reddit sends `{}`) a logged-out one."""
+    if resp.status_code != 200:
+        return None
+    try:
+        body = resp.json()
+    except ValueError:
+        return None
+    if not isinstance(body, dict):
+        return None
+    data = body.get("data")
+    return bool(isinstance(data, dict) and data.get("name"))
+
+
 # #UFB-0038
 @dataclass(frozen=True)
 class Site:
@@ -88,6 +104,12 @@ SITES = [
         "tiktok.com",
         "https://www.tiktok.com/passport/web/account/info/",
         _classify_tiktok,
+    ),
+    Site(
+        "reddit",
+        "reddit.com",
+        "https://www.reddit.com/api/me.json",
+        _classify_reddit,
     ),
 ]
 

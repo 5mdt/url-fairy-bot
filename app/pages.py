@@ -10,7 +10,7 @@ from urllib.parse import quote
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from app import metadata, preview
+from app import media, metadata, preview
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -65,7 +65,11 @@ def _gallery_image_urls_from_disk(media_filename: str) -> list[str]:
         names = sorted(os.listdir(os.path.join(settings.CACHE_DIR, "gallery", stem)))
     except OSError:
         return []
-    return [gallery_image_url(media_filename, n) for n in names if n.endswith(".jpg")]
+    return [
+        gallery_image_url(media_filename, n)
+        for n in names
+        if n.lower().endswith(media.GALLERY_EXTS)
+    ]
 
 
 # #UFB-0032
@@ -174,6 +178,70 @@ def write_watch_page(
 ) -> str:
     path = watch_page_path(media_filename)
     _write_atomic(path, render_watch_page(media_filename, gallery_image_urls))
+    return path
+
+
+_IMG_MARKER_RE = re.compile(r"^\[\[img:([^\]]+)\]\]$")
+
+
+# #UFB-0057
+def reddit_page_path(stem: str) -> str:
+    return os.path.join(settings.CACHE_DIR, "reddit", f"{stem}.html")
+
+
+# #UFB-0057
+def reddit_page_url(stem: str) -> str:
+    return f"https://{settings.BASE_URL}/reddit/{quote(stem)}.html"
+
+
+# #UFB-0057
+def _reddit_blocks(section: dict) -> list[tuple[str, object]]:
+    """`("p", lines)` / `("img", url)` blocks for a section's body. A
+    `[[img:ID]]` line becomes the image cached for ID; images the text never
+    mentions follow it."""
+    images = section.get("images") or {}
+    used = set()
+    blocks: list[tuple[str, object]] = []
+    for lines in _description_paragraphs(section.get("body")):
+        match = _IMG_MARKER_RE.match(lines[0]) if len(lines) == 1 else None
+        if not match:
+            blocks.append(("p", lines))
+        elif url := images.get(match.group(1)):
+            used.add(match.group(1))
+            blocks.append(("img", url))
+    blocks.extend(("img", url) for key, url in images.items() if key not in used)
+    return blocks
+
+
+# #UFB-0057
+def render_reddit_page(stem: str, view: dict) -> str:
+    """`view`: `title`, `description`, `source_url`, optional `banner`, and
+    `sections` (dicts with `heading`, `title`, `avatar`, `author`,
+    `author_url`, `subreddit`, `subreddit_url`, `subtitle`, `body`,
+    `images` {id: https URL})."""
+    sections = [{**sec, "blocks": _reddit_blocks(sec)} for sec in view["sections"]]
+    first_image = next(
+        (block[1] for sec in sections for block in sec["blocks"] if block[0] == "img"),
+        None,
+    )
+    og_image = first_image or view.get("banner")
+    if not og_image:
+        og_image = next((s["avatar"] for s in sections if s.get("avatar")), None)
+    return _env.get_template("reddit.html").render(
+        page_url=reddit_page_url(stem),
+        page_title=view["title"],
+        description=view.get("description") or "",
+        og_image=og_image or f"https://{settings.BASE_URL}/{PREVIEW_IMAGE_FILENAME}",
+        banner=view.get("banner"),
+        sections=sections,
+        source_url=view["source_url"],
+    )
+
+
+# #UFB-0057
+def write_reddit_page(stem: str, view: dict) -> str:
+    path = reddit_page_path(stem)
+    _write_atomic(path, render_reddit_page(stem, view))
     return path
 
 

@@ -907,3 +907,135 @@ async def test_attempt_download_gallery_caption_includes_metadata(
         result = await attempt_download(url)
 
     assert result.text.startswith("<b>Photos</b>\n👤 Nick\n\n")
+
+
+# --- UFB-0057: Reddit ---
+
+REDDIT_POST = "https://www.reddit.com/r/deck/comments/abc123/a_title/"
+
+
+def _reddit_download(kind="post", images=(), video=None, **record):
+    from app.reddit import RedditDownload
+
+    base = {"title": "Big news", "uploader": "u/alice", "reddit": kind}
+    base.update(record)
+    return RedditDownload(base, list(images), video)
+
+
+# #UFB-0057
+@pytest.mark.asyncio
+async def test_reddit_post_with_media_replies_with_an_album(monkeypatch):
+    dl = _reddit_download(
+        images=["/x/01.jpg"],
+        uploader_url="https://www.reddit.com/user/alice/",
+        description="Hello there",
+    )
+    with (
+        patch(
+            "app.url_processing.reddit.reddit_download", new=AsyncMock(return_value=dl)
+        ),
+        patch("app.url_processing.yt_dlp_download", new=AsyncMock()) as ytdlp,
+    ):
+        result = await attempt_download(REDDIT_POST)
+    ytdlp.assert_not_awaited()
+    assert result.image_paths == ["/x/01.jpg"]
+    assert result.media_path is None
+    assert "<b>Big news</b>" in result.text
+    assert '<a href="https://www.reddit.com/user/alice/">u/alice</a>' in result.text
+    assert "<blockquote>Hello there</blockquote>" in result.text
+    assert f'<a href="{REDDIT_POST}">📎 Source</a>' in result.text
+    assert "Read more" not in result.text
+    assert len(result.text) <= 1024
+
+
+# #UFB-0057
+@pytest.mark.asyncio
+async def test_reddit_clipped_post_links_its_instant_view_page(monkeypatch):
+    monkeypatch.setattr(settings, "IV_RHASH", "abc")
+    dl = _reddit_download(images=["/x/01.jpg"], description="word " * 1000)
+    with patch(
+        "app.url_processing.reddit.reddit_download", new=AsyncMock(return_value=dl)
+    ):
+        result = await attempt_download(REDDIT_POST)
+    assert "📖 Read more" in result.text
+    assert "t.me/iv?url=" in result.text
+    assert "%23description" in result.text
+    assert len(result.text) <= 1024
+
+
+# #UFB-0057
+@pytest.mark.asyncio
+async def test_reddit_text_only_post_gets_the_long_message_limit():
+    dl = _reddit_download(description="word " * 600)
+    with patch(
+        "app.url_processing.reddit.reddit_download", new=AsyncMock(return_value=dl)
+    ):
+        result = await attempt_download(REDDIT_POST)
+    assert result.image_paths == []
+    assert 1024 < len(result.text) <= 4096
+
+
+# #UFB-0057
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "kind, label",
+    [
+        ("comment", "📄 Original post"),
+        ("profile", "📄 Profile"),
+        ("subreddit", "📄 Subreddit"),
+    ],
+)
+async def test_reddit_non_post_kinds_always_link_their_page(kind, label):
+    dl = _reddit_download(kind=kind, description="short")
+    with patch(
+        "app.url_processing.reddit.reddit_download", new=AsyncMock(return_value=dl)
+    ):
+        result = await attempt_download(REDDIT_POST)
+    assert label in result.text
+    assert "example.test/reddit/" in result.text
+
+
+# #UFB-0057
+@pytest.mark.asyncio
+async def test_reddit_video_post_replies_with_a_native_video(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "CACHE_DIR", str(tmp_path))
+    video = tmp_path / "post.mp4"
+    video.write_bytes(b"v")
+    dl = _reddit_download(video=str(video), description="About it")
+    with (
+        patch(
+            "app.url_processing.reddit.reddit_download", new=AsyncMock(return_value=dl)
+        ),
+        patch("app.url_processing.preview.generate_preview"),
+    ):
+        result = await attempt_download(REDDIT_POST)
+    assert result.media_path == str(video)
+    assert "example.test/watch/post.html" in result.text
+    assert (tmp_path / "watch" / "post.html").exists()
+
+
+# #UFB-0057
+@pytest.mark.asyncio
+async def test_other_reddit_urls_still_go_to_yt_dlp():
+    with patch(
+        "app.url_processing.yt_dlp_download", new=AsyncMock(return_value=None)
+    ) as ytdlp:
+        await attempt_download("https://www.reddit.com/r/deck/wiki/index")
+    ytdlp.assert_awaited_once()
+
+
+# #UFB-0057
+@pytest.mark.asyncio
+async def test_reddit_error_falls_back_to_the_mirror_link():
+    from app.reddit import RedditError
+
+    with (
+        patch("app.url_processing.follow_redirects", return_value=REDDIT_POST),
+        patch(
+            "app.url_processing.reddit.reddit_download",
+            new=AsyncMock(side_effect=RedditError("403")),
+        ),
+    ):
+        reply = await process_url_request(REDDIT_POST)
+    assert "rxddit.com/r/deck/comments/abc123/a_title/" in reply
+    assert reply.reason == "fallback_mirror"

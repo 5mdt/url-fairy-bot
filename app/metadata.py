@@ -33,6 +33,9 @@ _CAPTION_STEPS = (
     (15, 10, 0),
 )
 
+# #UFB-0057: extra, longer excerpt sizes for text-only replies.
+_LONG_EXCERPTS = (3500, 3000, 2500, 2000, 1500, 1000, 600)
+
 
 # #UFB-0041
 def _stem(name: str) -> str:
@@ -80,6 +83,7 @@ def _record(
     source_url=None,
     extractor=None,
     duration=None,
+    subtitle=None,
 ) -> dict | None:
     record = {
         "title": _str(title, _MAX_TITLE_CHARS),
@@ -91,6 +95,7 @@ def _record(
         "source_url": _str(source_url, 4000),
         "extractor": _str(extractor, 100),
         "duration": duration if isinstance(duration, (int, float)) else None,
+        "subtitle": _str(subtitle, 300),
     }
     record = {k: v for k, v in record.items() if v not in (None, [])}
     if not any(k in record for k in ("title", "uploader", "description")):
@@ -146,6 +151,31 @@ def trim_tiktok_item(item, *, source_url: str | None = None) -> dict | None:
         avatar_url=avatar,
         source_url=source_url,
         extractor="TikTok",
+    )
+
+
+# #UFB-0057
+def trim_reddit(
+    *,
+    title,
+    uploader,
+    uploader_url=None,
+    description=None,
+    avatar_url=None,
+    subtitle=None,
+    source_url: str | None = None,
+) -> dict | None:
+    """The trimmed record for a Reddit post, comment, profile or subreddit;
+    `subtitle` is a short stats line shown under the uploader."""
+    return _record(
+        title=title,
+        uploader=uploader,
+        uploader_url=uploader_url,
+        description=description,
+        avatar_url=avatar_url,
+        subtitle=subtitle,
+        source_url=source_url,
+        extractor="Reddit",
     )
 
 
@@ -237,22 +267,33 @@ def _dedupe(title: str, description: str) -> tuple[str, str]:
 
 
 # #UFB-0041
-def caption(record: dict | None, budget: int, more_url: str | None = None) -> str:
+def caption(
+    record: dict | None,
+    budget: int,
+    more_url: str | None = None,
+    long_excerpt: bool = False,
+) -> str:
     """Telegram HTML for the short form: bold title, 👤 uploader (linked to the
     profile when it is a short https URL), description excerpt as a quote. The
     result is at most `budget` characters (markup
     and escapes included), or "" when nothing fits. With `more_url`, a
-    `📖 Read more` line follows whenever the description is clipped or left out."""
+    `📖 Read more` line follows whenever the description is clipped or left out.
+    `long_excerpt` (#UFB-0057, for text-only replies with a large budget) tries
+    excerpts longer than 300 characters before the usual steps."""
     if not record or budget <= 0:
         return ""
     title = str(record.get("title") or "")
     uploader = str(record.get("uploader") or "")
     description = str(record.get("description") or "")
     title, description = _dedupe(title, description)
+    subtitle = str(record.get("subtitle") or "")
     profile = str(record.get("uploader_url") or "")
     if not (profile.startswith("https://") and len(profile) <= _MAX_LINKED_URL):
         profile = ""
-    for title_max, uploader_max, excerpt_max in _CAPTION_STEPS:
+    steps = _CAPTION_STEPS
+    if long_excerpt:
+        steps = tuple((200, 80, e) for e in _LONG_EXCERPTS) + steps
+    for title_max, uploader_max, excerpt_max in steps:
         lines = []
         if clipped := _clip(title, title_max):
             lines.append(f"<b>{escape(clipped)}</b>")
@@ -261,6 +302,8 @@ def caption(record: dict | None, budget: int, more_url: str | None = None) -> st
             if profile:
                 name = f'<a href="{escape(profile)}">{name}</a>'
             lines.append(f"👤 {name}")
+        if clipped := _clip(subtitle, uploader_max * 2):
+            lines.append(escape(clipped))
         if clipped := _clip(description, excerpt_max):
             lines.append(f"<blockquote>{escape(clipped)}</blockquote>")
         if more_url and description and clipped != description:

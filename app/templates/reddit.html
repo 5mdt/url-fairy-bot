@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }}{% endblock %}
+{% block meta %}
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ page_title }}">
+    <meta property="og:url" content="{{ page_url }}">
+    {% if description %}
+    <meta property="og:description" content="{{ description[:200] }}">
+    {% endif %}
+    <meta property="og:image" content="{{ og_image }}">
+{% endblock %}
+{% block content %}
+    {% if banner %}<img src="{{ banner }}" alt="">{% endif %}
+    {% for sec in sections %}
+    <section class="meta">
+        {% if sec.heading %}<h2>{{ sec.heading }}</h2>{% endif %}
+        {% if sec.title %}{% if loop.first %}<h1>{{ sec.title }}</h1>{% else %}<h3>{{ sec.title }}</h3>{% endif %}{% endif %}
+        {% if sec.author or sec.avatar %}
+        <p class="uploader">
+            {% if sec.avatar %}<img src="{{ sec.avatar }}" alt="" width="64" height="64">{% endif %}
+            {% if sec.author_url %}<a href="{{ sec.author_url }}">{{ sec.author }}</a>{% else %}{{ sec.author }}{% endif %}
+            {% if sec.subreddit %}in {% if sec.subreddit_url %}<a href="{{ sec.subreddit_url }}">{{ sec.subreddit }}</a>{% else %}{{ sec.subreddit }}{% endif %}{% endif %}
+        </p>
+        {% endif %}
+        {% if sec.subtitle %}<p>{{ sec.subtitle }}</p>{% endif %}
+        <div{% if loop.first %} id="description"{% endif %}>{% for kind, value in sec.blocks %}{% if kind == "img" %}<img src="{{ value }}" alt="">{% else %}<p>{% for line in value %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</p>{% endif %}{% endfor %}</div>
+    </section>
+    {% endfor %}
+    <p>📎 <a href="{{ source_url }}">Source</a></p>
+{% endblock %}

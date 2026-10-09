@@ -89,6 +89,8 @@ def _media_exists(stem: str) -> bool:
     photo gallery directory (a post without audio has no top-level file)."""
     if os.path.isdir(os.path.join(settings.CACHE_DIR, "gallery", stem)):
         return True
+    if os.path.exists(os.path.join(settings.CACHE_DIR, "reddit", f"{stem}.html")):
+        return True  # #UFB-0057: a text-only Reddit post has only its page
     try:
         return any(
             os.path.splitext(name)[0] == stem

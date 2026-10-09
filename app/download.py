@@ -208,9 +208,11 @@ def _subtitle_names(stem: str) -> list[str]:
         return []
 
 
-# #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040, #BUG-0014
-async def yt_dlp_download(url: str) -> str:
-    stem = url_to_filename_stem(url)
+# #UFB-0015, #UFB-0016, #UFB-0017, #UFB-0040, #UFB-0057, #BUG-0014
+async def yt_dlp_download(url: str, stem: str | None = None) -> str:
+    """`stem` overrides the cache stem (default: derived from `url`); Reddit
+    videos are fetched from an HLS URL but cached under the post's stem."""
+    stem = stem or url_to_filename_stem(url)
     async with _url_lock(stem):
         return await _yt_dlp_download_locked(url, stem)
 
@@ -308,8 +310,8 @@ def _write_atomic_bytes(path: str, content: bytes) -> None:
 def _cached_gallery(gallery_dir: str, audio_path: str) -> GalleryDownload | None:
     images = sorted(
         p
-        for p in glob.glob(os.path.join(gallery_dir, "*.jpg"))
-        if not p.endswith(_INCOMPLETE_SUFFIXES)
+        for p in glob.glob(os.path.join(gallery_dir, "*"))
+        if p.lower().endswith(media.GALLERY_EXTS)
     )
     if not images:
         return None

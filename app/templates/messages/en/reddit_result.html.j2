@@ -1,0 +1,9 @@
+{% if meta %}
+{{ meta|safe }}
+
+{% endif %}
+{% if iv_url %}
+<a href="{{ iv_url }}">{{ iv_label }}</a>
+
+{% endif %}
+<a href="{{ source_url }}">📎 Source</a>

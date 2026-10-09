@@ -297,3 +297,43 @@ def test_subtitle_url_and_dir(cache_dir):
         == "https://example.test/subs/clip/clip.en.vtt"
     )
     assert os.path.basename(metadata.subs_dir("clip")) == "clip"
+
+
+# --- UFB-0057: Reddit records and the subtitle line ---
+
+
+# #UFB-0057
+def test_trim_reddit_keeps_card_fields():
+    rec = metadata.trim_reddit(
+        title="T",
+        uploader="u/alice",
+        uploader_url="https://www.reddit.com/user/alice/",
+        description="D",
+        subtitle="r/deck · ⬆️ 5",
+        source_url="https://src",
+    )
+    assert rec["subtitle"] == "r/deck · ⬆️ 5"
+    assert rec["extractor"] == "Reddit"
+    assert metadata.trim_reddit(title="", uploader=None) is None
+
+
+# #UFB-0057
+def test_caption_shows_the_subtitle_under_the_uploader():
+    record = {"title": "T", "uploader": "u/a", "subtitle": "r/deck <3"}
+    html = metadata.caption(record, 500)
+    assert html == "<b>T</b>\n👤 u/a\nr/deck &lt;3"
+
+
+# #UFB-0057
+def test_caption_with_subtitle_still_fits_the_budget():
+    record = {"title": "T" * 300, "uploader": "u" * 100, "subtitle": "s" * 500}
+    assert len(metadata.caption(record, 120)) <= 120
+
+
+# #UFB-0057
+def test_long_excerpt_shows_more_text_only_when_asked():
+    record = {"title": "T", "uploader": "u/a", "description": "word " * 600}
+    short = metadata.caption(record, 3000)
+    long = metadata.caption(record, 3000, long_excerpt=True)
+    assert len(short) < 400
+    assert 1000 < len(long) <= 3000

@@ -68,6 +68,21 @@ def download_result(watch_url: str, source_url: str, meta: str = "") -> str:
     )
 
 
+# #UFB-0057, #UFB-0037
+def reddit_result(
+    source_url: str, meta: str = "", iv_url: str = "", iv_label: str = ""
+) -> str:
+    """`meta` is the already-escaped short-form metadata HTML; `iv_url` the
+    Instant View page link (empty = none)."""
+    return _render(
+        "reddit_result.html.j2",
+        source_url=source_url,
+        meta=meta,
+        iv_url=iv_url,
+        iv_label=iv_label,
+    )
+
+
 # #UFB-0036, #UFB-0037
 def too_large(body: str) -> str:
     return _render("too_large.html.j2", body=body)

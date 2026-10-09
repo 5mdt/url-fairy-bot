@@ -17,7 +17,7 @@ When a link points at a user profile (Instagram, TikTok, Twitter/X, Reddit, a Yo
 | Bio or description        | where available                                                    |
 | Follower counts           | where available                                                    |
 
-Profile links get no useful treatment today. Instagram, for example, is only matched on `/p/` and `/reel/` ([UFB-0011](UFB-0011-platform-mirror-rewrites.md)).
+Reddit profiles and subreddits ship first, in [UFB-0057](UFB-0057-reddit-links.md). Other platforms get no useful treatment today. Instagram, for example, is only matched on `/p/` and `/reel/` ([UFB-0011](UFB-0011-platform-mirror-rewrites.md)).
 
 ## Implementation
 

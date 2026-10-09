@@ -14,7 +14,8 @@ As an operator running authenticated downloads, I want the bot to periodically c
   2. **Check** — for each known site that has cookies in the jar, requests a logged-in-only page with those cookies (no redirects followed, 5 s timeout). Result per site: alive, logged out, or unknown (network error, 5xx, unexpected response — unknown never triggers a re-seed). The jar is saved afterwards so refreshed `Set-Cookie` values persist.
   3. **Re-seed on failure** — for a logged-out site, replaces only that site's cookies in the jar with those from `cookies*.txt`, saves, and re-checks once.
 - Overall state: `false` if any site is logged out, `true` if at least one was checked and all are alive, otherwise `null`.
-- Known sites: Instagram (`/accounts/edit/`), YouTube (`/account`), TikTok (`/passport/web/account/info/`).
+- Known sites: Instagram (`/accounts/edit/`), YouTube (`/account`), TikTok (`/passport/web/account/info/`), Reddit (`/api/me.json`: a JSON object with a `data.name` is logged in, an object without `data` is logged out).
+- Reddit's API client ([UFB-0057](UFB-0057-reddit-links.md)) reads its cookies from the jar when the jar is enabled, so refreshed values reach it; it never takes the jar lock, and falls back to the `cookies*.txt` files if the jar is missing or unreadable.
 - `GET /health` ([UFB-0034](UFB-0034-health-endpoints.md)) always includes `"cookies": true|false|null`. It only returns `503` for `cookies: false` when `COOKIE_HEALTHCHECK=true` (default `false`). `cookies` is also `false` if keepalive is enabled but its thread has died.
 
 ## Implementation
@@ -41,7 +42,7 @@ As an operator running authenticated downloads, I want the bot to periodically c
 
 ### Unit
 
-- Each site's response classifier: alive, logged-out redirect, 5xx/exception → unknown.
+- Each site's response classifier: alive, logged-out redirect, 5xx/exception → unknown; Reddit: `data.name` → alive, `{}` → logged out, 403/non-JSON → unknown.
 - Newer source files rebuild the jar; unchanged sources leave it alone.
 - A logged-out site is re-seeded alone, other sites' cookies are kept, and it is re-checked once.
 - Refreshed `Set-Cookie` values are persisted to the jar.

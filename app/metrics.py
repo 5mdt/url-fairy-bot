@@ -44,7 +44,7 @@ OTHER = "other"
 PLATFORMS = tuple(sorted(set(_DOMAIN_PLATFORMS.values()))) + (OTHER,)
 OUTCOMES = ("success", "failure", "fallback_mirror")
 # "cobalt" is reserved for #UFB-0052.
-DOWNLOADERS = ("yt-dlp", "cobalt")
+DOWNLOADERS = ("yt-dlp", "cobalt", "reddit-api")  # #UFB-0057
 REPLY_KINDS = ("native_video", "text_link", "gallery")
 
 _BUCKETS = (0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 300)

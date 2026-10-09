@@ -17,7 +17,7 @@ flowchart TD
 
     C -- "allowed" --> K{"Known non-video platform?<br/>(Spotify)"}
     K -- yes --> O
-    K -- no --> L["attempt_download(final_url)<br/>→ yt_dlp_download()"]
+    K -- no --> L["attempt_download(final_url)<br/>→ Reddit API (post/comment/profile/subreddit)<br/>or yt_dlp_download()"]
     L --> M{"Download succeeded?"}
     M -- yes --> N["Reply: Watch/Download link<br/>(served from CACHE_DIR via nginx)<br/>+ original link"]
 

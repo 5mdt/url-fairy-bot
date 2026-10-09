@@ -91,6 +91,17 @@ class Settings(BaseSettings):
     ALERT_YTDLP_MAX_AGE_DAYS: int = 60
     ALERT_CACHE_FULL_PERCENT: int = 90
 
+    # #UFB-0057: app-only OAuth for Reddit; empty = cookies, then anonymous
+    REDDIT_CLIENT_ID: str = ""
+    REDDIT_CLIENT_SECRET: str = ""
+    REDDIT_USER_AGENT: str = "url-fairy-bot/1.0"
+
+    @field_validator("REDDIT_USER_AGENT", mode="before")
+    @classmethod
+    def _blank_user_agent_is_default(cls, v):
+        """#UFB-0057: an empty env value (docker-compose default) keeps the default."""
+        return "url-fairy-bot/1.0" if isinstance(v, str) and not v.strip() else v
+
     # Domain-rewrite mirror destinations (source-matching regex stays in code)
     # #UFB-0022
     SPOTIFY_MIRROR_DOMAIN: str = "fxspotify.com"

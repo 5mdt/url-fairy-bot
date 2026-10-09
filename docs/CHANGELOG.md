@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `#UFB-0038`, `#UFB-0057` — the cookie keepalive also checks and refreshes the Reddit session, and the Reddit client reads its cookies from the jar when `COOKIE_JAR_ENABLED` is on.
+- `#UFB-0057` — Reddit posts, comments, profiles and subreddits get a native reply: clickable author, text as a quote, photos/albums/native video, and an Instant View page (a comment's page also shows the original post). Needs `REDDIT_CLIENT_ID`/`REDDIT_CLIENT_SECRET` (or Reddit cookies); without them links fall back to the mirror as before.
 - `#UFB-0041` — when a reply's description excerpt is clipped or left out, the caption adds a `📖 Read more` link that opens the full description on the watch page (in Instant View when `IV_RHASH` is set); the page keeps paragraphs and line breaks, and stored descriptions may be up to 100 000 characters.
 - `#UFB-0052` — optional `cobalt` service in `docker-compose.yml` behind the `cobalt` compose profile (internal only, not started by default), with a setup guide in `docs/cobalt-setup.md`; the bot does not call it yet.
 

@@ -10,6 +10,8 @@ As a Telegram user, I want links to Spotify, Instagram, Reddit, TikTok, Twitter/
 
 Links to Spotify, Instagram, Reddit, Threads, TikTok, Twitter/X, and YouTube are rewritten to an equivalent link on a configured "mirror" domain that renders richer link previews/embeds than the original site. Rewriting a domain is only skipped when it's excluded by the [rewrite allow-list](UFB-0023-rewrite-domain-allowlist.md) (`REWRITE_ALLOWED_DOMAINS`, empty by default — no exclusions). Every URL path on a matched domain is eligible for rewriting, not just specific sub-paths (YouTube's patterns are the exception — see [UFB-0012](UFB-0012-youtube-mirror-rewrites.md)).
 
+Reddit posts, comments, profiles and subreddits are read natively ([UFB-0057](UFB-0057-reddit-links.md)); the Reddit mirror is only the fallback when that fails.
+
 ## Implementation
 
 - Domain-matching patterns per platform, each pointing at a configurable mirror domain (see [UFB-0022](UFB-0022-configurable-mirror-domains.md)).

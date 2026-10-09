@@ -1,6 +1,6 @@
 # Feature Requirements Document
 
-Next free ID: **UFB-0057**.
+Next free ID: **UFB-0059**.
 
 ## Behavior diagrams
 
@@ -67,33 +67,36 @@ The two mermaid flowcharts are the source of truth for how the features below fi
 - [X] [UFB-0054. Maintainer alerts](features/UFB-0054-maintainer-alerts.md) - `#ops` `#telegram` `#config`
 - [X] [UFB-0055. Progress chat action](features/UFB-0055-progress-chat-action.md) - `#telegram` `#ux`
 - [X] [UFB-0056. API authentication and rate limiting](features/UFB-0056-api-auth-rate-limiting.md) - `#api` `#ops` `#config`
+- [X] [UFB-0057. Reddit posts, comments, profiles and subreddits](features/UFB-0057-reddit-links.md) - `#reddit` `#download` `#media` `#telegram` `#ux` `#hosting`
+- [ ] [UFB-0058. Reddit account login for gated content](features/UFB-0058-reddit-account-login.md) - `#reddit` `#download` `#config`
 
 ## Deprecated
 
 ## Tags
 
-- `#telegram`: UFB-0001, UFB-0002, UFB-0003, UFB-0004, UFB-0005, UFB-0006, UFB-0014, UFB-0032, UFB-0035, UFB-0036, UFB-0037, UFB-0039, UFB-0046, UFB-0047, UFB-0049, UFB-0050, UFB-0051, UFB-0054, UFB-0055
+- `#telegram`: UFB-0001, UFB-0002, UFB-0003, UFB-0004, UFB-0005, UFB-0006, UFB-0014, UFB-0032, UFB-0035, UFB-0036, UFB-0037, UFB-0039, UFB-0046, UFB-0047, UFB-0049, UFB-0050, UFB-0051, UFB-0054, UFB-0055, UFB-0057
 - `#commands`: UFB-0001, UFB-0049
 - `#url`: UFB-0002, UFB-0007, UFB-0008, UFB-0010
-- `#ux`: UFB-0003, UFB-0014, UFB-0032, UFB-0036, UFB-0037, UFB-0039, UFB-0041, UFB-0046, UFB-0047, UFB-0048, UFB-0051, UFB-0055
+- `#ux`: UFB-0003, UFB-0014, UFB-0032, UFB-0036, UFB-0037, UFB-0039, UFB-0041, UFB-0046, UFB-0047, UFB-0048, UFB-0051, UFB-0055, UFB-0057
 - `#i18n`: UFB-0037
 - `#groups`: UFB-0004, UFB-0005
 - `#easter-egg`: UFB-0005
 - `#validation`: UFB-0006
 - `#redirects`: UFB-0007
 - `#privacy`: UFB-0008
-- `#config`: UFB-0009, UFB-0018, UFB-0021, UFB-0022, UFB-0023, UFB-0024, UFB-0054, UFB-0056
-- `#download`: UFB-0009, UFB-0013, UFB-0015, UFB-0016, UFB-0017, UFB-0018, UFB-0039, UFB-0040, UFB-0041, UFB-0042, UFB-0052, UFB-0053
+- `#config`: UFB-0009, UFB-0018, UFB-0021, UFB-0022, UFB-0023, UFB-0024, UFB-0054, UFB-0056, UFB-0058
+- `#download`: UFB-0009, UFB-0013, UFB-0015, UFB-0016, UFB-0017, UFB-0018, UFB-0039, UFB-0040, UFB-0041, UFB-0042, UFB-0052, UFB-0053, UFB-0057, UFB-0058
 - `#allowlist`: UFB-0009, UFB-0023
 - `#rewrite`: UFB-0010, UFB-0011, UFB-0012, UFB-0013, UFB-0022, UFB-0023, UFB-0029
 - `#youtube`: UFB-0012
 - `#fallback`: UFB-0013, UFB-0052
-- `#media`: UFB-0015, UFB-0035, UFB-0036, UFB-0039, UFB-0040, UFB-0042, UFB-0048
+- `#media`: UFB-0015, UFB-0035, UFB-0036, UFB-0039, UFB-0040, UFB-0042, UFB-0048, UFB-0057
 - `#cache`: UFB-0016, UFB-0026, UFB-0050
 - `#cookies`: UFB-0017, UFB-0018, UFB-0038, UFB-0053
 - `#api`: UFB-0019, UFB-0034, UFB-0045, UFB-0056
 - `#runtime`: UFB-0020, UFB-0034, UFB-0038, UFB-0043, UFB-0044
 - `#ops`: UFB-0024, UFB-0025, UFB-0026, UFB-0027, UFB-0028, UFB-0030, UFB-0031, UFB-0033, UFB-0034, UFB-0038, UFB-0043, UFB-0044, UFB-0045, UFB-0049, UFB-0051, UFB-0054, UFB-0056
-- `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033, UFB-0035, UFB-0036, UFB-0041, UFB-0047
+- `#hosting`: UFB-0025, UFB-0031, UFB-0032, UFB-0033, UFB-0035, UFB-0036, UFB-0041, UFB-0047, UFB-0057
 - `#deploy`: UFB-0027, UFB-0030
 - `#ci`: UFB-0028
+- `#reddit`: UFB-0057, UFB-0058

@@ -290,3 +290,35 @@ def test_reply_records_are_swept_by_window_not_file_ttl(cache_dir, monkeypatch):
 
     assert not os.path.exists(old)
     assert duplicates.lookup(1, "https://e.com/new") == 11
+
+
+# --- UFB-0057: Reddit pages ---
+
+
+# #UFB-0057
+def test_text_only_reddit_post_keeps_its_record_while_its_page_exists(cache_dir):
+    from app import metadata
+
+    (cache_dir / "reddit").mkdir()
+    (cache_dir / "reddit" / "post.html").write_text("<html></html>")
+    metadata.write("post", {"title": "T", "reddit": "post"})
+
+    cleanup.sweep_once()
+
+    assert metadata.read("post") is not None
+
+
+# #UFB-0057
+def test_stale_reddit_page_is_swept_with_its_record(cache_dir):
+    from app import metadata
+
+    (cache_dir / "reddit").mkdir()
+    page = cache_dir / "reddit" / "post.html"
+    page.write_text("<html></html>")
+    metadata.write("post", {"title": "T", "reddit": "post"})
+    _age(str(page), days=10)
+
+    cleanup.sweep_once()
+
+    assert not page.exists()
+    assert metadata.read("post") is None
